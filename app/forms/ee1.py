@@ -24,7 +24,6 @@ import os
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 
-from app.fillmaps.ee1_map import FIELD_MAP
 
 TEMPLATE_PATH = "app/templates/EE-1 DRAFT.pdf"
 OUTPUT_DIR = "data/output"
