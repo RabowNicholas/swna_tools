@@ -1,9 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog
 from datetime import datetime
-
-# You will implement this function in your controller later
+from app.airtable import fetch_clients
 from app.controller import handle_en11a_form
+from app.ui.record_selector import RecordSelector
 
 
 class EN11aForm(tk.Frame):
@@ -28,9 +28,15 @@ class EN11aForm(tk.Frame):
 
         self.entries = {}
 
+        tk.Button(
+            self.form_frame,
+            text="Load from Airtable",
+            command=self.open_record_selector,
+        ).grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+
         # Case ID
         tk.Label(self.form_frame, text="Case ID", width=25, anchor="w").grid(
-            row=0, column=0, sticky="w", pady=4
+            row=1, column=0, sticky="w", pady=4
         )
         self.entries["case_id"] = tk.Entry(
             self.form_frame,
@@ -39,11 +45,11 @@ class EN11aForm(tk.Frame):
             fg=entry_fg,
             insertbackground=entry_fg,
         )
-        self.entries["case_id"].grid(row=0, column=1, pady=4)
+        self.entries["case_id"].grid(row=1, column=1, pady=4)
 
         # Employee Name
         tk.Label(self.form_frame, text="Employee Name", width=25, anchor="w").grid(
-            row=1, column=0, sticky="w", pady=4
+            row=2, column=0, sticky="w", pady=4
         )
         self.entries["employee_name"] = tk.Entry(
             self.form_frame,
@@ -52,24 +58,42 @@ class EN11aForm(tk.Frame):
             fg=entry_fg,
             insertbackground=entry_fg,
         )
-        self.entries["employee_name"].grid(row=1, column=1, pady=4)
+        self.entries["employee_name"].grid(row=2, column=1, pady=4)
 
         # Doctor selection
         tk.Label(self.form_frame, text="Doctor", width=25, anchor="w").grid(
-            row=2, column=0, sticky="w", pady=4
+            row=3, column=0, sticky="w", pady=4
         )
         self.doctor_var = tk.StringVar()
         self.doctor_var.set("Dr. Lewis")
         self.entries["doctor"] = self.doctor_var
         tk.OptionMenu(
             self.form_frame, self.doctor_var, "Dr. Lewis", "La Plata Medical"
-        ).grid(row=2, column=1, sticky="ew", pady=4)
+        ).grid(row=3, column=1, sticky="ew", pady=4)
 
         # Submit button
         tk.Button(
             self.form_frame, text="Generate EN-11a Form", command=self.submit
-        ).grid(row=3, column=0, columnspan=2, pady=15)
+        ).grid(row=4, column=0, columnspan=2, pady=15)
         self.form_frame.update_idletasks()
+
+    def open_record_selector(self):
+        records = fetch_clients()
+        RecordSelector(self, records, self.prefill_from_record)
+
+    def prefill_from_record(self, record):
+        self.entries["case_id"].delete(0, tk.END)
+        self.entries["case_id"].insert(0, record["fields"].get("Case ID", ""))
+
+        self.entries["employee_name"].delete(0, tk.END)
+        raw_name = record["fields"].get("Name", "")
+        if "," in raw_name:
+            last, rest = raw_name.split(",", 1)
+            first = rest.split("-")[0].strip()
+            formatted_name = f"{first} {last.strip()}"
+        else:
+            formatted_name = raw_name
+        self.entries["employee_name"].insert(0, formatted_name)
 
     def submit(self):
         data = {
