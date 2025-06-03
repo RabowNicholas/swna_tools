@@ -35,8 +35,8 @@ class EN11aForm(tk.Frame):
         ).grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 10))
 
         # Case ID
-        tk.Label(self.form_frame, text="Case ID", width=25, anchor="w").grid(
-            row=1, column=0, sticky="w", pady=4
+        tk.Label(self.form_frame, text="Case ID", anchor="w").grid(
+            row=1, column=0, columnspan=2, sticky="w", pady=(6, 0), padx=(5, 5)
         )
         self.entries["case_id"] = tk.Entry(
             self.form_frame,
@@ -45,11 +45,13 @@ class EN11aForm(tk.Frame):
             fg=entry_fg,
             insertbackground=entry_fg,
         )
-        self.entries["case_id"].grid(row=1, column=1, pady=4)
+        self.entries["case_id"].grid(
+            row=2, column=0, columnspan=2, pady=(0, 6), padx=(5, 5), sticky="ew"
+        )
 
         # Employee Name
-        tk.Label(self.form_frame, text="Employee Name", width=25, anchor="w").grid(
-            row=2, column=0, sticky="w", pady=4
+        tk.Label(self.form_frame, text="Employee Name", anchor="w").grid(
+            row=3, column=0, columnspan=2, sticky="w", pady=(6, 0), padx=(5, 5)
         )
         self.entries["employee_name"] = tk.Entry(
             self.form_frame,
@@ -58,23 +60,28 @@ class EN11aForm(tk.Frame):
             fg=entry_fg,
             insertbackground=entry_fg,
         )
-        self.entries["employee_name"].grid(row=2, column=1, pady=4)
+        self.entries["employee_name"].grid(
+            row=4, column=0, columnspan=2, pady=(0, 6), padx=(5, 5), sticky="ew"
+        )
 
         # Doctor selection
-        tk.Label(self.form_frame, text="Doctor", width=25, anchor="w").grid(
-            row=3, column=0, sticky="w", pady=4
+        tk.Label(self.form_frame, text="Doctor", anchor="w").grid(
+            row=5, column=0, columnspan=2, sticky="w", pady=(6, 0), padx=(5, 5)
         )
         self.doctor_var = tk.StringVar()
         self.doctor_var.set("Dr. Lewis")
         self.entries["doctor"] = self.doctor_var
         tk.OptionMenu(
             self.form_frame, self.doctor_var, "Dr. Lewis", "La Plata Medical"
-        ).grid(row=3, column=1, sticky="ew", pady=4)
+        ).grid(row=6, column=0, columnspan=2, pady=(0, 10), padx=(5, 5), sticky="ew")
 
         # Submit button
+        tk.Label(
+            self.form_frame, text="Form Actions", font=("San Francisco", 14, "bold")
+        ).grid(row=7, column=0, columnspan=2, sticky="w", pady=(10, 0), padx=(5, 5))
         tk.Button(
             self.form_frame, text="Generate EN-11a Form", command=self.submit
-        ).grid(row=4, column=0, columnspan=2, pady=15)
+        ).grid(row=8, column=0, columnspan=2, pady=(10, 15), padx=(5, 5))
         self.form_frame.update_idletasks()
 
     def open_record_selector(self):
