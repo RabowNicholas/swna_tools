@@ -6,7 +6,7 @@ class PrefillGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("SWNA Form Assistant")
-        self.root.geometry("600x700")
+        self.root.geometry("700x900")
         self.root.minsize(600, 600)
 
         # Configure custom ttk style for enhanced button appearance (Apple HIG)
