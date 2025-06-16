@@ -1,4 +1,0 @@
-([('SWNA Form Assistant',
-   '/Users/nicholasrabow/SWNA/Code Projects/prefill-assistant/dist/SWNA Form '
-   'Assistant',
-   'EXECUTABLE')],)
