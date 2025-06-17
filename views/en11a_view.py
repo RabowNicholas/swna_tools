@@ -2,7 +2,7 @@ import asyncio
 import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN
-from forms.en11a_generator import EN11AGenerator
+from generators.en11a_generator import EN11AGenerator
 from services.airtable import fetch_clients
 
 
@@ -35,7 +35,7 @@ class EN11AView:
                 self.generate_button,
                 self.status_label,
             ],
-            style=Pack(direction=COLUMN, padding=20),
+            style=Pack(direction=COLUMN),
         )
 
     async def load_clients(self):
