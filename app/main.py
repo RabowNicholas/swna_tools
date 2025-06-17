@@ -2,6 +2,7 @@ import toga
 from views.home_view import HomeView
 from views.en11a_view import EN11AView
 from toga.style.pack import COLUMN, ROW, Pack
+from views.invoice_view import InvoiceView
 
 
 class SWNAToolsApp(toga.App):
@@ -17,8 +18,9 @@ class SWNAToolsApp(toga.App):
     def startup(self):
         self.main_window = toga.MainWindow(title=self.formal_name)
 
-        self.en11a_view = EN11AView(app=self)
         self.home_view = HomeView(app=self)
+        self.en11a_view = EN11AView(app=self)
+        self.invoice_view = InvoiceView(app=self)
 
         self.nav_bar = toga.Box(
             children=[

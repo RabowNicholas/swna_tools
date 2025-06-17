@@ -22,11 +22,18 @@ class HomeView:
             on_press=lambda w: self.app.switch_view(self.app.en11a_view.main_box),
             style=Pack(padding=10),
         )
-
-        self.main_box = toga.Box(
-            children=[title_label, description_label, en11a_button],
-            style=Pack(direction=COLUMN),
+        invoice_button = toga.Button(
+            "Create Invoice",
+            on_press=lambda w: self.app.switch_view(self.app.invoice_view.main_box),
+            style=Pack(padding=10),
         )
 
-    def go_to_en11a(self, widget):
-        self.app.switch_view(self.app.en11a_view.main_box)
+        self.main_box = toga.Box(
+            children=[
+                title_label,
+                description_label,
+                en11a_button,
+                invoice_button,
+            ],
+            style=Pack(direction=COLUMN),
+        )
