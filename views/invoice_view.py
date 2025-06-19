@@ -2,6 +2,7 @@ import asyncio
 import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN, ROW
+from generators.invoice_generator import generate_invoice_file
 from services.airtable import fetch_clients, fetch_invoice_by_id
 from datetime import date, timedelta
 import re
@@ -35,12 +36,12 @@ class InvoiceView:
             placeholder="MM/DD/YYYY",
         )
 
-        self.impairment_input = toga.TextInput(value="2")
+        self.ar_fee = toga.TextInput(value="2")
         self.part_selector = toga.Selection(
             items=["Part B", "Part E"], style=Pack(padding=5, flex=1)
         )
         self.percentage_owed = toga.Box(
-            children=[toga.Label("AR Fee (%)"), self.impairment_input]
+            children=[toga.Label("AR Fee (%)"), self.ar_fee]
         )
         self.percentage_owed.style.display = "none"  # Hidden by default
         self.part_e_amount_input = toga.TextInput(
@@ -95,6 +96,7 @@ class InvoiceView:
                 toga.Label("Invoice Items", style=Pack(padding=(10, 10))),
                 self.items_box,
                 self.add_item_button,
+                self.generate_button,
                 self.status_label,
             ],
             style=Pack(direction=COLUMN),
@@ -154,8 +156,36 @@ class InvoiceView:
             visibility="hidden" if is_part_e else "visible"
         )
 
-    def generate_invoice(self, widget):
-        pass
+    async def generate_invoice(self, widget):
+        try:
+            fields = {
+                "invoice_date": self.invoice_date_input.value,
+                "case_id": self.case_id_input.value,
+                "invoice_number": self.invoice_number_input.value,
+                "client_name": self.client_name_input.value,
+                "address": self.address_input.value,
+                "fd_letter_date": self.fd_letter_date_input.value,
+                "part_type": self.part_selector.value,
+                "ar_fee": self.ar_fee.value,
+                "awarded_amount": self.part_e_amount_input.value,
+            }
+
+            filename, excel_bytes = generate_invoice_file(fields)
+            save_path = await self.app.main_window.save_file_dialog(
+                "Save Invoice", suggested_filename=filename
+            )
+
+            if save_path:
+                with open(save_path, "wb") as f:
+                    f.write(excel_bytes.read())
+                self.status_label.text = f"Saved to {save_path}"
+                self.status_label.style.color = "green"
+            else:
+                self.status_label.text = "Save cancelled."
+                self.status_label.style.color = "white"
+        except Exception as e:
+            self.status_label.text = f"Error: {str(e)}"
+            self.status_label.style.color = "red"
 
     def populate_client_fields(self, widget):
         self.invoice_items.clear()
