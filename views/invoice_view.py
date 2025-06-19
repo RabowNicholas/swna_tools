@@ -30,10 +30,19 @@ class InvoiceView:
         )
         self.case_id_input = toga.TextInput(style=Pack(padding=5, flex=1))
         self.address_input = toga.TextInput(style=Pack(padding=5, flex=1))
+        self.fd_letter_date_input = toga.TextInput(
+            style=Pack(padding=5, flex=1),
+            placeholder="MM/DD/YYYY",
+        )
+
+        self.impairment_input = toga.TextInput(value="2")
         self.part_selector = toga.Selection(
             items=["Part B", "Part E"], style=Pack(padding=5, flex=1)
         )
-
+        self.percentage_owed = toga.Box(
+            children=[toga.Label("AR Fee (%)"), self.impairment_input]
+        )
+        self.percentage_owed.style.display = "none"  # Hidden by default
         self.part_e_amount_input = toga.TextInput(
             style=Pack(padding=5, flex=1), placeholder="Amount Awarded (e.g. 2000)"
         )
@@ -46,13 +55,7 @@ class InvoiceView:
         )
         self.part_e_amount_input_box.style.update(visibility="hidden")
 
-        def toggle_part_e_field(widget):
-            is_part_e = self.part_selector.value == "Part E"
-            self.part_e_amount_input_box.style.update(
-                visibility="visible" if is_part_e else "hidden"
-            )
-
-        self.part_selector.on_change = toggle_part_e_field
+        self.part_selector.on_change = self.on_part_change
 
         # Invoice items container
         self.items_box = toga.Box(style=Pack(direction=COLUMN, padding=5))
@@ -83,9 +86,12 @@ class InvoiceView:
                 self.invoice_number_input,
                 toga.Label("Address", style=Pack(padding=(10, 0))),
                 self.address_input,
+                toga.Label("Date on FD Letter", style=Pack(padding=(10, 0))),
+                self.fd_letter_date_input,
                 toga.Label("Award Type", style=Pack(padding=(10, 0))),
                 self.part_selector,
                 self.part_e_amount_input_box,
+                self.percentage_owed,
                 toga.Label("Invoice Items", style=Pack(padding=(10, 10))),
                 self.items_box,
                 self.add_item_button,
@@ -138,6 +144,15 @@ class InvoiceView:
 
     def remove_invoice_item(self, item_row):
         self.items_box.remove(item_row)
+
+    def on_part_change(self, widget):
+        is_part_e = self.part_selector.value == "Part E"
+        self.part_e_amount_input_box.style.update(
+            visibility="visible" if is_part_e else "hidden"
+        )
+        self.percentage_owed.style.update(
+            visibility="hidden" if is_part_e else "visible"
+        )
 
     def generate_invoice(self, widget):
         pass
