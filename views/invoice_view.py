@@ -110,6 +110,7 @@ class InvoiceView:
                 rec["fields"].get("Name", f"Unnamed {i}")
                 for i, rec in enumerate(self.client_records)
             ]
+
             self.client_selector.items = ["Select a client..."] + formatted_names
             self.client_selector._impl.set_enabled(True)
         except Exception as e:
@@ -168,6 +169,10 @@ class InvoiceView:
                 "part_type": self.part_selector.value,
                 "ar_fee": self.ar_fee.value,
                 "awarded_amount": self.part_e_amount_input.value,
+                "invoice_items": [
+                    {"name": selector.value, "date": date_input.value}
+                    for selector, date_input in self.invoice_items
+                ],
             }
 
             filename, excel_bytes = generate_invoice_file(fields)
