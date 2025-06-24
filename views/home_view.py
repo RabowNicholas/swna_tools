@@ -17,6 +17,11 @@ class HomeView:
             style=Pack(padding=(0, 20)),
         )
 
+        en16_button = toga.Button(
+            "Create EN-16",
+            on_press=lambda w: self.app.switch_view(self.app.en16_view.main_box),
+            style=Pack(padding=10),
+        )
         en11a_button = toga.Button(
             "Draft EN-11A",
             on_press=lambda w: self.app.switch_view(self.app.en11a_view.main_box),
@@ -32,6 +37,7 @@ class HomeView:
             children=[
                 title_label,
                 description_label,
+                en16_button,
                 en11a_button,
                 invoice_button,
             ],

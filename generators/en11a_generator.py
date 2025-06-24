@@ -2,7 +2,6 @@ from datetime import datetime
 from io import BytesIO
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
-from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 
 
