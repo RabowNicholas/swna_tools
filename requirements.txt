@@ -3,9 +3,11 @@ certifi==2025.6.15
 chardet==5.2.0
 charset-normalizer==3.4.2
 dotenv==0.9.9
+et_xmlfile==2.0.0
 fonttools==4.58.4
 idna==3.10
 inflection==0.5.1
+openpyxl==3.1.5
 pillow==11.2.1
 pyairtable==3.1.1
 pydantic==2.11.7

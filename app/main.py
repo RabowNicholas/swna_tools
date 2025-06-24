@@ -1,6 +1,7 @@
 import toga
 from views.home_view import HomeView
 from views.en11a_view import EN11AView
+from views.en16_view import EN16View
 from toga.style.pack import COLUMN, ROW, Pack
 from views.invoice_view import InvoiceView
 
@@ -20,6 +21,7 @@ class SWNAToolsApp(toga.App):
 
         self.home_view = HomeView(app=self)
         self.en11a_view = EN11AView(app=self)
+        self.en16_view = EN16View(app=self)
         self.invoice_view = InvoiceView(app=self)
 
         self.nav_bar = toga.Box(
