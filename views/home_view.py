@@ -2,6 +2,8 @@ import toga
 from toga.style import Pack
 from toga.style.pack import COLUMN
 
+from generators import rd_waiver_generator
+
 
 class HomeView:
     def __init__(self, app):
@@ -22,6 +24,11 @@ class HomeView:
             on_press=lambda w: self.app.switch_view(self.app.en16_view.main_box),
             style=Pack(padding=10),
         )
+        rd_waiver_button = toga.Button(
+            "Create RD Accept Waiver",
+            on_press=lambda w: self.app.switch_view(self.app.rd_waiver_view.main_box),
+            style=Pack(padding=10),
+        )
         en11a_button = toga.Button(
             "Draft EN-11A",
             on_press=lambda w: self.app.switch_view(self.app.en11a_view.main_box),
@@ -38,6 +45,7 @@ class HomeView:
                 title_label,
                 description_label,
                 en16_button,
+                rd_waiver_button,
                 en11a_button,
                 invoice_button,
             ],
