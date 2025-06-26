@@ -146,7 +146,16 @@ class InvoiceView:
         self.items_box.add(item_row)
 
     def remove_invoice_item(self, item_row):
+        # Remove the item_row from the UI
         self.items_box.remove(item_row)
+        # Remove the corresponding (selector, date_input) from self.invoice_items
+        # by matching the widgets in the item_row's children
+        children = list(item_row.children)
+        self.invoice_items = [
+            (selector, date_input)
+            for selector, date_input in self.invoice_items
+            if not (selector in children and date_input in children)
+        ]
 
     def on_part_change(self, widget):
         is_part_e = self.part_selector.value == "Part E"
