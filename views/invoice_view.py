@@ -58,17 +58,12 @@ class InvoiceView:
 
         self.part_selector.on_change = self.on_part_change
 
-        # Invoice items container
+        # Items box
         self.items_box = toga.Box(style=Pack(direction=COLUMN, padding=5))
-        self.add_invoice_item()
 
         # Buttons
-
         self.generate_button = toga.Button(
             "Generate Invoice", on_press=self.generate_invoice, style=Pack(padding=10)
-        )
-        self.add_item_button = toga.Button(
-            "Add Item", on_press=self.add_invoice_item, style=Pack(padding=5)
         )
         self.status_label = toga.Label("", style=Pack(padding=(10, 0)))
 
@@ -93,9 +88,7 @@ class InvoiceView:
                 self.part_selector,
                 self.part_e_amount_input_box,
                 self.percentage_owed,
-                toga.Label("Invoice Items", style=Pack(padding=(10, 10))),
                 self.items_box,
-                self.add_item_button,
                 self.generate_button,
                 self.status_label,
             ],
@@ -117,45 +110,6 @@ class InvoiceView:
             self.client_selector.items = ["Failed to load"]
             self.status_label.text = f"Error loading clients: {e}"
             self.status_label.style.color = "red"
-
-    def add_invoice_item(self, widget=None):
-        item_selector = toga.Selection(
-            items=[
-                "Physician File Review - Dr. Toupin",
-                "Physician File Review - Dr. Herold",
-                "B-read Imaging - Dr. Klepper",
-                "B-read Imaging - Dr. Smith",
-                "B-read 2nd Opinion - Dr. Smith",
-                "Physician Response Memo - Dr. Toupin",
-                "Physician Response Memo - Dr. Herold",
-                "Discount",
-            ],
-            style=Pack(padding=5, flex=2),
-        )
-        date_input = toga.TextInput(
-            style=Pack(padding=5, flex=1), placeholder="MM/DD/YYYY"
-        )
-        remove_button = toga.Button("Remove", style=Pack(padding=5))
-        item_row = toga.Box(
-            children=[item_selector, date_input, remove_button],
-            style=Pack(direction=ROW),
-        )
-        remove_button.on_press = lambda w: self.remove_invoice_item(item_row)
-
-        self.invoice_items.append((item_selector, date_input))
-        self.items_box.add(item_row)
-
-    def remove_invoice_item(self, item_row):
-        # Remove the item_row from the UI
-        self.items_box.remove(item_row)
-        # Remove the corresponding (selector, date_input) from self.invoice_items
-        # by matching the widgets in the item_row's children
-        children = list(item_row.children)
-        self.invoice_items = [
-            (selector, date_input)
-            for selector, date_input in self.invoice_items
-            if not (selector in children and date_input in children)
-        ]
 
     def on_part_change(self, widget):
         is_part_e = self.part_selector.value == "Part E"
@@ -202,12 +156,6 @@ class InvoiceView:
             self.status_label.style.color = "red"
 
     def populate_client_fields(self, widget):
-        self.invoice_items.clear()
-        self.main_box.remove(self.items_box)
-        self.items_box = toga.Box(style=Pack(direction=COLUMN, padding=5))
-        self.main_box.insert(
-            self.main_box.children.index(self.add_item_button), self.items_box
-        )
         selected_name = self.client_selector.value
         if selected_name == "Select a client...":
             return
@@ -229,6 +177,19 @@ class InvoiceView:
             self.case_id_input.value = fields.get("Case ID", "")
             self.address_input.value = fields.get("Address", "")
             invoice_records = fields.get("Invoicing", [])
+
+            # Clear previous invoice items from the UI and internal list
+            # Ensure self.items_box exists and is added to main_box if not already
+            if not hasattr(self, "items_box"):
+                self.items_box = toga.Box(style=Pack(direction=COLUMN, padding=5))
+                self.main_box.add(self.items_box)
+            else:
+                # Remove all children from items_box
+                for child in list(self.items_box.children):
+                    self.items_box.remove(child)
+            self.invoice_items = []
+
+            invoice_records = fields.get("Invoicing", [])
             if isinstance(invoice_records, list):
                 for invoice_id in invoice_records:
                     invoice = fetch_invoice_by_id(invoice_id)
@@ -249,7 +210,7 @@ class InvoiceView:
                     raw_value = fields.get("Name", "").lower()
 
                     if "pending" in raw_value or "payment complete" in raw_value:
-                        return
+                        continue
 
                     if "toupin" in raw_value and "memo" in raw_value:
                         mapped_value = "Physician Response Memo - Dr. Toupin"
@@ -306,3 +267,16 @@ class InvoiceView:
 
                     self.invoice_items.append((item_selector, date_input))
                     self.items_box.add(item_row)
+
+    def remove_invoice_item(self, item_row):
+        # Remove from UI
+        self.items_box.remove(item_row)
+
+        # Remove from internal list
+        self.invoice_items = [
+            (selector, date_input)
+            for selector, date_input in self.invoice_items
+            if item_row not in (selector, date_input)
+            and item_row.children[0] != selector
+            and item_row.children[1] != date_input
+        ]
