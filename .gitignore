@@ -5,3 +5,18 @@
 .venv/
 __pycache__/
 *.py[cod]
+
+# py2app build artifacts
+build/
+dist/
+*.app
+
+# macOS metadata
+.DS_Store
+
+# Egg info
+*.egg-info/
+
+# IDEs and editors
+.vscode/
+.idea/
