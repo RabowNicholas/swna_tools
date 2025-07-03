@@ -9,6 +9,7 @@ tool = st.sidebar.radio(
     [
         "Create EN-16",
         "Create EN-11A",
+        "Create IR Schedule Notice La Plata",
         "Create RD Accept Waiver",
         "Create Invoice",
     ],
@@ -33,3 +34,8 @@ elif tool == "Create Invoice":
     from streamlit_views.invoice import render_invoice
 
     render_invoice()
+
+elif tool == "Create IR Schedule Notice La Plata":
+    from streamlit_views.ir_notice_la_plata import render_ir_notice_la_plata
+
+    render_ir_notice_la_plata()
