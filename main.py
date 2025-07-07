@@ -8,7 +8,7 @@ tool = st.sidebar.radio(
     "Choose a tool",
     [
         "Create EN-16",
-        "Create EN-11A",
+        "Create EE-10",
         "Create IR Schedule Notice La Plata",
         "Create RD Accept Waiver",
         "Create Invoice",
@@ -20,10 +20,10 @@ if tool == "Create EN-16":
 
     render_en16()
 
-elif tool == "Create EN-11A":
-    from streamlit_views.en11a import render_en11a
+elif tool == "Create EE-10":
+    from streamlit_views.ee10 import render_ee10
 
-    render_en11a()
+    render_ee10()
 
 elif tool == "Create RD Accept Waiver":
     from streamlit_views.rd_waiver import render_rd_waiver
