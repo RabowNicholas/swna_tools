@@ -50,7 +50,29 @@ def render_invoice():
         "Invoice Date", value=datetime.today() + timedelta(days=30)
     )
     case_id = st.text_input("Case ID", value=fields.get("Case ID", ""))
-    address = st.text_input("Address", value=fields.get("Address", ""))
+
+    address_prefill = fields.get("Address", "")
+    if "," in address_prefill:
+        prefill_main, prefill_city_zip = address_prefill.rsplit(",", 1)
+        prefill_main = prefill_main.strip()
+        prefill_city_zip = prefill_city_zip.strip()
+    else:
+        prefill_main = address_prefill
+        prefill_city_zip = ""
+
+    address_main_input = st.text_input("Street Address", value=prefill_main)
+
+    import re
+
+    city, state, zip_code = "", "", ""
+    city_state_zip_match = re.match(r"(.*),?\s*([A-Z]{2})\s*(\d{5})", prefill_city_zip)
+    if city_state_zip_match:
+        city, state, zip_code = city_state_zip_match.groups()
+
+    address_city_input = st.text_input("City", value=city.strip())
+    address_state_input = st.text_input("State", value=state.strip())
+    address_zip_input = st.text_input("ZIP Code", value=zip_code.strip())
+
     fd_letter_date = st.date_input("Date on FD Letter", value=datetime.today())
 
     part_type = st.radio("Award Type", ["Part B", "Part E"])
@@ -151,7 +173,17 @@ def render_invoice():
         st.session_state.invoice_items.append({"name": "", "date": ""})
 
     if st.button("Generate Invoice"):
-        if not all([invoice_number, case_id, address, fd_letter_date]):
+        if not all(
+            [
+                invoice_number,
+                case_id,
+                address_main_input,
+                address_city_input,
+                address_state_input,
+                address_zip_input,
+                fd_letter_date,
+            ]
+        ):
             st.error("All fields are required.")
             return
 
@@ -160,7 +192,10 @@ def render_invoice():
             "case_id": case_id,
             "invoice_number": invoice_number,
             "client_name": display_name,
-            "address": address,
+            "address_main": address_main_input,
+            "address_city": address_city_input,
+            "address_state": address_state_input,
+            "address_zip": address_zip_input,
             "fd_letter_date": fd_letter_date.strftime("%m/%d/%Y"),
             "part_type": part_type,
             "ar_fee": str(ar_fee) if ar_fee is not None else None,

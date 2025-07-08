@@ -6,6 +6,24 @@ from datetime import date
 
 
 def generate_invoice_file(fields: dict):
+    """
+    Generate an invoice Excel file based on the provided fields.
+
+    Expected keys in fields:
+    - invoice_date
+    - case_id
+    - invoice_number
+    - client_name
+    - address_main
+    - address_city
+    - address_state
+    - address_zip
+    - fd_letter_date
+    - ar_fee (optional)
+    - part_type
+    - awarded_amount
+    - invoice_items (list of dicts with keys 'name' and 'date')
+    """
     wb = load_workbook("templates/invoice.xlsx")
     ws = wb.active
 
@@ -13,7 +31,10 @@ def generate_invoice_file(fields: dict):
     ws["E4"] = f"{fields['case_id']}-{fields['invoice_number']}"
     ws["E5"] = fields["case_id"]
     ws["A10"] = fields["client_name"]
-    ws["A11"] = fields["address"]
+    ws["A11"] = fields["address_main"]
+    ws["A12"] = (
+        f"{fields['address_city']}, {fields['address_state']} {fields['address_zip']}"
+    )
     ws["D17"] = fields["fd_letter_date"]
 
     ar_fee = float(fields.get("ar_fee") or 2)

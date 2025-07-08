@@ -57,9 +57,9 @@ class RDAcceptWaiverGenerator:
         c.setFont("Helvetica", 11)
 
         # Adjust these coordinates as needed
-        c.drawString(410, 675, claimant)
+        c.drawString(410, 675, case_id)
         c.drawString(378, 662, employee)
-        c.drawString(374, 647, case_id)
+        c.drawString(374, 647, claimant)
         c.drawString(410, 634, rd_decision_date)
         c.drawString(83, 247, claimant)
         c.drawString(315, 178, current_date)
