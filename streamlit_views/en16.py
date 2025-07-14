@@ -20,6 +20,41 @@ def render_en16():
     ]
     client_selection = st.selectbox("Select a Client", ["Select..."] + client_names)
 
+    # Prefill fields when client changes (pattern from rd_waiver.py)
+    if client_selection != "Select...":
+        record = next(
+            (
+                rec
+                for rec in st.session_state.client_records
+                if rec["fields"].get("Name") == client_selection
+            ),
+            None,
+        )
+        if record:
+            fields = record["fields"]
+            raw_name = fields.get("Name", "")
+            try:
+                last, rest = raw_name.split(",", 1)
+                first = rest.split("-")[0].strip()
+                full_name = f"{first} {last.strip()}"
+            except ValueError:
+                full_name = raw_name
+            st.session_state["prefill_claimant"] = full_name
+            st.session_state["prefill_case_id"] = fields.get("Case ID", "")
+        else:
+            st.session_state["prefill_claimant"] = ""
+            st.session_state["prefill_case_id"] = ""
+    else:
+        st.session_state["prefill_claimant"] = ""
+        st.session_state["prefill_case_id"] = ""
+
+    claimant = st.text_input(
+        "Claimant Name", value=st.session_state.get("prefill_claimant", "")
+    )
+    case_id = st.text_input(
+        "Case ID", value=st.session_state.get("prefill_case_id", "")
+    )
+
     if st.button("Generate EN-16"):
         if client_selection == "Select...":
             st.error("Please select a valid client.")
@@ -37,6 +72,7 @@ def render_en16():
             st.error("Client record not found.")
             return
 
+        # You might want to use claimant/case_id variables here for further processing
         try:
             generator = EN16Generator()
             filename, pdf_bytes = generator.generate(record)
