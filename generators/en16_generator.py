@@ -9,22 +9,19 @@ class EN16Generator:
     def __init__(self, template_path="templates/en-16.pdf"):
         self.template_path = template_path
 
-    def generate(self, client_record: dict) -> tuple[str, BytesIO]:
-        raw_name = client_record["fields"].get("Name", "")
-        try:
-            case_id = client_record["fields"].get("Case ID", "")
-            last_first = raw_name.split(" - ")[0]
-            last, first = [s.strip() for s in last_first.split(",")]
-            client_name = f"{first} {last}"
-        except ValueError:
+    def generate(self, claimant: str, case_id: str) -> tuple[str, BytesIO]:
+        name_parts = claimant.strip().split()
+        if len(name_parts) < 2:
             raise ValueError(
-                "Client name format invalid. Expected 'Last, First - ####'"
+                "Claimant name format invalid. Must include at least first and last name."
             )
+        first = name_parts[0]
+        last = name_parts[-1]
 
         current_date = datetime.now().strftime("%m.%d.%y")
         filename = f"EN16_{first[0]}.{last}_{current_date}.pdf"
 
-        pdf_bytes = self.draw_pdf(self.template_path, client_name, case_id)
+        pdf_bytes = self.draw_pdf(self.template_path, claimant, case_id)
         return filename, pdf_bytes
 
     def draw_pdf(self, template_path: str, client_name: str, case_id: str) -> BytesIO:
