@@ -35,6 +35,60 @@ def render_invoice():
         None,
     )
 
+    if (
+        "last_selected_client" not in st.session_state
+        or st.session_state["last_selected_client"] != client_name
+    ):
+        st.session_state["last_selected_client"] = client_name
+        st.session_state.invoice_items = []
+
+        # Clear address fields
+        st.session_state["address_main"] = ""
+        st.session_state["address_city"] = ""
+        st.session_state["address_state"] = ""
+        st.session_state["address_zip"] = ""
+
+        # Optionally refetch invoices by resetting or calling logic here
+        for invoice_id in client_record["fields"].get("Invoicing", []):
+            inv = fetch_invoice_by_id(invoice_id)
+            raw = inv.get("fields", {}).get("Name", "").lower()
+            if "pending" in raw or "payment complete" in raw:
+                continue
+
+            if "toupin" in raw and "memo" in raw:
+                name = "Physician Response Memo - Dr. Toupin"
+            elif "toupin" in raw:
+                name = "Physician File Review - Dr. Toupin"
+            elif "herold" in raw and "memo" in raw:
+                name = "Physician Response Memo - Dr. Herold"
+            elif "herold" in raw:
+                name = "Physician File Review - Dr. Herold"
+            elif "klepper" in raw and "2nd" in raw:
+                name = "B-read 2nd Opinion - Dr. Smith"
+            elif "klepper" in raw or "b-read" in raw:
+                name = "B-read Imaging - Dr. Klepper"
+            elif "smith" in raw and "2nd" in raw:
+                name = "B-read 2nd Opinion - Dr. Smith"
+            elif "smith" in raw or "b-read" in raw:
+                name = "B-read Imaging - Dr. Smith"
+            elif "discount" in raw or "-$" in raw or "$-" in raw:
+                name = "Discount"
+            else:
+                name = ""
+
+            import re
+
+            date_match = re.search(r"(\d{1,2})[./](\d{1,2})[./](\d{2,4})", raw)
+            if date_match:
+                m, d, y = date_match.groups()
+                if len(y) == 2:
+                    y = "20" + y
+                date = f"{int(m):02d}/{int(d):02d}/{y}"
+            else:
+                date = ""
+
+            st.session_state.invoice_items.append({"name": name, "date": date})
+
     fields = client_record["fields"]
     parsed_name = fields.get("Name", "")
     try:
@@ -51,27 +105,19 @@ def render_invoice():
     )
     case_id = st.text_input("Case ID", value=fields.get("Case ID", ""))
 
-    address_prefill = fields.get("Address", "")
-    if "," in address_prefill:
-        prefill_main, prefill_city_zip = address_prefill.rsplit(",", 1)
-        prefill_main = prefill_main.strip()
-        prefill_city_zip = prefill_city_zip.strip()
-    else:
-        prefill_main = address_prefill
-        prefill_city_zip = ""
-
-    address_main_input = st.text_input("Street Address", value=prefill_main)
-
-    import re
-
-    city, state, zip_code = "", "", ""
-    city_state_zip_match = re.match(r"(.*),?\s*([A-Z]{2})\s*(\d{5})", prefill_city_zip)
-    if city_state_zip_match:
-        city, state, zip_code = city_state_zip_match.groups()
-
-    address_city_input = st.text_input("City", value=city.strip())
-    address_state_input = st.text_input("State", value=state.strip())
-    address_zip_input = st.text_input("ZIP Code", value=zip_code.strip())
+    # Render address fields using session state values
+    address_main_input = st.text_input(
+        "Street Address", value=st.session_state.get("address_main", "")
+    )
+    address_city_input = st.text_input(
+        "City", value=st.session_state.get("address_city", "")
+    )
+    address_state_input = st.text_input(
+        "State", value=st.session_state.get("address_state", "")
+    )
+    address_zip_input = st.text_input(
+        "ZIP Code", value=st.session_state.get("address_zip", "")
+    )
 
     fd_letter_date = st.date_input("Date on FD Letter", value=datetime.today())
 
