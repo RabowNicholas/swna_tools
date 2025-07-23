@@ -3,6 +3,9 @@ from datetime import datetime
 from services.airtable import fetch_clients
 from generators.rd_waiver_generator import RDAcceptWaiverGenerator
 
+# If you have a fetch_invoices function, import it here
+# from services.airtable import fetch_invoices
+
 
 def render_rd_waiver():
     st.header("Generate RD Accept Waiver")
@@ -32,6 +35,18 @@ def render_rd_waiver():
             None,
         )
         if record:
+            # Clear address and invoice-related fields
+            st.session_state["invoice_data"] = None
+            st.session_state["address_line_1"] = ""
+            st.session_state["address_line_2"] = ""
+            st.session_state["city"] = ""
+            st.session_state["state"] = ""
+            st.session_state["zip_code"] = ""
+
+            # Optional: refetch invoices if you have a fetch_invoices(record_id) function
+            # from services.airtable import fetch_invoices
+            # st.session_state["invoice_data"] = fetch_invoices(record["id"])
+
             fields = record["fields"]
             raw_name = fields.get("Name", "")
             try:
@@ -95,12 +110,43 @@ def render_rd_waiver():
                 rd_decision_date=rd_decision_date.strftime("%m/%d/%Y"),
                 current_date=datetime.now().strftime("%m/%d/%Y"),
             )
-            st.download_button(
-                label=f"Download {filename}",
-                data=pdf_bytes.read(),
-                file_name=filename,
-                mime="application/pdf",
-            )
             st.success("RD Accept Waiver generated successfully!")
+            st.session_state["rdwaiver_pdf_name"] = filename
+            st.session_state["rdwaiver_pdf_bytes"] = pdf_bytes.read()
+            st.session_state["rdwaiver_record"] = selected_record
+            st.session_state["rdwaiver_claimant"] = claimant
+            st.session_state["rdwaiver_case_id"] = case_id
         except Exception as e:
             st.error(f"Error generating waiver: {e}")
+
+    # Show buttons after generation
+    if st.session_state.get("rdwaiver_pdf_bytes"):
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            st.download_button(
+                label=f"Download {st.session_state.rdwaiver_pdf_name}",
+                data=st.session_state.rdwaiver_pdf_bytes,
+                file_name=st.session_state.rdwaiver_pdf_name,
+                mime="application/pdf",
+            )
+        with col2:
+            if st.button("Access Portal"):
+                with st.status("🔁 Launching portal automation...", expanded=True):
+                    try:
+                        # Replace with the actual upload function for RD waiver
+                        # upload_rdwaiver_to_portal(
+                        #     st.session_state["rdwaiver_record"],
+                        #     st.session_state["rdwaiver_case_id"],
+                        #     st.session_state["rdwaiver_claimant"],
+                        # )
+                        # Placeholder: using upload_en16_to_portal as a stand-in
+                        from dol_portal.en_16_uploader import upload_en16_to_portal
+
+                        upload_en16_to_portal(
+                            st.session_state["rdwaiver_record"],
+                            st.session_state["rdwaiver_case_id"],
+                            st.session_state["rdwaiver_claimant"],
+                        )
+                        st.success("✅ Upload script completed.")
+                    except Exception as e:
+                        st.error(f"❌ Upload script failed: {e}")
