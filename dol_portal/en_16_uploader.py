@@ -1,9 +1,9 @@
-from playwright.sync_api import sync_playwright
 from dol_portal.access_case_portal import access_case_portal
 from datetime import datetime
 
 
 def upload_en16_to_portal(record, case_id, claimant):
+    from playwright.sync_api import sync_playwright
 
     ssn_last4 = record["fields"]["Name"].split("-")[-1].strip()
 
