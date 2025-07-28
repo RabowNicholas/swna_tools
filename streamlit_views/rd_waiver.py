@@ -1,7 +1,9 @@
+import os
 import streamlit as st
 from datetime import datetime
 from services.airtable import fetch_clients
 from generators.rd_waiver_generator import RDAcceptWaiverGenerator
+from dol_portal.access_case_portal import access_case_portal
 
 # If you have a fetch_invoices function, import it here
 # from services.airtable import fetch_invoices
@@ -130,23 +132,25 @@ def render_rd_waiver():
                 mime="application/pdf",
             )
         with col2:
-            if st.button("Access Portal"):
-                with st.status("🔁 Launching portal automation...", expanded=True):
-                    try:
-                        # Replace with the actual upload function for RD waiver
-                        # upload_rdwaiver_to_portal(
-                        #     st.session_state["rdwaiver_record"],
-                        #     st.session_state["rdwaiver_case_id"],
-                        #     st.session_state["rdwaiver_claimant"],
-                        # )
-                        # Placeholder: using upload_en16_to_portal as a stand-in
-                        from dol_portal.en_16_uploader import upload_en16_to_portal
-
-                        upload_en16_to_portal(
-                            st.session_state["rdwaiver_record"],
-                            st.session_state["rdwaiver_case_id"],
-                            st.session_state["rdwaiver_claimant"],
-                        )
-                        st.success("✅ Upload script completed.")
-                    except Exception as e:
-                        st.error(f"❌ Upload script failed: {e}")
+            if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
+                if st.button("Access Portal"):
+                    with st.status("🔁 Launching portal automation...", expanded=True):
+                        try:
+                            record = st.session_state["rdwaiver_record"]
+                            ssn_last4 = record["fields"]["Name"].split("-")[-1].strip()
+                            last_name = st.session_state["rdwaiver_claimant"].split()[
+                                -1
+                            ]
+                            access_case_portal(
+                                record,
+                                st.session_state["rdwaiver_case_id"],
+                                last_name,
+                                ssn_last4,
+                            )
+                            st.success("✅ Upload script completed.")
+                        except Exception as e:
+                            st.error(f"❌ Upload script failed: {e}")
+            else:
+                st.caption(
+                    "⚠️ Portal automation is only available in local environments."
+                )
