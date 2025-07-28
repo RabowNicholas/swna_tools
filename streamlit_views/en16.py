@@ -1,5 +1,5 @@
 import streamlit as st
-from dol_portal.en_16_uploader import upload_en16_to_portal
+from dol_portal.access_case_portal import access_case_portal
 from generators.en16_generator import EN16Generator
 from services.airtable import fetch_clients
 import os
@@ -108,10 +108,14 @@ def render_en16():
                 if st.button("Access Portal"):
                     with st.status("🔁 Launching portal automation...", expanded=True):
                         try:
-                            upload_en16_to_portal(
-                                st.session_state["en16_record"],
+                            record = st.session_state["en16_record"]
+                            ssn_last4 = record["fields"]["Name"].split("-")[-1].strip()
+                            last_name = st.session_state["en16_claimant"].split()[-1]
+                            access_case_portal(
+                                record,
                                 st.session_state["en16_case_id"],
-                                st.session_state["en16_claimant"],
+                                last_name,
+                                ssn_last4,
                             )
                             st.success("✅ Upload script completed.")
                         except Exception as e:
