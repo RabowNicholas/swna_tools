@@ -2,6 +2,8 @@ import streamlit as st
 from datetime import date, timedelta
 from services.airtable import fetch_clients
 from generators.ir_notice_la_plata_generator import LaPlataNoticeGenerator
+import os
+from dol_portal.access_case_portal import access_case_portal
 
 
 def render_ir_notice_la_plata():
@@ -82,5 +84,29 @@ def render_ir_notice_la_plata():
                 mime="application/pdf",
             )
             st.success("Notice generated successfully!")
+            st.session_state["ir_notice_generated"] = True
+            st.session_state["ir_notice_record"] = record
+            st.session_state["ir_notice_claimant"] = client_name
+            st.session_state["ir_notice_case_id"] = case_id
         except Exception as e:
             st.error(f"Error generating notice: {e}")
+
+    if st.session_state.get("ir_notice_generated"):
+        if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
+            if st.button("Access Portal"):
+                with st.status("🔁 Launching portal automation...", expanded=True):
+                    try:
+                        record = st.session_state["ir_notice_record"]
+                        ssn_last4 = record["fields"]["Name"].split("-")[-1].strip()
+                        last_name = st.session_state["ir_notice_claimant"].split()[-1]
+                        access_case_portal(
+                            record,
+                            st.session_state["ir_notice_case_id"],
+                            last_name,
+                            ssn_last4,
+                        )
+                        st.success("✅ Upload script completed.")
+                    except Exception as e:
+                        st.error(f"❌ Upload script failed: {e}")
+        else:
+            st.caption("⚠️ Portal automation is only available in local environments.")

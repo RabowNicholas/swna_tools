@@ -2,6 +2,8 @@ import streamlit as st
 from services.airtable import fetch_clients
 from generators.ee10_generator import EE10Generator
 import re
+import os
+from dol_portal.access_case_portal import access_case_portal
 
 
 def render_ee10():
@@ -131,5 +133,31 @@ def render_ee10():
                 mime="application/pdf",
             )
             st.success("EE-10 generated successfully!")
+
+            st.session_state["ee10_record"] = record
+            st.session_state["ee10_claimant"] = name_input
+            st.session_state["ee10_case_id"] = case_id_input
+            st.session_state["ee10_generated"] = True
+
         except Exception as e:
             st.error(f"Error generating EN-11A: {e}")
+
+    if st.session_state.get("ee10_generated"):
+        if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
+            if st.button("Access Portal"):
+                with st.status("🔁 Launching portal automation...", expanded=True):
+                    try:
+                        record = st.session_state["ee10_record"]
+                        ssn_last4 = record["fields"]["Name"].split("-")[-1].strip()
+                        last_name = st.session_state["ee10_claimant"].split()[-1]
+                        access_case_portal(
+                            record,
+                            st.session_state["ee10_case_id"],
+                            last_name,
+                            ssn_last4,
+                        )
+                        st.success("✅ Upload script completed.")
+                    except Exception as e:
+                        st.error(f"❌ Upload script failed: {e}")
+        else:
+            st.caption("⚠️ Portal automation is only available in local environments.")
