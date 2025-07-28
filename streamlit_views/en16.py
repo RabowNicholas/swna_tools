@@ -2,6 +2,10 @@ import streamlit as st
 from dol_portal.en_16_uploader import upload_en16_to_portal
 from generators.en16_generator import EN16Generator
 from services.airtable import fetch_clients
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def render_en16():
@@ -100,14 +104,19 @@ def render_en16():
                 mime="application/pdf",
             )
         with col2:
-            if st.button("Access Portal"):
-                with st.status("🔁 Launching portal automation...", expanded=True):
-                    try:
-                        upload_en16_to_portal(
-                            st.session_state["en16_record"],
-                            st.session_state["en16_case_id"],
-                            st.session_state["en16_claimant"],
-                        )
-                        st.success("✅ Upload script completed.")
-                    except Exception as e:
-                        st.error(f"❌ Upload script failed: {e}")
+            if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
+                if st.button("Access Portal"):
+                    with st.status("🔁 Launching portal automation...", expanded=True):
+                        try:
+                            upload_en16_to_portal(
+                                st.session_state["en16_record"],
+                                st.session_state["en16_case_id"],
+                                st.session_state["en16_claimant"],
+                            )
+                            st.success("✅ Upload script completed.")
+                        except Exception as e:
+                            st.error(f"❌ Upload script failed: {e}")
+            else:
+                st.caption(
+                    "⚠️ Portal automation is only available in local environments."
+                )
