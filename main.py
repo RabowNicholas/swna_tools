@@ -10,6 +10,7 @@ st.title("SWNA Tools")
 tool = st.sidebar.radio(
     "Choose a tool",
     [
+        "Access Portal",
         "Create EN-16",
         "Create EE-10",
         "Create IR Schedule Notice La Plata",
@@ -42,3 +43,8 @@ elif tool == "Create IR Schedule Notice La Plata":
     from streamlit_views.ir_notice_la_plata import render_ir_notice_la_plata
 
     render_ir_notice_la_plata()
+
+elif tool == "Access Portal":
+    from streamlit_views.portal_access import render_portal_access
+
+    render_portal_access()
