@@ -12,6 +12,9 @@ tool = st.sidebar.radio(
     [
         "Access Portal",
         "Create EN-16",
+        "Create EE-1",
+        # "Create EE-1a",
+        # "Create EE-3",
         "Create EE-10",
         "Create IR Schedule Notice La Plata",
         "Create RD Accept Waiver",
@@ -23,6 +26,21 @@ if tool == "Create EN-16":
     from streamlit_views.en16 import render_en16
 
     render_en16()
+
+elif tool == "Create EE-1":
+    from streamlit_views.ee1 import render_ee1
+
+    render_ee1()
+
+elif tool == "Create EE-1a":
+    from streamlit_views.ee1a import render_ee1a
+
+    render_ee1a()
+
+elif tool == "Create EE-3":
+    from streamlit_views.ee3 import render_ee3
+
+    render_ee3()
 
 elif tool == "Create EE-10":
     from streamlit_views.ee10 import render_ee10
