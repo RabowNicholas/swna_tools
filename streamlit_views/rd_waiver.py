@@ -10,7 +10,10 @@ from dol_portal.access_case_portal import access_case_portal
 
 
 def render_rd_waiver():
-    st.header("Generate RD Accept Waiver")
+    st.title("📝 RD Accept Waiver Generator")
+    st.markdown("**Generate Waiver for Recommended Decision (RD) Acceptance**")
+    st.info("📝 **For Staff Use:** Complete this form on behalf of your client to generate their RD acceptance waiver.")
+    st.divider()
 
     if "client_records" not in st.session_state:
         with st.spinner("Loading clients..."):
@@ -24,7 +27,15 @@ def render_rd_waiver():
         rec["fields"].get("Name", f"Unnamed {i}")
         for i, rec in enumerate(st.session_state.client_records)
     ]
-    selected_client = st.selectbox("Select a Client", ["Select..."] + client_names)
+    st.subheader("📋 Client Selection")
+    selected_client = st.selectbox(
+        "Choose which client you're preparing this waiver for", 
+        ["Select..."] + client_names,
+        help="Select an existing client record to auto-populate their basic information"
+    )
+    
+    if selected_client != "Select...":
+        st.success(f"✅ Selected: {selected_client}")
 
     # Prefill fields when client changes
     if selected_client != "Select...":
@@ -70,20 +81,67 @@ def render_rd_waiver():
         st.session_state["prefill_employee"] = ""
         st.session_state["prefill_case_id"] = ""
 
-    claimant = st.text_input(
-        "Claimant Name", value=st.session_state.get("prefill_claimant", "")
-    )
-    employee = st.text_input(
-        "Employee Name", value=st.session_state.get("prefill_employee", "")
-    )
-    case_id = st.text_input(
-        "Case ID", value=st.session_state.get("prefill_case_id", "")
-    )
-    rd_decision_date = st.date_input("RD Decision Date", value=datetime.today())
+    st.divider()
+    st.subheader("👤 Client Information")
+    st.caption("Enter the client's information as it appears in their records")
+    
+    col1, col2 = st.columns(2, gap="medium")
+    
+    with col1:
+        st.markdown("**👤 Personal Details**")
+        claimant = st.text_input(
+            "Claimant Name *", 
+            value=st.session_state.get("prefill_claimant", ""),
+            help="Full name of the claimant as it appears on official documents"
+        )
+        employee = st.text_input(
+            "Employee Name *", 
+            value=st.session_state.get("prefill_employee", ""),
+            help="Employee name (typically same as claimant unless different)"
+        )
+    
+    with col2:
+        st.markdown("**📋 Case & Decision Information**")
+        case_id = st.text_input(
+            "Case ID *", 
+            value=st.session_state.get("prefill_case_id", ""),
+            help="The case identification number assigned to this client"
+        )
+        rd_decision_date = st.date_input(
+            "RD Decision Date *", 
+            value=datetime.today(),
+            help="Date when the Recommended Decision was issued"
+        )
 
-    if st.button("Generate RD Accept Waiver"):
+    st.divider()
+    
+    # Generate button with better styling
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        generate_button = st.button(
+            "🚀 Generate Client's RD Accept Waiver",
+            type="primary",
+            use_container_width=True,
+            help="Click to generate the completed RD acceptance waiver PDF for this client"
+        )
+    
+    if generate_button:
+        # Validation
+        errors = []
         if selected_client == "Select...":
-            st.error("Please select a valid client.")
+            errors.append("Please select a valid client.")
+        if not claimant:
+            errors.append("Claimant name is required.")
+        if not employee:
+            errors.append("Employee name is required.")
+        if not case_id:
+            errors.append("Case ID is required.")
+        if not rd_decision_date:
+            errors.append("RD Decision Date is required.")
+        
+        if errors:
+            for error in errors:
+                st.error(error)
             return
 
         selected_record = next(
@@ -99,9 +157,6 @@ def render_rd_waiver():
             st.error("Client record not found.")
             return
 
-        if not claimant and not employee and not case_id:
-            st.warning("Consider pre-filling using the selected client.")
-            return
 
         try:
             generator = RDAcceptWaiverGenerator()
@@ -112,28 +167,46 @@ def render_rd_waiver():
                 rd_decision_date=rd_decision_date.strftime("%m/%d/%Y"),
                 current_date=datetime.now().strftime("%m/%d/%Y"),
             )
-            st.success("RD Accept Waiver generated successfully!")
+            st.success("🎉 RD Accept Waiver generated successfully for client!")
+            st.balloons()  # Celebrate successful form generation!
             st.session_state["rdwaiver_pdf_name"] = filename
             st.session_state["rdwaiver_pdf_bytes"] = pdf_bytes.read()
             st.session_state["rdwaiver_record"] = selected_record
             st.session_state["rdwaiver_claimant"] = claimant
             st.session_state["rdwaiver_case_id"] = case_id
         except Exception as e:
-            st.error(f"Error generating waiver: {e}")
+            st.error(f"❌ Error generating RD Accept Waiver: {e}")
 
-    # Show buttons after generation
+    # Show download and portal access after generation
     if st.session_state.get("rdwaiver_pdf_bytes"):
-        col1, col2 = st.columns([1, 1])
-        with col1:
+        st.divider()
+        st.subheader("📥 Download Form")
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
             st.download_button(
-                label=f"Download {st.session_state.rdwaiver_pdf_name}",
+                label=f"📥 Download {st.session_state.rdwaiver_pdf_name}",
                 data=st.session_state.rdwaiver_pdf_bytes,
                 file_name=st.session_state.rdwaiver_pdf_name,
                 mime="application/pdf",
+                type="primary",
+                use_container_width=True
             )
-        with col2:
-            if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
-                if st.button("Access Portal"):
+        
+        # Portal access section
+        st.divider()
+        st.subheader("🌐 Portal Access")
+        st.info("💡 **Staff Note:** After downloading the waiver, you can access the DOL portal to upload it directly.")
+        
+        if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button(
+                    "🌐 Access DOL Portal", 
+                    type="secondary",
+                    use_container_width=True,
+                    help="Launch automated portal access to upload the generated waiver"
+                ):
                     with st.status("🔁 Launching portal automation...", expanded=True):
                         try:
                             record = st.session_state["rdwaiver_record"]
@@ -147,10 +220,8 @@ def render_rd_waiver():
                                 last_name,
                                 ssn_last4,
                             )
-                            st.success("✅ Upload script completed.")
+                            st.success("✅ Portal automation completed successfully!")
                         except Exception as e:
-                            st.error(f"❌ Upload script failed: {e}")
-            else:
-                st.caption(
-                    "⚠️ Portal automation is only available in local environments."
-                )
+                            st.error(f"❌ Portal automation failed: {e}")
+        else:
+            st.warning("⚠️ Portal automation is only available in local environments with Playwright enabled.")

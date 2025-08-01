@@ -7,7 +7,10 @@ from dol_portal.access_case_portal import access_case_portal
 
 
 def render_ee10():
-    st.header("Generate EE-10 Form")
+    st.title("🏥 EE-10 Form Generator")
+    st.markdown("**Generate Request for Assistance in Obtaining Employment Records or Other Information**")
+    st.info("📝 **For Staff Use:** Complete this form on behalf of your client to request employment records and other information.")
+    st.divider()
 
     if "client_records" not in st.session_state:
         with st.spinner("Loading clients..."):
@@ -21,7 +24,15 @@ def render_ee10():
         rec["fields"].get("Name", f"Unnamed {i}")
         for i, rec in enumerate(st.session_state.client_records)
     ]
-    client_selection = st.selectbox("Select a Client", ["Select..."] + client_names)
+    st.subheader("📋 Client Selection")
+    client_selection = st.selectbox(
+        "Choose which client you're preparing this form for", 
+        ["Select..."] + client_names,
+        help="Select an existing client record to auto-populate their basic information"
+    )
+    
+    if client_selection != "Select...":
+        st.success(f"✅ Selected: {client_selection}")
 
     # Prefill fields when client changes
     if client_selection != "Select...":
@@ -57,44 +68,116 @@ def render_ee10():
         st.session_state["prefill_address"] = ""
         st.session_state["prefill_phone"] = ""
 
-    doctor_selection = st.selectbox("Select a Doctor", ["La Plata", "Dr. Lewis"])
-
-    name_input = st.text_input("Name", value=st.session_state.get("prefill_name", ""))
-    case_id_input = st.text_input(
-        "Case ID", value=st.session_state.get("prefill_case_id", "")
+    st.divider()
+    st.subheader("🩺 Doctor Selection")
+    st.caption("Select the medical professional who will be handling this case")
+    doctor_selection = st.selectbox(
+        "Choose Doctor *", 
+        ["La Plata", "Dr. Lewis"],
+        help="Select the doctor who will review the employment records"
     )
-    address_prefill = st.session_state.get("prefill_address", "")
-    if "," in address_prefill:
-        prefill_main, prefill_city_zip = address_prefill.rsplit(",", 1)
-        prefill_main = prefill_main.strip()
-        prefill_city_zip = prefill_city_zip.strip()
-    else:
-        prefill_main = address_prefill
-        prefill_city_zip = ""
 
-    address_main_input = st.text_input("Street Address", value=prefill_main)
+    st.divider()
+    st.subheader("👤 Client Information")
+    st.caption("Enter the client's information as it appears in their records")
+    
+    # Form inputs
+    col1, col2 = st.columns(2, gap="medium")
+    
+    with col1:
+        st.markdown("**👤 Personal Details**")
+        name_input = st.text_input(
+            "Client's Full Name *", 
+            value=st.session_state.get("prefill_name", ""),
+            help="Client's full legal name as it appears on their official documents"
+        )
+        case_id_input = st.text_input(
+            "Case ID *", 
+            value=st.session_state.get("prefill_case_id", ""),
+            help="The case identification number assigned to this client"
+        )
+    with col2:
+        st.markdown("**🏠 Client's Contact Information**")
+        # Address parsing and inputs
+        address_prefill = st.session_state.get("prefill_address", "")
+        if "," in address_prefill:
+            prefill_main, prefill_city_zip = address_prefill.rsplit(",", 1)
+            prefill_main = prefill_main.strip()
+            prefill_city_zip = prefill_city_zip.strip()
+        else:
+            prefill_main = address_prefill
+            prefill_city_zip = ""
 
-    city, state, zip_code = "", "", ""
-    city_state_zip_match = re.match(r"(.*),?\s*([A-Z]{2})\s*(\d{5})", prefill_city_zip)
-    if city_state_zip_match:
-        city, state, zip_code = city_state_zip_match.groups()
+        address_main_input = st.text_input(
+            "Client's Street Address", 
+            value=prefill_main,
+            help="Client's street address (include apartment/unit number if applicable)"
+        )
 
-    address_city_input = st.text_input("City", value=city.strip())
-    address_state_input = st.text_input("State", value=state.strip())
-    address_zip_input = st.text_input("ZIP Code", value=zip_code.strip())
+        city, state, zip_code = "", "", ""
+        city_state_zip_match = re.match(r"(.*),?\s*([A-Z]{2})\s*(\d{5})", prefill_city_zip)
+        if city_state_zip_match:
+            city, state, zip_code = city_state_zip_match.groups()
 
-    phone_input = st.text_input(
-        "Phone Number",
-        value=st.session_state.get("prefill_phone", ""),
-        placeholder="XXX.XXX.XXXX",
-    )
+        col2a, col2b = st.columns([2, 1])
+        with col2a:
+            address_city_input = st.text_input("Client's City", value=city.strip())
+        with col2b:
+            address_state_input = st.text_input(
+                "Client's State", 
+                value=state.strip(),
+                help="2-letter state code (e.g., NY)",
+                max_chars=2
+            )
+        
+        address_zip_input = st.text_input(
+            "Client's ZIP Code", 
+            value=zip_code.strip(),
+            help="Client's 5-digit ZIP code",
+            max_chars=5
+        )
+
+        phone_input = st.text_input(
+            "Client's Phone Number",
+            value=st.session_state.get("prefill_phone", ""),
+            placeholder="555.123.4567",
+            help="Client's phone number in format: XXX.XXX.XXXX"
+        )
+    
+    st.divider()
+    st.subheader("📋 Claim Information")
+    st.caption("Specify the type of claim being processed for this client")
     claim_type = st.selectbox(
-        "Claim Type", ["Initial Impairment Claim", "Repeat Impairment Claim"]
+        "Claim Type *", 
+        ["Initial Impairment Claim", "Repeat Impairment Claim"],
+        help="Select whether this is the client's first impairment claim or a repeat claim"
     )
 
-    if st.button("Generate EE-10"):
+    st.divider()
+    
+    # Generate button with better styling
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        generate_button = st.button(
+            "🚀 Generate Client's EE-10 Form",
+            type="primary",
+            use_container_width=True,
+            help="Click to generate the completed EE-10 form PDF for this client"
+        )
+    
+    if generate_button:
+        # Validation
+        errors = []
         if client_selection == "Select...":
-            st.error("Please select a valid client.")
+            errors.append("Please select a valid client.")
+        if not name_input:
+            errors.append("Client's full name is required.")
+        if not case_id_input:
+            errors.append("Case ID is required.")
+        
+        if errors:
+            for error in errors:
+                st.error(error)
             return
 
         record = next(
@@ -127,12 +210,14 @@ def render_ee10():
             )
 
             st.download_button(
-                label=f"Download {filename}",
+                label=f"📥 Download {filename}",
                 data=pdf_bytes.read(),
                 file_name=filename,
                 mime="application/pdf",
+                type="primary"
             )
-            st.success("EE-10 generated successfully!")
+            st.success("🎉 EE-10 form generated successfully for client!")
+            st.balloons()  # Celebrate successful form generation!
 
             st.session_state["ee10_record"] = record
             st.session_state["ee10_claimant"] = name_input
@@ -140,24 +225,36 @@ def render_ee10():
             st.session_state["ee10_generated"] = True
 
         except Exception as e:
-            st.error(f"Error generating EN-11A: {e}")
+            st.error(f"❌ Error generating EE-10: {e}")
 
+    # Portal access section
     if st.session_state.get("ee10_generated"):
+        st.divider()
+        st.subheader("🌐 Portal Access")
+        st.info("💡 **Staff Note:** After downloading the form, you can access the DOL portal to upload it directly.")
+        
         if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
-            if st.button("Access Portal"):
-                with st.status("🔁 Launching portal automation...", expanded=True):
-                    try:
-                        record = st.session_state["ee10_record"]
-                        ssn_last4 = record["fields"]["Name"].split("-")[-1].strip()
-                        last_name = st.session_state["ee10_claimant"].split()[-1]
-                        access_case_portal(
-                            record,
-                            st.session_state["ee10_case_id"],
-                            last_name,
-                            ssn_last4,
-                        )
-                        st.success("✅ Upload script completed.")
-                    except Exception as e:
-                        st.error(f"❌ Upload script failed: {e}")
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button(
+                    "🌐 Access DOL Portal", 
+                    type="secondary",
+                    use_container_width=True,
+                    help="Launch automated portal access to upload the generated form"
+                ):
+                    with st.status("🔁 Launching portal automation...", expanded=True):
+                        try:
+                            record = st.session_state["ee10_record"]
+                            ssn_last4 = record["fields"]["Name"].split("-")[-1].strip()
+                            last_name = st.session_state["ee10_claimant"].split()[-1]
+                            access_case_portal(
+                                record,
+                                st.session_state["ee10_case_id"],
+                                last_name,
+                                ssn_last4,
+                            )
+                            st.success("✅ Portal automation completed successfully!")
+                        except Exception as e:
+                            st.error(f"❌ Portal automation failed: {e}")
         else:
-            st.caption("⚠️ Portal automation is only available in local environments.")
+            st.warning("⚠️ Portal automation is only available in local environments with Playwright enabled.")

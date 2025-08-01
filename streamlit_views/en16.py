@@ -11,7 +11,11 @@ load_dotenv()
 def render_en16():
     if "en16_pdf_path" not in st.session_state:
         st.session_state["en16_pdf_path"] = None
-    st.header("Generate EN-16 Form")
+    
+    st.title("📋 EN-16 Form Generator")
+    st.markdown("**Generate Employee Identification Information for Energy Employee**")
+    st.info("📝 **For Staff Use:** Complete this form on behalf of your client to provide employee identification information.")
+    st.divider()
 
     if "client_records" not in st.session_state:
         with st.spinner("Loading clients..."):
@@ -25,7 +29,15 @@ def render_en16():
         rec["fields"].get("Name", f"Unnamed {i}")
         for i, rec in enumerate(st.session_state.client_records)
     ]
-    client_selection = st.selectbox("Select a Client", ["Select..."] + client_names)
+    st.subheader("📋 Client Selection")
+    client_selection = st.selectbox(
+        "Choose which client you're preparing this form for", 
+        ["Select..."] + client_names,
+        help="Select an existing client record to auto-populate their basic information"
+    )
+    
+    if client_selection != "Select...":
+        st.success(f"✅ Selected: {client_selection}")
 
     # Prefill fields when client changes (pattern from rd_waiver.py)
     if client_selection != "Select...":
@@ -55,16 +67,53 @@ def render_en16():
         st.session_state["prefill_claimant"] = ""
         st.session_state["prefill_case_id"] = ""
 
-    claimant = st.text_input(
-        "Claimant Name", value=st.session_state.get("prefill_claimant", "")
-    )
-    case_id = st.text_input(
-        "Case ID", value=st.session_state.get("prefill_case_id", "")
-    )
+    st.divider()
+    st.subheader("👤 Client Information")
+    st.caption("Enter the client's information as it appears in their records")
+    
+    col1, col2 = st.columns(2, gap="medium")
+    
+    with col1:
+        st.markdown("**👤 Personal Details**")
+        claimant = st.text_input(
+            "Client's Full Name *", 
+            value=st.session_state.get("prefill_claimant", ""),
+            help="Client's full legal name as it appears on their official documents"
+        )
+    
+    with col2:
+        st.markdown("**📋 Case Information**")
+        case_id = st.text_input(
+            "Case ID *", 
+            value=st.session_state.get("prefill_case_id", ""),
+            help="The case identification number assigned to this client"
+        )
 
-    if st.button("Generate EN-16"):
+    st.divider()
+    
+    # Generate button with better styling
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        generate_button = st.button(
+            "🚀 Generate Client's EN-16 Form",
+            type="primary",
+            use_container_width=True,
+            help="Click to generate the completed EN-16 form PDF for this client"
+        )
+    
+    if generate_button:
+        # Validation
+        errors = []
         if client_selection == "Select...":
-            st.error("Please select a valid client.")
+            errors.append("Please select a valid client.")
+        if not claimant:
+            errors.append("Client's full name is required.")
+        if not case_id:
+            errors.append("Case ID is required.")
+        
+        if errors:
+            for error in errors:
+                st.error(error)
             return
 
         record = next(
@@ -85,27 +134,45 @@ def render_en16():
             filename, pdf_bytes = generator.generate(claimant, case_id)
             st.session_state.en16_pdf_name = filename
             st.session_state.en16_pdf_bytes = pdf_bytes.read()
-            st.success("EN-16 generated successfully!")
+            st.success("🎉 EN-16 form generated successfully for client!")
+            st.balloons()  # Celebrate successful form generation!
             st.session_state.en16_generated = True
             st.session_state["en16_claimant"] = claimant
             st.session_state["en16_case_id"] = case_id
             st.session_state["en16_record"] = record
         except Exception as e:
-            st.error(f"Error generating EN-16: {e}")
+            st.error(f"❌ Error generating EN-16: {e}")
 
-    # Show buttons after generation
+    # Show download and portal access after generation
     if st.session_state.get("en16_pdf_bytes"):
-        col1, col2 = st.columns([1, 1])
-        with col1:
+        st.divider()
+        st.subheader("📥 Download Form")
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
             st.download_button(
-                label=f"Download {st.session_state.en16_pdf_name}",
+                label=f"📥 Download {st.session_state.en16_pdf_name}",
                 data=st.session_state.en16_pdf_bytes,
                 file_name=st.session_state.en16_pdf_name,
                 mime="application/pdf",
+                type="primary",
+                use_container_width=True
             )
-        with col2:
-            if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
-                if st.button("Access Portal"):
+        
+        # Portal access section
+        st.divider()
+        st.subheader("🌐 Portal Access")
+        st.info("💡 **Staff Note:** After downloading the form, you can access the DOL portal to upload it directly.")
+        
+        if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button(
+                    "🌐 Access DOL Portal", 
+                    type="secondary",
+                    use_container_width=True,
+                    help="Launch automated portal access to upload the generated form"
+                ):
                     with st.status("🔁 Launching portal automation...", expanded=True):
                         try:
                             record = st.session_state["en16_record"]
@@ -117,10 +184,8 @@ def render_en16():
                                 last_name,
                                 ssn_last4,
                             )
-                            st.success("✅ Upload script completed.")
+                            st.success("✅ Portal automation completed successfully!")
                         except Exception as e:
-                            st.error(f"❌ Upload script failed: {e}")
-            else:
-                st.caption(
-                    "⚠️ Portal automation is only available in local environments."
-                )
+                            st.error(f"❌ Portal automation failed: {e}")
+        else:
+            st.warning("⚠️ Portal automation is only available in local environments with Playwright enabled.")
