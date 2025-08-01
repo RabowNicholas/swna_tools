@@ -13,7 +13,7 @@ tool = st.sidebar.radio(
         "Access Portal",
         "Create EN-16",
         "Create EE-1",
-        # "Create EE-1a",
+        "Create EE-1a",
         # "Create EE-3",
         "Create EE-10",
         "Create IR Schedule Notice La Plata",
