@@ -5,7 +5,10 @@ from services.airtable import fetch_clients, fetch_invoice_by_id
 
 
 def render_invoice():
-    st.header("Generate Invoice")
+    st.title("🧾 Invoice Generator")
+    st.markdown("**Generate Professional Legal Service Invoices**")
+    st.info("📝 **For Staff Use:** Create detailed invoices for client legal services and case work.")
+    st.divider()
 
     if "client_records" not in st.session_state:
         with st.spinner("Loading clients..."):
@@ -16,11 +19,19 @@ def render_invoice():
                 return
 
     # Client selection
+    st.subheader("📋 Client Selection")
     client_names = [
         rec["fields"].get("Name", f"Unnamed {i}")
         for i, rec in enumerate(st.session_state.client_records)
     ]
-    client_name = st.selectbox("Select a Client", ["Select..."] + client_names)
+    client_name = st.selectbox(
+        "Choose which client you're generating an invoice for", 
+        ["Select..."] + client_names,
+        help="Select an existing client record to auto-populate their information"
+    )
+    
+    if client_name != "Select...":
+        st.success(f"✅ Selected: {client_name}")
 
     if client_name == "Select...":
         st.warning("Please select a client.")
