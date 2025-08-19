@@ -115,6 +115,7 @@ def render_invoice():
         "Invoice Date", value=datetime.today() + timedelta(days=30)
     )
     case_id = st.text_input("Case ID", value=fields.get("Case ID", ""))
+    client_name_display = st.text_input("Client Name", value=display_name, help="Client name (editable)")
 
     # Render address fields using session state values
     address_main_input = st.text_input(
@@ -248,7 +249,7 @@ def render_invoice():
             "invoice_date": invoice_date.strftime("%m/%d/%Y"),
             "case_id": case_id,
             "invoice_number": invoice_number,
-            "client_name": display_name,
+            "client_name": client_name_display,
             "address_main": address_main_input,
             "address_city": address_city_input,
             "address_state": address_state_input,
