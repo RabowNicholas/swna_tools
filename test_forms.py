@@ -13,6 +13,7 @@ from io import BytesIO
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from generators.desert_pulm_referral_generator import DesertPulmReferralGenerator
+from generators.withdrawal_letter_generator import WithdrawalLetterGenerator
 
 
 def test_desert_pulm_referral():
@@ -58,6 +59,44 @@ def test_desert_pulm_referral():
         return False
 
 
+def test_withdrawal_letter():
+    """Test Withdrawal Letter generation with sample data"""
+    print("Testing Withdrawal Letter form...")
+
+    # Sample client record (mock data)
+    client_record = {
+        "fields": {
+            "Name": "Smith, John - 1234",
+            "Case ID": "5003",
+            "Address": "123 Main St, Anytown, NY 12345",
+            "Phone": "555.123.4567",
+        }
+    }
+
+    # Sample form data
+    form_data = {
+        "claimant_name": "John Smith",
+        "case_id": "5003",
+        "letter_date": date(2023, 8, 15),
+        "claimed_condition": "Lung Cancer",
+    }
+
+    try:
+        generator = WithdrawalLetterGenerator()
+        filename, pdf_bytes = generator.generate(client_record, form_data)
+
+        # Save the test PDF
+        with open(f"test_output_{filename}", "wb") as f:
+            f.write(pdf_bytes.read())
+
+        print(f"✅ Withdrawal Letter test PDF saved as: test_output_{filename}")
+        return True
+
+    except Exception as e:
+        print(f"❌ Withdrawal Letter test failed: {e}")
+        return False
+
+
 def print_coordinate_guide():
     """Print a helpful guide for understanding PDF coordinates"""
     print("\n" + "=" * 60)
@@ -87,41 +126,51 @@ def print_coordinate_guide():
 
 
 def main():
-    """Run Desert Pulmonary referral form test"""
-    print("🧪 Desert Pulmonary Referral Form Test")
-    print("=====================================")
-    print("This script generates a test PDF for the Desert Pulmonary referral form.")
-    print("Use this PDF to identify correct field positioning.\n")
+    """Run form generation tests"""
+    print("🧪 Form Generation Tests")
+    print("========================")
+    print("This script generates test PDFs for form generators.")
+    print("Use these PDFs to identify correct field positioning.\n")
 
     # Print coordinate guide
     print_coordinate_guide()
 
-    print("\n🔬 Running Desert Pulmonary Referral Test...")
+    print("\n🔬 Running Form Tests...")
     print("-" * 50)
 
-    # Run test
-    test_passed = test_desert_pulm_referral()
+    # Run tests
+    desert_pulm_passed = test_desert_pulm_referral()
+    print()
+    withdrawal_passed = test_withdrawal_letter()
 
     # Summary
     print("\n📊 Test Results:")
     print("-" * 20)
-    status = "✅ PASSED" if test_passed else "❌ FAILED"
-    print(f"Desert Pulmonary Referral: {status}")
+    desert_status = "✅ PASSED" if desert_pulm_passed else "❌ FAILED"
+    withdrawal_status = "✅ PASSED" if withdrawal_passed else "❌ FAILED"
+    print(f"Desert Pulmonary Referral: {desert_status}")
+    print(f"Withdrawal Letter: {withdrawal_status}")
+
+    all_passed = desert_pulm_passed and withdrawal_passed
 
     print("\n" + "=" * 60)
-    if test_passed:
-        print("🎉 TEST PASSED!")
-        print("Check the generated 'test_output_*.pdf' file to verify field positioning.")
+    if all_passed:
+        print("🎉 ALL TESTS PASSED!")
+        print("Check the generated 'test_output_*.pdf' files to verify field positioning.")
         print("\nTo adjust coordinates:")
         print("1. Open the test PDF file")
         print("2. Note which fields need repositioning")
-        print("3. Edit generators/desert_pulm_referral_generator.py")
+        print("3. Edit the corresponding generator file:")
+        print("   - generators/desert_pulm_referral_generator.py")
+        print("   - generators/withdrawal_letter_generator.py")
         print("4. Adjust the overlay.drawString(x, y, text) coordinates")
         print("5. Re-run this test script to verify changes")
     else:
-        print("❌ TEST FAILED")
-        print("Check the error message above and ensure:")
-        print("- Template PDF file exists: templates/desert_pulm_la_plata_ref.pdf")
+        print("❌ SOME TESTS FAILED")
+        print("Check the error messages above and ensure:")
+        print("- Template PDF files exist:")
+        print("  - templates/desert_pulm_la_plata_ref.pdf")
+        print("  - templates/withdraw_letter.pdf")
         print("- Required Python packages are installed")
         print("- File permissions allow writing test output files")
 

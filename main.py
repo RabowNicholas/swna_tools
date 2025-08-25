@@ -20,6 +20,7 @@ tool = st.sidebar.radio(
         "Create RD Accept Waiver",
         "Create Invoice",
         "Create Desert Pulmonary Referral",
+        "Create Withdrawal Letter",
     ],
 )
 
@@ -76,6 +77,11 @@ elif tool == "Create Desert Pulmonary Referral":
     from streamlit_views.desert_pulm_referral import render_desert_pulm_referral
 
     render_desert_pulm_referral()
+
+elif tool == "Create Withdrawal Letter":
+    from streamlit_views.withdrawal_letter import render_withdrawal_letter
+
+    render_withdrawal_letter()
 
 elif tool == "Access Portal":
     from streamlit_views.portal_access import render_portal_access
