@@ -59,6 +59,10 @@ class AddressChangeGenerator:
             # Case ID
             overlay.drawString(110, 708, case_id)
 
+            # Current date below case ID
+            current_date = datetime.now().strftime("%B %d, %Y")
+            overlay.drawString(72, 695, current_date)
+
             # Address information (assuming it goes in the middle section)
             # Street address
             overlay.drawString(112, 540, street_address)
