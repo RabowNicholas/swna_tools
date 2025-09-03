@@ -21,6 +21,7 @@ tool = st.sidebar.radio(
         "Create Invoice",
         "Create Desert Pulmonary Referral",
         "Create Withdrawal Letter",
+        "Create Address Change Letter",
     ],
 )
 
@@ -82,6 +83,11 @@ elif tool == "Create Withdrawal Letter":
     from streamlit_views.withdrawal_letter import render_withdrawal_letter
 
     render_withdrawal_letter()
+
+elif tool == "Create Address Change Letter":
+    from streamlit_views.address_change import render_address_change
+
+    render_address_change()
 
 elif tool == "Access Portal":
     from streamlit_views.portal_access import render_portal_access
