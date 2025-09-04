@@ -7,7 +7,6 @@ import os
 def render_address_change():
     st.title("🏠 Address Change Letter Generator")
     st.markdown("**Generate address change letter for client**")
-    st.info("📝 **For Staff Use:** Complete this form to generate an address change letter for your client.")
     st.divider()
 
     if "client_records" not in st.session_state:

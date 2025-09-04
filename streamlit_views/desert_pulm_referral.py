@@ -7,7 +7,6 @@ from datetime import datetime
 def render_desert_pulm_referral():
     st.title("🫁 Desert Pulmonary Referral Form Generator")
     st.markdown("**Generate Referral Form for Desert Pulmonary Rehab & Diagnostics**")
-    st.info("📝 **For Staff Use:** Complete this referral form for pulmonary testing orders.")
     st.divider()
 
     if "client_records" not in st.session_state:
