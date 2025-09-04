@@ -12,13 +12,21 @@ class EmailService:
         self.outlook_available = self._check_outlook_availability()
     
     def _check_outlook_availability(self) -> bool:
-        """Check if Outlook COM automation is available"""
+        """Check if Outlook is available"""
         try:
             if os.name == 'nt':  # Windows
                 import win32com.client
                 return True
+            elif os.name == 'posix':  # macOS/Linux
+                # Check if Outlook is available on macOS
+                import subprocess
+                result = subprocess.run(['osascript', '-e', 'tell application "System Events" to (name of processes) contains "Microsoft Outlook"'], 
+                                      capture_output=True, text=True)
+                return result.returncode == 0 and 'true' in result.stdout
             return False
         except ImportError:
+            return False
+        except Exception:
             return False
     
     def create_email_draft(
@@ -30,7 +38,7 @@ class EmailService:
         attachments: Optional[List[str]] = None
     ) -> bool:
         """
-        Create an email draft with specified recipients and content
+        Create an email draft with specified recipients and content - Outlook only
         
         Args:
             to_recipients: List of TO recipient email addresses
@@ -42,16 +50,20 @@ class EmailService:
         Returns:
             bool: True if email draft created successfully, False otherwise
         """
-        if self.outlook_available:
-            return self._create_outlook_draft(
+        if not self.outlook_available:
+            st.error("❌ Outlook is not available. Please ensure Microsoft Outlook is installed and running.")
+            return False
+        
+        if os.name == 'nt':  # Windows
+            return self._create_outlook_draft_windows(
                 to_recipients, cc_recipients, subject, body, attachments
             )
-        else:
-            return self._create_mailto_draft(
+        else:  # macOS
+            return self._create_outlook_draft_macos(
                 to_recipients, cc_recipients, subject, body
             )
     
-    def _create_outlook_draft(
+    def _create_outlook_draft_windows(
         self,
         to_recipients: List[str],
         cc_recipients: Optional[List[str]] = None,
@@ -102,6 +114,73 @@ class EmailService:
             
         except Exception as e:
             st.error(f"Failed to create Outlook draft: {e}")
+            return False
+    
+    def _create_outlook_draft_macos(
+        self,
+        to_recipients: List[str],
+        cc_recipients: Optional[List[str]] = None,
+        subject: str = "",
+        body: str = ""
+    ) -> bool:
+        """Create draft using AppleScript on macOS"""
+        try:
+            import subprocess
+            
+            # Validate recipients
+            if not to_recipients or not to_recipients[0].strip():
+                st.error("❌ No valid TO recipients provided")
+                return False
+            
+            # Build AppleScript
+            to_string = ", ".join([f'"{addr.strip()}"' for addr in to_recipients if addr.strip()])
+            cc_string = ", ".join([f'"{addr.strip()}"' for addr in cc_recipients if cc_recipients and addr.strip()]) if cc_recipients else ""
+            
+            # Clean body text for AppleScript - escape quotes only
+            # Note: Outlook on macOS via AppleScript doesn't preserve line breaks well
+            clean_body = body.replace('"', '\\"')
+            
+            applescript = f'''
+            tell application "Microsoft Outlook"
+                activate  
+                set newMessage to make new outgoing message
+                tell newMessage
+                    set subject to "{subject}"
+                    set content to "{clean_body}"
+                    make new recipient at end of to recipients with properties {{email address:{{address:"{to_recipients[0].strip()}"}}}}
+            '''
+            
+            # Add additional TO recipients
+            for addr in to_recipients[1:]:
+                if addr.strip():
+                    applescript += f'''
+                    make new recipient at end of to recipients with properties {{email address:{{address:"{addr.strip()}"}}}}'''
+            
+            # Add CC recipients
+            if cc_recipients:
+                for addr in cc_recipients:
+                    if addr.strip():
+                        applescript += f'''
+                    make new recipient at end of cc recipients with properties {{email address:{{address:"{addr.strip()}"}}}}'''
+            
+            applescript += '''
+                    open
+                end tell
+            end tell
+            '''
+            
+            # Execute AppleScript
+            result = subprocess.run(['osascript', '-e', applescript], 
+                                  capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                return True
+            else:
+                st.error(f"AppleScript failed: {result.stderr}")
+                return False
+                
+        except Exception as e:
+            st.error(f"Failed to create Outlook draft on macOS: {e}")
             return False
     
     def _create_mailto_draft(

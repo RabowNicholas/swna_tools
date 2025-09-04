@@ -305,11 +305,6 @@ def render_ee10():
         phone = st.session_state.get("ee10_phone", "")
         address = st.session_state.get("ee10_address", "")
 
-        # Debug session state
-        st.write(f"**Session State Debug:**")
-        st.write(f"- Doctor: '{doctor_selection}'")
-        st.write(f"- Phone: '{phone}'")
-        st.write(f"- Address: '{address}'")
 
         col1, col2 = st.columns(2)
         with col1:
@@ -407,12 +402,6 @@ def render_ee10():
                         doctor_selection, client_status, hhc_location
                     )
 
-                    # Debug recipients
-                    st.write(f"**Recipients Debug:**")
-                    st.write(f"- Doctor selection: '{doctor_selection}'")
-                    st.write(f"- TO recipients: {to_recipients}")
-                    st.write(f"- CC recipients: {cc_recipients}")
-
                     # Create email service and draft email
                     email_service = EmailService()
 
@@ -425,14 +414,9 @@ def render_ee10():
 
                     if success:
                         st.success("📧 Email draft created successfully!")
-                        if email_service.is_outlook_available():
-                            st.info(
-                                "✅ Outlook draft opened - review and add attachments before sending"
-                            )
-                        else:
-                            st.info(
-                                "✅ Email client opened - add attachments manually before sending"
-                            )
+                        st.info("✅ Outlook draft opened - review and add attachments before sending")
+                        if os.name != 'nt':  # Not Windows
+                            st.warning("⚠️ Note: On macOS, you may need to manually add line breaks in the email body")
 
                         # Show email details for confirmation
                         with st.expander("📋 Email Details", expanded=False):
