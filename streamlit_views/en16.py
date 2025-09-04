@@ -14,7 +14,6 @@ def render_en16():
     
     st.title("📋 EN-16 Form Generator")
     st.markdown("**Generate Employee Identification Information for Energy Employee**")
-    st.info("📝 **For Staff Use:** Complete this form on behalf of your client to provide employee identification information.")
     st.divider()
 
     if "client_records" not in st.session_state:
@@ -162,7 +161,6 @@ def render_en16():
         # Portal access section
         st.divider()
         st.subheader("🌐 Portal Access")
-        st.info("💡 **Staff Note:** After downloading the form, you can access the DOL portal to upload it directly.")
         
         if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
             col1, col2, col3 = st.columns([1, 2, 1])

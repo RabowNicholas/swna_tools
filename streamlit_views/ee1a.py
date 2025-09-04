@@ -9,7 +9,6 @@ from dol_portal.access_case_portal import access_case_portal
 def render_ee1a():
     st.title("🏥 EE-1a Form Generator")
     st.markdown("**Generate Claim for Consequential Illness Benefits Under the Energy Employees Occupational Illness Compensation Program Act**")
-    st.info("📝 **For Staff Use:** A consequential illness is a separately diagnosed medical condition that occurred or worsened because of an already-accepted work-related illness.")
     st.divider()
 
     if "client_records" not in st.session_state:

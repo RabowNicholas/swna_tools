@@ -8,7 +8,6 @@ import os
 def render_withdrawal_letter():
     st.title("📄 Withdrawal Letter Generator")
     st.markdown("**Generate withdrawal letter for client's claim**")
-    st.info("📝 **For Staff Use:** Complete this form to generate a withdrawal letter for your client's claim.")
     st.divider()
 
     if "client_records" not in st.session_state:

@@ -7,7 +7,6 @@ from services.airtable import fetch_clients, fetch_invoice_by_id
 def render_invoice():
     st.title("🧾 Invoice Generator")
     st.markdown("**Generate Professional Legal Service Invoices**")
-    st.info("📝 **For Staff Use:** Create detailed invoices for client legal services and case work.")
     st.divider()
 
     if "client_records" not in st.session_state:

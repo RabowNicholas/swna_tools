@@ -12,7 +12,6 @@ from dol_portal.access_case_portal import access_case_portal
 def render_rd_waiver():
     st.title("📝 RD Accept Waiver Generator")
     st.markdown("**Generate Waiver for Recommended Decision (RD) Acceptance**")
-    st.info("📝 **For Staff Use:** Complete this form on behalf of your client to generate their RD acceptance waiver.")
     st.divider()
 
     if "client_records" not in st.session_state:
@@ -196,7 +195,6 @@ def render_rd_waiver():
         # Portal access section
         st.divider()
         st.subheader("🌐 Portal Access")
-        st.info("💡 **Staff Note:** After downloading the waiver, you can access the DOL portal to upload it directly.")
         
         if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
             col1, col2, col3 = st.columns([1, 2, 1])

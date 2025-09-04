@@ -8,7 +8,6 @@ from datetime import datetime
 def render_ee1():
     st.title("🏥 EE-1 Form Generator")
     st.markdown("**Generate Worker's Claim for Benefits Under the Energy Employees Occupational Illness Compensation Program Act**")
-    st.info("📝 **For Staff Use:** Complete this form on behalf of your client to generate their EE-1 claim form.")
     st.divider()
 
     if "client_records" not in st.session_state:
@@ -167,7 +166,6 @@ def render_ee1():
     st.divider()
     st.subheader("🩺 Client's Medical Diagnoses")
     st.markdown("**Client's Diagnosed Condition(s) Being Claimed as Work-Related**")
-    st.info("ℹ️ **Staff Note:** Select all conditions that apply to this client. Each condition must have a specific diagnosis date from medical records.")
     
     # Initialize diagnosis categories in session state
     if "diagnosis_categories_ee1" not in st.session_state:

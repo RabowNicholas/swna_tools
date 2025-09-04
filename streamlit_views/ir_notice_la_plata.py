@@ -9,7 +9,6 @@ from dol_portal.access_case_portal import access_case_portal
 def render_ir_notice_la_plata():
     st.title("🏥 La Plata IR Schedule Notice Generator")
     st.markdown("**Generate Independent Review (IR) Schedule Notice for La Plata**")
-    st.info("📝 **For Staff Use:** Create IR schedule notices for clients scheduled for medical review at La Plata.")
     st.divider()
 
     if "client_records" not in st.session_state:
@@ -145,7 +144,6 @@ def render_ir_notice_la_plata():
     if st.session_state.get("ir_notice_generated"):
         st.divider()
         st.subheader("🌐 Portal Access")
-        st.info("💡 **Staff Note:** After downloading the notice, you can access the DOL portal to upload it directly.")
         
         if os.getenv("PLAYWRIGHT_ENABLED", "false").lower() == "true":
             col1, col2, col3 = st.columns([1, 2, 1])
