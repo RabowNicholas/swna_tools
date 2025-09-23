@@ -2,6 +2,7 @@ import streamlit as st
 from services.airtable import fetch_clients
 from generators.desert_pulm_referral_generator import DesertPulmReferralGenerator
 from datetime import datetime
+from utils.state_mapping import get_state_abbreviation
 
 
 def render_desert_pulm_referral():
@@ -53,17 +54,26 @@ def render_desert_pulm_referral():
                 full_name = raw_name
             st.session_state["prefill_name"] = full_name
             st.session_state["prefill_case_id"] = fields.get("Case ID", "")
-            st.session_state["prefill_address"] = fields.get("Address", "")
+            st.session_state["prefill_street_address"] = fields.get("Street Address", "")
+            st.session_state["prefill_city"] = fields.get("City", "")
+            st.session_state["prefill_state"] = get_state_abbreviation(fields.get("State", ""))
+            st.session_state["prefill_zip_code"] = fields.get("ZIP Code", "")
             st.session_state["prefill_phone"] = fields.get("Phone", "")
         else:
             st.session_state["prefill_name"] = ""
             st.session_state["prefill_case_id"] = ""
-            st.session_state["prefill_address"] = ""
+            st.session_state["prefill_street_address"] = ""
+            st.session_state["prefill_city"] = ""
+            st.session_state["prefill_state"] = ""
+            st.session_state["prefill_zip_code"] = ""
             st.session_state["prefill_phone"] = ""
     else:
         st.session_state["prefill_name"] = ""
         st.session_state["prefill_case_id"] = ""
-        st.session_state["prefill_address"] = ""
+        st.session_state["prefill_street_address"] = ""
+        st.session_state["prefill_city"] = ""
+        st.session_state["prefill_state"] = ""
+        st.session_state["prefill_zip_code"] = ""
         st.session_state["prefill_phone"] = ""
 
     st.divider()
@@ -101,42 +111,29 @@ def render_desert_pulm_referral():
         
     with col2:
         st.markdown("**🏠 Patient's Contact Information**")
-        # Address parsing and inputs
-        address_prefill = st.session_state.get("prefill_address", "")
-        if "," in address_prefill:
-            prefill_main, prefill_city_zip = address_prefill.rsplit(",", 1)
-            prefill_main = prefill_main.strip()
-            prefill_city_zip = prefill_city_zip.strip()
-        else:
-            prefill_main = address_prefill
-            prefill_city_zip = ""
-
         address_main_input = st.text_input(
             "Patient's Street Address *", 
-            value=prefill_main,
+            value=st.session_state.get("prefill_street_address", ""),
             help="Patient's street address (include apartment/unit number if applicable)"
         )
 
-        city, state, zip_code = "", "", ""
-        import re
-        city_state_zip_match = re.match(r"(.*),?\s*([A-Z]{2})\s*(\d{5})", prefill_city_zip)
-        if city_state_zip_match:
-            city, state, zip_code = city_state_zip_match.groups()
-
         col2a, col2b = st.columns([2, 1])
         with col2a:
-            address_city_input = st.text_input("Patient's City *", value=city.strip())
+            address_city_input = st.text_input(
+                "Patient's City *", 
+                value=st.session_state.get("prefill_city", "")
+            )
         with col2b:
             address_state_input = st.text_input(
                 "Patient's State *", 
-                value=state.strip(),
+                value=st.session_state.get("prefill_state", ""),
                 help="2-letter state code (e.g., NY)",
                 max_chars=2
             )
         
         address_zip_input = st.text_input(
             "Patient's ZIP Code *", 
-            value=zip_code.strip(),
+            value=st.session_state.get("prefill_zip_code", ""),
             help="Patient's 5-digit ZIP code",
             max_chars=5
         )
