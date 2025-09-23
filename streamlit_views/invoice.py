@@ -88,9 +88,9 @@ def render_invoice():
 
             import re
 
-            date_match = re.search(r"(\d{1,2})[./](\d{1,2})[./](\d{2,4})", raw)
-            if date_match:
-                m, d, y = date_match.groups()
+            date_matches = re.findall(r"(\d{1,2})[./](\d{1,2})[./](\d{2,4})", raw)
+            if date_matches:
+                m, d, y = date_matches[-1]  # Use the last match
                 if len(y) == 2:
                     y = "20" + y
                 date = f"{int(m):02d}/{int(d):02d}/{y}"
@@ -178,9 +178,9 @@ def render_invoice():
 
             import re
 
-            date_match = re.search(r"(\d{1,2})[./](\d{1,2})[./](\d{2,4})", raw)
-            if date_match:
-                m, d, y = date_match.groups()
+            date_matches = re.findall(r"(\d{1,2})[./](\d{1,2})[./](\d{2,4})", raw)
+            if date_matches:
+                m, d, y = date_matches[-1]  # Use the last match
                 if len(y) == 2:
                     y = "20" + y
                 date = f"{int(m):02d}/{int(d):02d}/{y}"
