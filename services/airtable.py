@@ -20,9 +20,24 @@ def fetch_invoice_by_id(record_id):
     return invoice_table.get(record_id)
 
 
+def update_client_data(record_id, client_data):
+    """
+    Update client data fields in Airtable
+    
+    Args:
+        record_id: Airtable record ID
+        client_data: Dict with client data fields
+    
+    Returns:
+        Updated record
+    """
+    table = Table(AIRTABLE_PAT, BASE_ID, TABLE_NAME)
+    return table.update(record_id, client_data)
+
+
 def update_client_address(record_id, address_data):
     """
-    Update client address fields in Airtable
+    Update client address fields in Airtable (legacy function - use update_client_data)
     
     Args:
         record_id: Airtable record ID
@@ -31,5 +46,4 @@ def update_client_address(record_id, address_data):
     Returns:
         Updated record
     """
-    table = Table(AIRTABLE_PAT, BASE_ID, TABLE_NAME)
-    return table.update(record_id, address_data)
+    return update_client_data(record_id, address_data)
