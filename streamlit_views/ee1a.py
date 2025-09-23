@@ -1,9 +1,9 @@
 import streamlit as st
 from services.airtable import fetch_clients
 from generators.ee1a_generator import EE1AGenerator
-import re
 import os
 from dol_portal.access_case_portal import access_case_portal
+from utils.state_mapping import get_state_abbreviation
 
 
 def render_ee1a():
@@ -57,19 +57,28 @@ def render_ee1a():
                 st.session_state["prefill_first_name"] = ""
                 st.session_state["prefill_last_name"] = ""
             st.session_state["prefill_case_id"] = fields.get("Case ID", "")
-            st.session_state["prefill_address"] = fields.get("Address", "")
+            st.session_state["prefill_street_address"] = fields.get("Street Address", "")
+            st.session_state["prefill_city"] = fields.get("City", "")
+            st.session_state["prefill_state"] = get_state_abbreviation(fields.get("State", ""))
+            st.session_state["prefill_zip_code"] = fields.get("ZIP Code", "")
             st.session_state["prefill_phone"] = fields.get("Phone", "")
         else:
             st.session_state["prefill_first_name"] = ""
             st.session_state["prefill_last_name"] = ""
             st.session_state["prefill_case_id"] = ""
-            st.session_state["prefill_address"] = ""
+            st.session_state["prefill_street_address"] = ""
+            st.session_state["prefill_city"] = ""
+            st.session_state["prefill_state"] = ""
+            st.session_state["prefill_zip_code"] = ""
             st.session_state["prefill_phone"] = ""
     else:
         st.session_state["prefill_first_name"] = ""
         st.session_state["prefill_last_name"] = ""
         st.session_state["prefill_case_id"] = ""
-        st.session_state["prefill_address"] = ""
+        st.session_state["prefill_street_address"] = ""
+        st.session_state["prefill_city"] = ""
+        st.session_state["prefill_state"] = ""
+        st.session_state["prefill_zip_code"] = ""
         st.session_state["prefill_phone"] = ""
 
     st.divider()
@@ -97,36 +106,32 @@ def render_ee1a():
             help="The existing case ID for the client's accepted illness"
         )
     
-    # Address parsing and inputs
-    address_prefill = st.session_state.get("prefill_address", "")
-    if "," in address_prefill:
-        prefill_main, prefill_city_zip = address_prefill.rsplit(",", 1)
-        prefill_main = prefill_main.strip()
-        prefill_city_zip = prefill_city_zip.strip()
-    else:
-        prefill_main = address_prefill
-        prefill_city_zip = ""
-
     with col2:
         st.markdown("**📍 Address & Contact**")
         address_main_input = st.text_input(
             "Street Address *", 
-            value=prefill_main,
+            value=st.session_state.get("prefill_street_address", ""),
             help="Street address, apartment number, or P.O. Box"
         )
 
-        city, state, zip_code = "", "", ""
-        city_state_zip_match = re.match(r"(.*),?\s*([A-Z]{2})\s*(\d{5})", prefill_city_zip)
-        if city_state_zip_match:
-            city, state, zip_code = city_state_zip_match.groups()
-
         col2a, col2b, col2c = st.columns([2, 1, 1])
         with col2a:
-            address_city_input = st.text_input("City *", value=city.strip())
+            address_city_input = st.text_input(
+                "City *", 
+                value=st.session_state.get("prefill_city", "")
+            )
         with col2b:
-            address_state_input = st.text_input("State *", value=state.strip(), max_chars=2)
+            address_state_input = st.text_input(
+                "State *", 
+                value=st.session_state.get("prefill_state", ""), 
+                max_chars=2
+            )
         with col2c:
-            address_zip_input = st.text_input("ZIP Code *", value=zip_code.strip(), max_chars=5)
+            address_zip_input = st.text_input(
+                "ZIP Code *", 
+                value=st.session_state.get("prefill_zip_code", ""), 
+                max_chars=5
+            )
 
         phone_input = st.text_input(
             "Home Phone Number",

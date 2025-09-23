@@ -1,8 +1,8 @@
 import streamlit as st
 from services.airtable import fetch_clients
 from generators.ee1_generator import EE1Generator
-import re
-from datetime import datetime
+from datetime import datetime, date
+from utils.state_mapping import get_state_abbreviation
 
 
 def render_ee1():
@@ -54,17 +54,26 @@ def render_ee1():
                 # If parsing fails, leave fields empty for manual entry
                 st.session_state["prefill_first_name"] = ""
                 st.session_state["prefill_last_name"] = ""
-            st.session_state["prefill_address"] = fields.get("Address", "")
+            st.session_state["prefill_street_address"] = fields.get("Street Address", "")
+            st.session_state["prefill_city"] = fields.get("City", "")
+            st.session_state["prefill_state"] = get_state_abbreviation(fields.get("State", ""))
+            st.session_state["prefill_zip_code"] = fields.get("ZIP Code", "")
             st.session_state["prefill_phone"] = fields.get("Phone", "")
         else:
             st.session_state["prefill_first_name"] = ""
             st.session_state["prefill_last_name"] = ""
-            st.session_state["prefill_address"] = ""
+            st.session_state["prefill_street_address"] = ""
+            st.session_state["prefill_city"] = ""
+            st.session_state["prefill_state"] = ""
+            st.session_state["prefill_zip_code"] = ""
             st.session_state["prefill_phone"] = ""
     else:
         st.session_state["prefill_first_name"] = ""
         st.session_state["prefill_last_name"] = ""
-        st.session_state["prefill_address"] = ""
+        st.session_state["prefill_street_address"] = ""
+        st.session_state["prefill_city"] = ""
+        st.session_state["prefill_state"] = ""
+        st.session_state["prefill_zip_code"] = ""
         st.session_state["prefill_phone"] = ""
 
     st.divider()
@@ -107,6 +116,8 @@ def render_ee1():
         dob_input = st.date_input(
             "Client's Date of Birth *", 
             value=None,
+            min_value=date(1900, 1, 1),
+            max_value=datetime.now().date(),
             help="Select the client's date of birth"
         )
         sex_input = st.radio(
@@ -117,41 +128,30 @@ def render_ee1():
     
     with col2:
         st.markdown("**🏠 Client's Contact Information**")
-        # Address parsing and inputs
-        address_prefill = st.session_state.get("prefill_address", "")
-        if "," in address_prefill:
-            prefill_main, prefill_city_zip = address_prefill.rsplit(",", 1)
-            prefill_main = prefill_main.strip()
-            prefill_city_zip = prefill_city_zip.strip()
-        else:
-            prefill_main = address_prefill
-            prefill_city_zip = ""
-
+        
         address_main_input = st.text_input(
             "Client's Street Address", 
-            value=prefill_main,
+            value=st.session_state.get("prefill_street_address", ""),
             help="Client's street address (include apartment/unit number if applicable)"
         )
 
-        city, state, zip_code = "", "", ""
-        city_state_zip_match = re.match(r"(.*),?\s*([A-Z]{2})\s*(\d{5})", prefill_city_zip)
-        if city_state_zip_match:
-            city, state, zip_code = city_state_zip_match.groups()
-
         col2a, col2b = st.columns([2, 1])
         with col2a:
-            address_city_input = st.text_input("Client's City", value=city.strip())
+            address_city_input = st.text_input(
+                "Client's City", 
+                value=st.session_state.get("prefill_city", "")
+            )
         with col2b:
             address_state_input = st.text_input(
                 "Client's State", 
-                value=state.strip(),
+                value=st.session_state.get("prefill_state", ""),
                 help="2-letter state code (e.g., NY)",
                 max_chars=2
             )
         
         address_zip_input = st.text_input(
             "Client's ZIP Code", 
-            value=zip_code.strip(),
+            value=st.session_state.get("prefill_zip_code", ""),
             help="Client's 5-digit ZIP code",
             max_chars=5
         )
@@ -205,6 +205,8 @@ def render_ee1():
                                 f"Diagnosis Date {chr(97+i).upper()}",
                                 value=categories["cancer"]["diagnoses"][i]["date"],
                                 key=f"cancer_date_{i}",
+                                min_value=date(1900, 1, 1),
+                                max_value=datetime.now().date(),
                                 help="Date when the client was diagnosed with this cancer"
                             )
                 if i < 2:  # Add separator between entries
@@ -234,6 +236,8 @@ def render_ee1():
                         f"Diagnosis Date",
                         value=categories[key]["date"],
                         key=f"{key}_date",
+                        min_value=date(1900, 1, 1),
+                        max_value=datetime.now().date(),
                         help=f"Date when client was diagnosed with {label.lower()}"
                     )
         st.markdown("")
@@ -264,6 +268,8 @@ def render_ee1():
                                 f"Diagnosis Date {chr(97+i).upper()}",
                                 value=categories["other"]["diagnoses"][i]["date"],
                                 key=f"other_date_{i}",
+                                min_value=date(1900, 1, 1),
+                                max_value=datetime.now().date(),
                                 help="Date when the client was diagnosed with this condition"
                             )
                 if i < 2:  # Add separator between entries
