@@ -11,7 +11,7 @@ tool = st.sidebar.radio(
     "Choose a tool",
     [
         "Access Portal",
-        "Manage Client Addresses",
+        "Manage Client Data",
         "Create EN-16",
         "Create EE-1",
         "Create EE-1a",
@@ -90,10 +90,10 @@ elif tool == "Create Address Change Letter":
 
     render_address_change()
 
-elif tool == "Manage Client Addresses":
-    from streamlit_views.address_manager import render_address_manager
+elif tool == "Manage Client Data":
+    from streamlit_views.client_data_manager import render_client_data_manager
 
-    render_address_manager()
+    render_client_data_manager()
 
 elif tool == "Access Portal":
     from streamlit_views.portal_access import render_portal_access

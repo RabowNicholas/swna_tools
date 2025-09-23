@@ -58,6 +58,7 @@ def render_ee1():
             st.session_state["prefill_city"] = fields.get("City", "")
             st.session_state["prefill_state"] = get_state_abbreviation(fields.get("State", ""))
             st.session_state["prefill_zip_code"] = fields.get("ZIP Code", "")
+            st.session_state["prefill_dob"] = fields.get("Date of Birth", "")
             st.session_state["prefill_phone"] = fields.get("Phone", "")
         else:
             st.session_state["prefill_first_name"] = ""
@@ -66,6 +67,7 @@ def render_ee1():
             st.session_state["prefill_city"] = ""
             st.session_state["prefill_state"] = ""
             st.session_state["prefill_zip_code"] = ""
+            st.session_state["prefill_dob"] = ""
             st.session_state["prefill_phone"] = ""
     else:
         st.session_state["prefill_first_name"] = ""
@@ -113,9 +115,24 @@ def render_ee1():
             elif len(digits_only) > 0:
                 ssn_input = digits_only  # Keep partial input for validation
                 st.info(f"ℹ️ Enter {9 - len(digits_only)} more digits")
+        # Parse prefilled DOB if available
+        prefill_dob_value = None
+        prefill_dob = st.session_state.get("prefill_dob", "")
+        if prefill_dob:
+            try:
+                # Try to parse existing DOB - handle various formats
+                for fmt in ["%Y-%m-%d", "%m/%d/%Y", "%m-%d-%Y", "%Y/%m/%d"]:
+                    try:
+                        prefill_dob_value = datetime.strptime(prefill_dob, fmt).date()
+                        break
+                    except ValueError:
+                        continue
+            except:
+                prefill_dob_value = None
+        
         dob_input = st.date_input(
             "Client's Date of Birth *", 
-            value=None,
+            value=prefill_dob_value,
             min_value=date(1900, 1, 1),
             max_value=datetime.now().date(),
             help="Select the client's date of birth"
