@@ -294,12 +294,12 @@ def render_ee1():
 
     st.divider()
     st.subheader("✍️ Client Signature")
-    st.info("📝 **Important:** Upload the client's signature. By signing, the client certifies that all information provided is true and accurate.")
+    st.info("📝 **Note:** Signature upload is optional. Signature placement is not always perfect - if you find this happening, regenerate the form without the signature and add it manually in Adobe.")
     
     signature_file = st.file_uploader(
-        "Upload Client's Signature *", 
+        "Upload Client's Signature (Optional)", 
         type=['png', 'jpg', 'jpeg'],
-        help="Upload a clear image file of the client's signature (PNG, JPG, or JPEG format)"
+        help="Upload a clear image file of the client's signature (PNG, JPG, or JPEG format). This field is optional."
     )
     
     if signature_file:
@@ -392,8 +392,6 @@ def render_ee1():
         
         if not has_valid_diagnosis:
             errors.append("At least one diagnosis category with date is required.")
-        if not signature_file:
-            errors.append("Client signature is required.")
         
         # Validate SSN format
         if ssn_raw:

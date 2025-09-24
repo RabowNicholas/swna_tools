@@ -205,7 +205,7 @@ class EE1Generator:
                         date_str = diagnosis["date"].strftime("%m       %d       %Y")
                         signature_overlay.drawString(507, y_positions[i], date_str)
 
-        # Signature handling
+        # Signature handling (optional)
         if signature_file:
             try:
                 # Process the signature image
@@ -237,6 +237,7 @@ class EE1Generator:
             except Exception as e:
                 # If signature processing fails, add text placeholder
                 signature_overlay.drawString(100, 155, "[Signature processing failed]")
+        # No else clause needed - signature is optional
 
         # Add current date to the right of signature
         from datetime import datetime
