@@ -60,6 +60,7 @@ def render_client_data_manager():
     current_phone = fields.get("Phone", "")
     current_email = fields.get("Email", "")
     current_dob = fields.get("Date of Birth", "")
+    current_ssn = fields.get("Social Security Number", "")
     
     # Display current information in organized sections
     col1, col2 = st.columns(2)
@@ -81,6 +82,11 @@ def render_client_data_manager():
                 st.text(f"Email: {current_email}")
             else:
                 st.text("Email: Not set")
+            
+            if current_ssn:
+                st.text(f"SSN: {current_ssn}")
+            else:
+                st.text("SSN: Not set")
     
     with col2:
         st.subheader("📍 Current Address")
@@ -98,7 +104,7 @@ def render_client_data_manager():
                 st.text("No address set")
     
     # Clear all data option
-    if any([current_street, current_city, current_state, current_zip, current_phone, current_email, current_dob]):
+    if any([current_street, current_city, current_state, current_zip, current_phone, current_email, current_dob, current_ssn]):
         if st.button("🗑️ Clear All Data", help="Clear all manageable client data"):
             if st.session_state.get("confirm_clear_all", False):
                 try:
@@ -109,7 +115,8 @@ def render_client_data_manager():
                         "ZIP Code": "",
                         "Phone": "",
                         "Email": "",
-                        "Date of Birth": ""
+                        "Date of Birth": "",
+                        "Social Security Number": ""
                     }
                     update_client_data(record["id"], update_data)
                     st.success("✅ All data cleared successfully!")
@@ -308,6 +315,15 @@ def render_client_data_manager():
                 help="Client's email address"
             )
             
+            # Social Security Number
+            ssn_input = st.text_input(
+                "Social Security Number",
+                value=current_ssn,
+                placeholder="123456789",
+                help="Client's Social Security Number (9 digits, no dashes)",
+                max_chars=9
+            )
+            
             # Buttons
             col1, col2, col3 = st.columns([1, 1, 1])
             
@@ -343,7 +359,15 @@ def render_client_data_manager():
                     st.error("Please enter a valid email address")
                     email_error = True
             
-            if not email_error:
+            # Validate SSN format if provided
+            ssn_error = False
+            if ssn_input.strip():
+                ssn_digits = ''.join(filter(str.isdigit, ssn_input.strip()))
+                if len(ssn_digits) != 9:
+                    st.error("Social Security Number must be exactly 9 digits")
+                    ssn_error = True
+            
+            if not email_error and not ssn_error:
                 try:
                     # Prepare update data
                     update_data = {}
@@ -361,6 +385,13 @@ def render_client_data_manager():
                         update_data["Email"] = email_input.strip()
                     elif email_input == "":  # Explicitly clear email if empty
                         update_data["Email"] = ""
+                    
+                    if ssn_input.strip():
+                        # Store only digits in Airtable 
+                        ssn_digits = ''.join(filter(str.isdigit, ssn_input.strip()))
+                        update_data["Social Security Number"] = ssn_digits
+                    elif ssn_input == "":  # Explicitly clear SSN if empty
+                        update_data["Social Security Number"] = ""
                 
                     if update_data:
                         update_client_data(record["id"], update_data)
@@ -380,7 +411,8 @@ def render_client_data_manager():
                 update_data = {
                     "Date of Birth": "",
                     "Phone": "",
-                    "Email": ""
+                    "Email": "",
+                    "Social Security Number": ""
                 }
                 update_client_data(record["id"], update_data)
                 st.success("✅ Personal information cleared successfully!")

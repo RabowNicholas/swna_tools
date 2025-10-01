@@ -211,8 +211,8 @@ class EE1Generator:
                 # Process the signature image
                 signature_image = Image.open(signature_file)
 
-                # Resize signature to reasonable size (adjust as needed)
-                max_width, max_height = 150, 50
+                # Resize signature to reasonable size (adjust as needed) - increased for better quality
+                max_width, max_height = 300, 100  # Doubled size for better quality
                 signature_image.thumbnail(
                     (max_width, max_height), Image.Resampling.LANCZOS
                 )
@@ -221,9 +221,9 @@ class EE1Generator:
                 if signature_image.mode in ("RGBA", "LA", "P"):
                     signature_image = signature_image.convert("RGB")
 
-                # Create temporary buffer for signature
+                # Create temporary buffer for signature with high quality
                 sig_buffer = BytesIO()
-                signature_image.save(sig_buffer, format="JPEG")
+                signature_image.save(sig_buffer, format="JPEG", quality=95)  # High quality JPEG
                 sig_buffer.seek(0)
 
                 # Add signature to signature overlay (behind form)
