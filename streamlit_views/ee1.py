@@ -60,6 +60,14 @@ def render_ee1():
             st.session_state["prefill_zip_code"] = fields.get("ZIP Code", "")
             st.session_state["prefill_dob"] = fields.get("Date of Birth", "")
             st.session_state["prefill_phone"] = fields.get("Phone", "")
+            # Handle SSN - strip any dashes if present
+            raw_ssn = fields.get("Social Security Number", "")
+            if raw_ssn:
+                # Remove any dashes or spaces, keep only digits
+                clean_ssn = ''.join(filter(str.isdigit, str(raw_ssn)))
+                st.session_state["prefill_ssn"] = clean_ssn if len(clean_ssn) == 9 else ""
+            else:
+                st.session_state["prefill_ssn"] = ""
         else:
             st.session_state["prefill_first_name"] = ""
             st.session_state["prefill_last_name"] = ""
@@ -69,6 +77,7 @@ def render_ee1():
             st.session_state["prefill_zip_code"] = ""
             st.session_state["prefill_dob"] = ""
             st.session_state["prefill_phone"] = ""
+            st.session_state["prefill_ssn"] = ""
     else:
         st.session_state["prefill_first_name"] = ""
         st.session_state["prefill_last_name"] = ""
@@ -77,6 +86,7 @@ def render_ee1():
         st.session_state["prefill_state"] = ""
         st.session_state["prefill_zip_code"] = ""
         st.session_state["prefill_phone"] = ""
+        st.session_state["prefill_ssn"] = ""
 
     st.divider()
     st.subheader("👤 Client Information")
@@ -99,6 +109,7 @@ def render_ee1():
         )
         ssn_raw = st.text_input(
             "Client's Social Security Number *", 
+            value=st.session_state.get("prefill_ssn", ""),
             placeholder="123456789",
             help="Enter 9 digits only (dashes will be added automatically)",
             max_chars=9
@@ -306,7 +317,7 @@ def render_ee1():
         st.success("✅ Client signature uploaded successfully")
         # Optional: Show a preview of the signature
         with st.expander("Preview Client Signature"):
-            st.image(signature_file, caption="Client's Signature", width=300)
+            st.image(signature_file, caption="Client's Signature", use_column_width=True)
 
     st.divider()
     
