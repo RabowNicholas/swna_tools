@@ -42,18 +42,9 @@ elif tool == "Create EE-1a":
     render_ee1a()
 
 elif tool == "Create EE-3":
-    st.title("🏗️ EE-3 Form Generator")
-    st.info("🚧 **Coming Soon!** The EE-3 Employment History form is currently under development.")
-    st.markdown("""
-    **EE-3 Form Features (In Development):**
-    - 📋 Comprehensive employment history tracking
-    - 🏭 Multiple facility types and locations
-    - 📊 Health program participation tracking
-    - 📑 Multi-page PDF generation
-    - ✍️ Digital signature support
-    
-    This form will be available in an upcoming release.
-    """)
+    from streamlit_views.ee3 import render_ee3
+
+    render_ee3()
 
 elif tool == "Create EE-10":
     from streamlit_views.ee10 import render_ee10
