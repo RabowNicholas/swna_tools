@@ -46,12 +46,23 @@ def render_ee3():
                 # If parsing fails, leave fields empty for manual entry
                 st.session_state["prefill_first_name"] = ""
                 st.session_state["prefill_last_name"] = ""
+            
+            # Handle SSN - strip any dashes if present
+            raw_ssn = fields.get("Social Security Number", "")
+            if raw_ssn:
+                # Remove any dashes or spaces, keep only digits
+                clean_ssn = ''.join(filter(str.isdigit, str(raw_ssn)))
+                st.session_state["prefill_ssn"] = clean_ssn if len(clean_ssn) == 9 else ""
+            else:
+                st.session_state["prefill_ssn"] = ""
         else:
             st.session_state["prefill_first_name"] = ""
             st.session_state["prefill_last_name"] = ""
+            st.session_state["prefill_ssn"] = ""
     else:
         st.session_state["prefill_first_name"] = ""
         st.session_state["prefill_last_name"] = ""
+        st.session_state["prefill_ssn"] = ""
 
     # Basic Information
     st.subheader("Personal Information")
@@ -60,7 +71,25 @@ def render_ee3():
     with col1:
         first_name_input = st.text_input("First Name", value=st.session_state.get("prefill_first_name", ""))
         last_name_input = st.text_input("Last Name", value=st.session_state.get("prefill_last_name", ""))
-        ssn_input = st.text_input("Social Security Number", placeholder="XXX-XX-XXXX")
+        ssn_raw = st.text_input(
+            "Social Security Number *", 
+            value=st.session_state.get("prefill_ssn", ""),
+            placeholder="123456789",
+            help="Enter 9 digits only (dashes will be added automatically)",
+            max_chars=9
+        )
+        
+        # Format SSN with dashes
+        ssn_input = ""
+        if ssn_raw:
+            # Remove any non-digits
+            digits_only = ''.join(filter(str.isdigit, ssn_raw))
+            if len(digits_only) == 9:
+                ssn_input = f"{digits_only[:3]}-{digits_only[3:5]}-{digits_only[5:]}"
+                st.success(f"✅ Formatted SSN: {ssn_input}")
+            elif len(digits_only) > 0:
+                ssn_input = digits_only  # Keep partial input for validation
+                st.info(f"ℹ️ Enter {9 - len(digits_only)} more digits")
     
     with col2:
         former_name_input = st.text_input("Former Name (if any)", placeholder="Leave blank if none")
@@ -195,12 +224,13 @@ def render_ee3():
             errors.append("First name is required.")
         if not last_name_input:
             errors.append("Last name is required.")
-        if not ssn_input:
-            errors.append("Social Security Number is required.")
-        
         # Validate SSN format
-        if ssn_input and not re.match(r'^\d{3}-\d{2}-\d{4}$', ssn_input):
-            errors.append("Social Security Number must be in format XXX-XX-XXXX.")
+        if not ssn_raw:
+            errors.append("Social Security Number is required.")
+        else:
+            digits_only = ''.join(filter(str.isdigit, ssn_raw))
+            if len(digits_only) != 9:
+                errors.append("Social Security Number must be exactly 9 digits.")
         
         # Validate employment history
         valid_jobs = []
