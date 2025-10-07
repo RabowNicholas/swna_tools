@@ -38,7 +38,7 @@ def render_en16():
     if client_selection != "Select...":
         st.success(f"✅ Selected: {client_selection}")
 
-    # Prefill fields when client changes (pattern from rd_waiver.py)
+    # Prefill fields when client changes
     if client_selection != "Select...":
         record = next(
             (
