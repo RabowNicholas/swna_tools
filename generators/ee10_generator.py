@@ -14,6 +14,18 @@ class EE10Generator:
         self, client_record: dict, doctor: str, form_data: dict
     ) -> tuple[str, BytesIO]:
         client_name = form_data.get("name", "")
+        
+        # Convert "First Last" format to "Last, First" format for display
+        formatted_name = client_name
+        try:
+            name_parts = client_name.strip().split()
+            if len(name_parts) >= 2:
+                first_name = name_parts[0]
+                last_name = " ".join(name_parts[1:])  # Handle multiple last names
+                formatted_name = f"{last_name}, {first_name}"
+        except:
+            formatted_name = client_name  # Fallback to original if parsing fails
+            
         case_id = form_data.get("case_id", "")
         address_main = form_data.get("address_main", "")
         address_city = form_data.get("address_city", "")
@@ -42,7 +54,7 @@ class EE10Generator:
         # Draw and return in-memory PDF
         pdf_bytes = self.draw_pdf(
             template_path,
-            client_name,
+            formatted_name,
             case_id,
             address_main,
             address_city,
