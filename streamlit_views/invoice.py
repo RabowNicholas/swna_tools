@@ -52,11 +52,12 @@ def render_invoice():
         st.session_state["last_selected_client"] = client_name
         st.session_state.invoice_items = []
 
-        # Clear address fields
-        st.session_state["address_main"] = ""
-        st.session_state["address_city"] = ""
-        st.session_state["address_state"] = ""
-        st.session_state["address_zip"] = ""
+        # Populate address fields from client record
+        client_fields = client_record["fields"]
+        st.session_state["address_main"] = client_fields.get("Street Address", "")
+        st.session_state["address_city"] = client_fields.get("City", "")
+        st.session_state["address_state"] = client_fields.get("State", "")
+        st.session_state["address_zip"] = client_fields.get("ZIP Code", "")
 
         # Optionally refetch invoices by resetting or calling logic here
         for invoice_id in client_record["fields"].get("Invoicing", []):

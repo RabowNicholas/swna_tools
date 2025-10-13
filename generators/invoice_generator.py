@@ -61,14 +61,21 @@ def generate_invoice_file(fields: dict):
         service_date = item["date"]
         lower_name = service_name.lower()
         amount = next(
-            (amount for key, amount in amount_map.items() if key in lower_name), ""
+            (amount for key, amount in amount_map.items() if key in lower_name), 0
         )
+        # Handle discount items (negative amounts)
+        if "discount" in lower_name:
+            amount = -abs(amount) if amount else 0
+            
         row = start_row + i
         ws[f"A{row}"] = service_name
         ws[f"B{row}"] = amount
         ws[f"E{row}"] = amount
         ws[f"D{row}"] = service_date
 
+    # Force Excel to recalculate formulas
+    wb.calculation.calcMode = 'auto'
+    
     buffer = io.BytesIO()
     wb.save(buffer)
     buffer.seek(0)
