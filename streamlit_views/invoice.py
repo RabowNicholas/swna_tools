@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime, timedelta
 from generators.invoice_generator import generate_invoice_file
 from services.airtable import fetch_clients, fetch_invoice_by_id
+from utils.state_mapping import get_state_abbreviation
 
 
 def render_invoice():
@@ -24,11 +25,11 @@ def render_invoice():
         for i, rec in enumerate(st.session_state.client_records)
     ]
     client_name = st.selectbox(
-        "Choose which client you're generating an invoice for", 
+        "Choose which client you're generating an invoice for",
         ["Select..."] + client_names,
-        help="Select an existing client record to auto-populate their information"
+        help="Select an existing client record to auto-populate their information",
     )
-    
+
     if client_name != "Select...":
         st.success(f"✅ Selected: {client_name}")
 
@@ -115,7 +116,9 @@ def render_invoice():
         "Invoice Date", value=datetime.today() + timedelta(days=30)
     )
     case_id = st.text_input("Case ID", value=fields.get("Case ID", ""))
-    client_name_display = st.text_input("Client Name", value=display_name, help="Client name (editable)")
+    client_name_display = st.text_input(
+        "Client Name", value=display_name, help="Client name (editable)"
+    )
 
     # Render address fields using session state values
     address_main_input = st.text_input(
