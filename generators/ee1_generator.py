@@ -5,9 +5,36 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.utils import ImageReader
 from PIL import Image
+import base64
 
 
 class EE1Generator:
+    def format_date(self, date_value, format_str="%m       %d       %Y"):
+        """Helper function to format dates that could be strings or datetime objects"""
+        if not date_value:
+            return ""
+        
+        if isinstance(date_value, str):
+            # Convert string date to datetime object
+            try:
+                # Try YYYY-MM-DD format first (from frontend)
+                date_obj = datetime.strptime(date_value, "%Y-%m-%d")
+                return date_obj.strftime(format_str)
+            except ValueError:
+                try:
+                    # Try M/D/Y format
+                    date_obj = datetime.strptime(date_value, "%m/%d/%Y")
+                    return date_obj.strftime(format_str)
+                except ValueError:
+                    try:
+                        # Try ISO format
+                        date_obj = datetime.fromisoformat(date_value.replace('Z', '+00:00'))
+                        return date_obj.strftime(format_str)
+                    except ValueError:
+                        return str(date_value)  # Fallback to original string
+        else:
+            # Assume it's already a datetime object
+            return date_value.strftime(format_str)
     def __init__(self, template_path="templates/EE-1.pdf"):
         self.template_path = template_path
 
@@ -101,14 +128,16 @@ class EE1Generator:
 
         # Date of Birth
         if dob:
-            dob_str = dob.strftime("%m      %d      %Y")
+            dob_str = self.format_date(dob, "%m      %d      %Y")
             signature_overlay.drawString(95, 627, dob_str)
 
         # Address
         signature_overlay.drawString(25, 585, address_main)
         signature_overlay.drawString(25, 555, address_city)
-        signature_overlay.drawString(215, 555, address_state)
         signature_overlay.drawString(255, 555, address_zip)
+        
+        # State goes on marks overlay (on top) like checkboxes
+        marks_overlay.drawString(215, 555, address_state)
 
         # Phone number
         signature_overlay.drawString(355, 585, area_code)
@@ -151,34 +180,28 @@ class EE1Generator:
 
                     # Individual date for each cancer diagnosis
                     if diagnosis.get("date"):
-                        date_str = diagnosis["date"].strftime("%m       %d       %Y")
+                        date_str = self.format_date(diagnosis["date"])
                         signature_overlay.drawString(507, date_y_positions[i], date_str)
 
         # Beryllium Sensitivity
         if diagnosis_categories.get("beryllium_sensitivity", {}).get("selected"):
             marks_overlay.drawString(22, 443, "X")  # Beryllium Sensitivity checkbox
             if diagnosis_categories["beryllium_sensitivity"].get("date"):
-                date_str = diagnosis_categories["beryllium_sensitivity"][
-                    "date"
-                ].strftime("%m       %d       %Y")
+                date_str = self.format_date(diagnosis_categories["beryllium_sensitivity"]["date"])
                 signature_overlay.drawString(507, 441, date_str)
 
         # Chronic Beryllium Disease (CBD)
         if diagnosis_categories.get("chronic_beryllium_disease", {}).get("selected"):
             marks_overlay.drawString(22, 425, "X")  # CBD checkbox
             if diagnosis_categories["chronic_beryllium_disease"].get("date"):
-                date_str = diagnosis_categories["chronic_beryllium_disease"][
-                    "date"
-                ].strftime("%m       %d       %Y")
+                date_str = self.format_date(diagnosis_categories["chronic_beryllium_disease"]["date"])
                 signature_overlay.drawString(507, 423, date_str)
 
         # Chronic Silicosis
         if diagnosis_categories.get("chronic_silicosis", {}).get("selected"):
             marks_overlay.drawString(22, 407, "X")  # Chronic Silicosis checkbox
             if diagnosis_categories["chronic_silicosis"].get("date"):
-                date_str = diagnosis_categories["chronic_silicosis"]["date"].strftime(
-                    "%m       %d       %Y"
-                )
+                date_str = self.format_date(diagnosis_categories["chronic_silicosis"]["date"])
                 signature_overlay.drawString(507, 405, date_str)
 
         # Other Work-Related Conditions
@@ -202,14 +225,20 @@ class EE1Generator:
 
                     # Individual date for each other diagnosis
                     if diagnosis.get("date"):
-                        date_str = diagnosis["date"].strftime("%m       %d       %Y")
+                        date_str = self.format_date(diagnosis["date"])
                         signature_overlay.drawString(507, y_positions[i], date_str)
 
         # Signature handling (optional)
         if signature_file:
             try:
-                # Process the signature image
-                signature_image = Image.open(signature_file)
+                # Handle both old format (File object) and new format (dict with base64 data)
+                if isinstance(signature_file, dict) and 'data' in signature_file:
+                    # New format: base64 encoded data from API
+                    image_data = base64.b64decode(signature_file['data'])
+                    signature_image = Image.open(BytesIO(image_data))
+                else:
+                    # Old format: direct file object (fallback)
+                    signature_image = Image.open(signature_file)
 
                 # Resize signature to reasonable size (adjust as needed) - increased for better quality
                 max_width, max_height = 300, 100  # Doubled size for better quality
@@ -236,7 +265,7 @@ class EE1Generator:
                 )
             except Exception as e:
                 # If signature processing fails, add text placeholder
-                signature_overlay.drawString(100, 155, "[Signature processing failed]")
+                signature_overlay.drawString(100, 155, f"[Signature processing failed: {str(e)}]")
         # No else clause needed - signature is optional
 
         # Add current date to the right of signature
