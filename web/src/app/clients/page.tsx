@@ -6,49 +6,23 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { Users, Search, Edit } from 'lucide-react';
+import { useClients } from '@/hooks/useClients';
+import { Users, Search, Edit, AlertCircle, RefreshCw } from 'lucide-react';
 
-interface ClientFields {
-  Name: string;
-  'Case ID'?: string;
-  'Social Security Number'?: string;
-  'Street Address'?: string;
-  'City'?: string;
-  'State'?: string;
-  'ZIP Code'?: string;
-  'Phone'?: string;
-  'Email'?: string;
-  'Date of Birth'?: string;
-  [key: string]: string | undefined;
-}
-
-interface Client {
-  id: string;
-  fields: ClientFields;
-}
+// Using Client interface from centralized storage
+import { Client } from '@/lib/clientStorage';
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { clients, loading, error, refreshClients, getCacheInfo } = useClients();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
-  // Load clients on component mount
+  // Show error if clients failed to load
   useEffect(() => {
-    async function loadClients() {
-      try {
-        const response = await fetch('/api/clients');
-        const data = await response.json();
-        setClients(data.clients || []);
-      } catch (error) {
-        console.error('Failed to load clients:', error);
-      } finally {
-        setLoading(false);
-      }
+    if (error) {
+      console.error('Failed to load clients:', error);
     }
-
-    loadClients();
-  }, []);
+  }, [error]);
 
   // Filter clients based on search term
   const filteredClients = clients.filter(client =>
@@ -71,16 +45,59 @@ export default function ClientsPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="text-destructive mb-4">
+            <AlertCircle className="h-12 w-12 mx-auto" />
+          </div>
+          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Clients</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button
+            onClick={() => refreshClients(true)}
+            icon={<RefreshCw className="h-4 w-4" />}
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       {/* Header */}
       <header className="mb-8">
-        <div className="flex items-center mb-6">
-          <Users className="h-8 w-8 text-primary mr-3" />
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Client Data Manager</h1>
-            <p className="text-muted-foreground">Manage client information and contact details</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center">
+            <Users className="h-8 w-8 text-primary mr-3" />
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Client Data Manager</h1>
+              <p className="text-muted-foreground">Manage client information and contact details</p>
+              {(() => {
+                const cacheInfo = getCacheInfo();
+                return cacheInfo.cached ? (
+                  <p className="text-xs text-success mt-1">
+                    ✓ Clients loaded from cache ({cacheInfo.clientCount} clients)
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Clients loaded from server
+                  </p>
+                );
+              })()}
+            </div>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refreshClients(true)}
+            icon={<RefreshCw className="h-4 w-4" />}
+            disabled={loading}
+          >
+            Refresh
+          </Button>
         </div>
 
         {/* Search Bar */}

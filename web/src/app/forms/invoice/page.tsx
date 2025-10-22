@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useClients } from '@/hooks/useClients';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -66,9 +67,8 @@ interface Client {
 }
 
 export default function InvoiceForm() {
-  const [clients, setClients] = useState<Client[]>([]);
+  const { clients, loading: clientsLoading, error: clientsError } = useClients();
   const [loading, setLoading] = useState(false);
-  const [clientsLoading, setClientsLoading] = useState(true);
   const [lastSelectedClient, setLastSelectedClient] = useState<string>('');
 
   const form = useForm<InvoiceFormData>({
@@ -99,22 +99,12 @@ export default function InvoiceForm() {
     name: 'invoice_items'
   });
 
-  // Load clients on component mount
+  // Show error if clients failed to load
   useEffect(() => {
-    async function loadClients() {
-      try {
-        const response = await fetch('/api/clients');
-        const data = await response.json();
-        setClients(data.clients || []);
-      } catch (error) {
-        console.error('Failed to load clients:', error);
-      } finally {
-        setClientsLoading(false);
-      }
+    if (clientsError) {
+      console.error('Failed to load clients:', clientsError);
     }
-
-    loadClients();
-  }, []);
+  }, [clientsError]);
 
   // Handle client selection
   const handleClientChange = async (clientId: string) => {
@@ -308,6 +298,20 @@ export default function InvoiceForm() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" label="Loading clients..." />
+      </div>
+    );
+  }
+
+  if (clientsError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="text-destructive mb-4">
+            <AlertCircle className="h-12 w-12 mx-auto" />
+          </div>
+          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Clients</h3>
+          <p className="text-muted-foreground">{clientsError}</p>
+        </div>
       </div>
     );
   }
