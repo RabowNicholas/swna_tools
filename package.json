@@ -1,0 +1,22 @@
+{
+  "name": "swna-tools",
+  "version": "1.0.0",
+  "description": "SWNA Legal Document Generation Tools",
+  "private": true,
+  "workspaces": ["web"],
+  "scripts": {
+    "dev": "cd web && npm run dev",
+    "build": "cd web && npm run build",
+    "start": "cd web && npm run start",
+    "streamlit": "streamlit run main.py",
+    "both": "concurrently \"npm run streamlit\" \"npm run dev\"",
+    "install-deps": "npm install && cd web && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
