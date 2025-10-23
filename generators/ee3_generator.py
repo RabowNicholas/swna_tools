@@ -116,10 +116,24 @@ class EE3Generator:
         Uses provided deltas for flexible field spacing.
         """
         # Dates - From Date and To Date fields
-        start_date_str = (
-            job["start_date"].strftime("%m/%d/%Y") if job["start_date"] else ""
-        )
-        end_date_str = job["end_date"].strftime("%m/%d/%Y") if job["end_date"] else ""
+        # Handle both string and datetime objects
+        start_date_str = ""
+        if job["start_date"]:
+            if isinstance(job["start_date"], str):
+                # Parse ISO format string (YYYY-MM-DD) to datetime
+                start_date = datetime.strptime(job["start_date"], "%Y-%m-%d")
+                start_date_str = start_date.strftime("%m/%d/%Y")
+            else:
+                start_date_str = job["start_date"].strftime("%m/%d/%Y")
+
+        end_date_str = ""
+        if job["end_date"]:
+            if isinstance(job["end_date"], str):
+                # Parse ISO format string (YYYY-MM-DD) to datetime
+                end_date = datetime.strptime(job["end_date"], "%Y-%m-%d")
+                end_date_str = end_date.strftime("%m/%d/%Y")
+            else:
+                end_date_str = job["end_date"].strftime("%m/%d/%Y")
 
         # From Date fields (Month, Day, Year) - base_y + deltas["dates"] (dates section)
         dates_y = base_y + deltas["dates"]
@@ -153,18 +167,26 @@ class EE3Generator:
         position_y = base_y + deltas["position"]
         overlay.drawString(30, position_y, job["position_title"])
 
+        # Union Member checkbox - for all employers on all pages
+        union_member = job.get("union_member", False)
+        if "union_checkbox" in deltas and union_member:
+            union_checkbox_y = base_y + deltas["union_checkbox"]
+            # X coordinate depends on page - page 1 uses 212, page 2+ uses 207 (minus 5)
+            union_x = 212 if page_num == 0 else 204
+            marks_overlay.drawString(union_x, union_checkbox_y, "X")
+
+        # Dosimeter Badge Worn checkbox - for all employers on all pages
+        dosimetry_worn = job.get("dosimetry_worn", False)
+        if "dosimetry_checkbox" in deltas and dosimetry_worn:
+            dosimetry_checkbox_y = base_y + deltas["dosimetry_checkbox"]
+            marks_overlay.drawString(438, dosimetry_checkbox_y, "X")
+
         # Facility Type Checkboxes - only if multiple employers provided and not on page 0
         if total_employers > 1 and page_num > 0:
             facility_checkbox_y = base_y + deltas["facility_checkbox"]
 
             # Department of Energy Facility checkbox - always mark for all employers
             marks_overlay.drawString(280, facility_checkbox_y, "X")
-
-            # Dosimeter Badge Worn checkbox
-            dosimetry_worn = job.get("dosimetry_worn", False)
-            dosimetry_checkbox_y = base_y + deltas["dosimetry_checkbox"]
-            if dosimetry_worn:
-                marks_overlay.drawString(438, dosimetry_checkbox_y, "X")
 
         # Description of Work Duties - base_y + deltas["duties"] (work duties section)
         duties_y = base_y + deltas["duties"]
@@ -212,6 +234,7 @@ class EE3Generator:
             "facility": -50,
             "contractor": -95,
             "position": -125,
+            "union_checkbox": -400,
             "duties": -180,
             "exposures": -280,
         }
@@ -224,6 +247,7 @@ class EE3Generator:
             "duties": -155,
             "exposures": -210,
             "facility_checkbox": -74,
+            "union_checkbox": -282,
             "dosimetry_checkbox": -107,
         }
 
@@ -235,6 +259,7 @@ class EE3Generator:
             "duties": -155,
             "exposures": -210,
             "facility_checkbox": -72,
+            "union_checkbox": -278,
             "dosimetry_checkbox": -103,
         }
 
