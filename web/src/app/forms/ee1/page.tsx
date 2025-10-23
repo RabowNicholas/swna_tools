@@ -151,11 +151,11 @@ const ee1Schema = z.object({
   sex: z
     .enum(["Male", "Female"])
     .refine((val) => val, { message: "Sex is required" }),
-  address_main: z.string().optional(),
-  address_city: z.string().optional(),
-  address_state: z.string().optional(),
-  address_zip: z.string().optional(),
-  phone: z.string().optional(),
+  address_main: z.string().min(1, "Street address is required"),
+  address_city: z.string().min(1, "City is required"),
+  address_state: z.string().min(2, "State is required").max(2, "State must be 2 characters"),
+  address_zip: z.string().regex(/^\d{5}(-\d{4})?$/, "ZIP code must be 5 or 9 digits"),
+  phone: z.string().regex(/^\d{3}\.\d{3}\.\d{4}$/, "Phone number must be in format: 123.123.1234"),
 });
 
 type EE1FormData = z.infer<typeof ee1Schema>;
@@ -184,6 +184,15 @@ export default function EE1Form() {
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [showSignaturePreview, setShowSignaturePreview] = useState(false);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [diagnosisErrors, setDiagnosisErrors] = useState<Record<string, string[]>>({
+    cancer: [],
+    beryllium_sensitivity: [],
+    chronic_beryllium_disease: [],
+    chronic_silicosis: [],
+    other: [],
+    general: []
+  });
 
   // Initialize diagnosis categories
   const [diagnosisCategories, setDiagnosisCategories] =
@@ -211,6 +220,8 @@ export default function EE1Form() {
 
   const form = useForm<EE1FormData>({
     resolver: zodResolver(ee1Schema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: {
       client_id: "",
       first_name: "",
@@ -335,9 +346,39 @@ export default function EE1Form() {
     }));
   };
 
+  // Helper to validate date is in past and reasonable
+  const validateDate = (date: Date | null, label: string): string | null => {
+    if (!date) return null;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const minDate = new Date('1900-01-01');
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+
+    if (dateToCheck > today) {
+      return `${label} cannot be in the future.`;
+    }
+
+    if (dateToCheck < minDate) {
+      return `${label} must be after January 1, 1900.`;
+    }
+
+    return null;
+  };
+
   // Validation helper
   const validateDiagnoses = () => {
-    const errors: string[] = [];
+    const errors: Record<string, string[]> = {
+      cancer: [],
+      beryllium_sensitivity: [],
+      chronic_beryllium_disease: [],
+      chronic_silicosis: [],
+      other: [],
+      general: []
+    };
+
     const categories = diagnosisCategories;
     let hasValidDiagnosis = false;
 
@@ -345,21 +386,23 @@ export default function EE1Form() {
     if (categories.cancer.selected) {
       let cancerHasValid = false;
       categories.cancer.diagnoses.forEach((diagnosis, i) => {
+        const label = String.fromCharCode(65 + i);
         if (diagnosis.text) {
           if (diagnosis.date) {
-            cancerHasValid = true;
+            const dateError = validateDate(diagnosis.date, `Cancer diagnosis ${label}`);
+            if (dateError) {
+              errors.cancer.push(dateError);
+            } else {
+              cancerHasValid = true;
+            }
           } else {
-            errors.push(
-              `Cancer diagnosis ${String.fromCharCode(65 + i)} requires a date.`
-            );
+            errors.cancer.push(`Cancer diagnosis ${label} requires a date.`);
           }
         }
       });
       if (cancerHasValid) hasValidDiagnosis = true;
       else if (!categories.cancer.diagnoses.some((d) => d.text)) {
-        errors.push(
-          "At least one specific cancer diagnosis is required when Cancer is selected."
-        );
+        errors.cancer.push("At least one specific cancer diagnosis is required when Cancer is selected.");
       }
     }
 
@@ -373,9 +416,14 @@ export default function EE1Form() {
     conditions.forEach(({ key, label }) => {
       if (categories[key].selected) {
         if (categories[key].date) {
-          hasValidDiagnosis = true;
+          const dateError = validateDate(categories[key].date, label);
+          if (dateError) {
+            errors[key].push(dateError);
+          } else {
+            hasValidDiagnosis = true;
+          }
         } else {
-          errors.push(`${label} date of diagnosis is required.`);
+          errors[key].push(`${label} date of diagnosis is required.`);
         }
       }
     });
@@ -384,29 +432,89 @@ export default function EE1Form() {
     if (categories.other.selected) {
       let otherHasValid = false;
       categories.other.diagnoses.forEach((diagnosis, i) => {
+        const label = String.fromCharCode(65 + i);
         if (diagnosis.text) {
           if (diagnosis.date) {
-            otherHasValid = true;
+            const dateError = validateDate(diagnosis.date, `Other condition ${label}`);
+            if (dateError) {
+              errors.other.push(dateError);
+            } else {
+              otherHasValid = true;
+            }
           } else {
-            errors.push(
-              `Other condition ${String.fromCharCode(65 + i)} requires a date.`
-            );
+            errors.other.push(`Other condition ${label} requires a date.`);
           }
         }
       });
       if (otherHasValid) hasValidDiagnosis = true;
       else if (!categories.other.diagnoses.some((d) => d.text)) {
-        errors.push(
-          "At least one specific other condition is required when Other is selected."
-        );
+        errors.other.push("At least one specific other condition is required when Other is selected.");
       }
     }
 
     if (!hasValidDiagnosis) {
-      errors.push("At least one diagnosis category with date is required.");
+      errors.general.push("At least one diagnosis category with date is required.");
     }
 
-    return errors;
+    setDiagnosisErrors(errors);
+
+    // Return flat array for backward compatibility
+    return Object.values(errors).flat();
+  };
+
+  const handleSubmitClick = async () => {
+    setAttemptedSubmit(true);
+
+    // Trigger validation
+    const isValid = await form.trigger();
+
+    if (!isValid) {
+      // Find the first error field and scroll to it
+      const errors = form.formState.errors;
+      let firstErrorField: string | null = null;
+
+      // Check fields in order of appearance
+      if (errors.client_id) firstErrorField = 'client_id';
+      else if (errors.first_name) firstErrorField = 'first_name';
+      else if (errors.last_name) firstErrorField = 'last_name';
+      else if (errors.ssn) firstErrorField = 'ssn';
+      else if (errors.dob) firstErrorField = 'dob';
+      else if (errors.sex) firstErrorField = 'sex';
+      else if (errors.address_main) firstErrorField = 'address_main';
+      else if (errors.address_city) firstErrorField = 'address_city';
+      else if (errors.address_state) firstErrorField = 'address_state';
+      else if (errors.address_zip) firstErrorField = 'address_zip';
+      else if (errors.phone) firstErrorField = 'phone';
+
+      // Scroll to and focus the first error field
+      if (firstErrorField) {
+        setTimeout(() => {
+          const element = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.focus();
+          }
+        }, 100);
+      }
+
+      return;
+    }
+
+    // Check diagnosis validation
+    const diagnosisErrorsList = validateDiagnoses();
+    if (diagnosisErrorsList.length > 0) {
+      // Scroll to diagnosis section
+      setTimeout(() => {
+        const diagnosisSection = document.getElementById('diagnosis-section');
+        if (diagnosisSection) {
+          diagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+      return;
+    }
+
+    // If valid, submit the form
+    form.handleSubmit(onSubmit)();
   };
 
   const onSubmit = async (data: EE1FormData) => {
@@ -544,32 +652,16 @@ export default function EE1Form() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header with Progress */}
+      {/* Header */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              🏥 EE-1 Form Generator
-            </h1>
-            <p className="text-muted-foreground">
-              Generate Worker&apos;s Claim for Benefits Under the Energy
-              Employees Occupational Illness Compensation Program Act
-            </p>
-          </div>
-          <Badge
-            variant={progressPercentage === 100 ? "success" : "secondary"}
-            size="lg"
-          >
-            {Math.round(progressPercentage)}% Complete
-          </Badge>
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Generate EE-1 Form
+          </h1>
+          <p className="text-muted-foreground">
+            Worker&apos;s Claim for Benefits Under the Energy Employees Occupational Illness Compensation Program Act
+          </p>
         </div>
-
-        <Progress
-          value={progressPercentage}
-          variant={progressPercentage === 100 ? "success" : "default"}
-          showLabel
-          label="Form Completion"
-        />
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -702,6 +794,8 @@ export default function EE1Form() {
 
                 <Input
                   label="Client's Street Address"
+                  required
+                  error={form.formState.errors.address_main?.message}
                   helperText="Client's street address (include apartment/unit number if applicable)"
                   {...form.register("address_main")}
                 />
@@ -710,13 +804,17 @@ export default function EE1Form() {
                   <div className="col-span-2">
                     <Input
                       label="Client's City"
+                      required
+                      error={form.formState.errors.address_city?.message}
                       {...form.register("address_city")}
                     />
                   </div>
                   <Input
                     label="State"
+                    required
                     maxLength={2}
                     placeholder="NY"
+                    error={form.formState.errors.address_state?.message}
                     helperText="2-letter code"
                     {...form.register("address_state")}
                   />
@@ -724,15 +822,20 @@ export default function EE1Form() {
 
                 <Input
                   label="Client's ZIP Code"
-                  maxLength={5}
-                  helperText="Client's 5-digit ZIP code"
+                  required
+                  maxLength={10}
+                  placeholder="12345"
+                  error={form.formState.errors.address_zip?.message}
+                  helperText="5-digit ZIP code (e.g., 12345 or 12345-6789)"
                   {...form.register("address_zip")}
                 />
 
                 <Input
                   label="Client's Phone Number"
+                  required
                   placeholder="555.123.4567"
-                  helperText="Client's phone number in format: XXX.XXX.XXXX"
+                  error={form.formState.errors.phone?.message}
+                  helperText="Phone number in format: 123.123.1234"
                   {...form.register("phone")}
                 />
               </div>
@@ -741,22 +844,47 @@ export default function EE1Form() {
         </Card>
 
         {/* Medical Diagnoses Section */}
-        <Card variant="elevated">
+        <Card variant="elevated" id="diagnosis-section">
           <CardHeader>
-            <div className="flex items-center space-x-2">
-              <Heart className="h-5 w-5 text-error" />
-              <CardTitle>Client&apos;s Medical Diagnoses</CardTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Heart className="h-5 w-5 text-error" />
+                <CardTitle>Client&apos;s Medical Diagnoses</CardTitle>
+              </div>
+              {attemptedSubmit && Object.values(diagnosisErrors).flat().length > 0 && (
+                <Badge variant="error" size="sm">
+                  {Object.values(diagnosisErrors).flat().length} Error{Object.values(diagnosisErrors).flat().length !== 1 ? 's' : ''}
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
               Client&apos;s Diagnosed Condition(s) Being Claimed as Work-Related
             </p>
+            {attemptedSubmit && diagnosisErrors.general.length > 0 && (
+              <div
+                className="mt-3 p-3 border-2 rounded-lg"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--destructive) 15%, transparent)',
+                  borderColor: 'var(--destructive)'
+                }}
+              >
+                {diagnosisErrors.general.map((error, i) => (
+                  <div key={i} className="flex items-center text-sm text-destructive font-medium">
+                    <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                    {error}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Cancer Section */}
             <Card
               variant="outlined"
               className={
-                diagnosisCategories.cancer.selected
+                attemptedSubmit && diagnosisErrors.cancer.length > 0
+                  ? "border-destructive bg-destructive/10"
+                  : diagnosisCategories.cancer.selected
                   ? "border-warning/50 bg-warning/5"
                   : ""
               }
@@ -842,6 +970,16 @@ export default function EE1Form() {
                       )
                     )}
                   </div>
+                  {attemptedSubmit && diagnosisErrors.cancer.length > 0 && (
+                    <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
+                      {diagnosisErrors.cancer.map((error, i) => (
+                        <div key={i} className="flex items-start text-sm text-destructive">
+                          <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
+                          {error}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               )}
             </Card>
@@ -873,8 +1011,10 @@ export default function EE1Form() {
                   key={key}
                   variant="outlined"
                   className={
-                    diagnosisCategories[key as keyof DiagnosisCategories]
-                      .selected
+                    attemptedSubmit && diagnosisErrors[key as keyof typeof diagnosisErrors]?.length > 0
+                      ? "border-destructive bg-destructive/10"
+                      : diagnosisCategories[key as keyof DiagnosisCategories]
+                        .selected
                       ? "border-info/50 bg-info/5"
                       : ""
                   }
@@ -940,6 +1080,16 @@ export default function EE1Form() {
                         />
                       )}
                     </div>
+                    {attemptedSubmit && diagnosisErrors[key as keyof typeof diagnosisErrors]?.length > 0 && (
+                      <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
+                        {diagnosisErrors[key as keyof typeof diagnosisErrors].map((error, i) => (
+                          <div key={i} className="flex items-start text-sm text-destructive">
+                            <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
+                            {error}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -949,7 +1099,9 @@ export default function EE1Form() {
             <Card
               variant="outlined"
               className={
-                diagnosisCategories.other.selected
+                attemptedSubmit && diagnosisErrors.other.length > 0
+                  ? "border-destructive bg-destructive/10"
+                  : diagnosisCategories.other.selected
                   ? "border-secondary/50 bg-secondary/5"
                   : ""
               }
@@ -1032,6 +1184,16 @@ export default function EE1Form() {
                       </div>
                     ))}
                   </div>
+                  {attemptedSubmit && diagnosisErrors.other.length > 0 && (
+                    <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
+                      {diagnosisErrors.other.map((error, i) => (
+                        <div key={i} className="flex items-start text-sm text-destructive">
+                          <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
+                          {error}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               )}
             </Card>
@@ -1113,90 +1275,47 @@ export default function EE1Form() {
         </Card>
 
         {/* Submit Button */}
-        <Card
-          variant="elevated"
-          className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800"
-        >
-          <CardContent>
-            <div className="flex flex-col items-center space-y-4">
-              <Button
-                type="submit"
-                disabled={loading || progressPercentage < 100}
-                size="lg"
-                loading={loading}
-                icon={<FileDown className="h-4 w-4" />}
-                className="w-full sm:w-auto"
-              >
-                {loading ? "Generating..." : "🚀 Generate Client's EE-1 Form"}
-              </Button>
+        <div className="flex flex-col gap-4 items-center">
+          <Button
+            type="button"
+            onClick={handleSubmitClick}
+            disabled={loading}
+            size="lg"
+            loading={loading}
+            icon={<FileDown className="h-4 w-4" />}
+            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50"
+          >
+            {loading ? "Generating..." : "Generate EE-1"}
+          </Button>
 
-              {progressPercentage < 100 && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Please complete all required fields and select at least one
-                  diagnosis before generating the form.
-                </div>
-              )}
+          {attemptedSubmit && (Object.keys(form.formState.errors).length > 0 || !hasValidDiagnosis) && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Please complete all required fields and select at least one
+              diagnosis before generating the form.
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
         {/* Success Message */}
         {formSubmitted && (
-          <>
-            <Card variant="elevated" className="bg-success/10 border-success/20">
-              <CardContent>
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <CheckCircle className="h-6 w-6 text-success" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      🎉 EE-1 form generated successfully for client!
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Your EE-1 claim form has been downloaded and is ready for
-                      submission.
-                    </p>
-                  </div>
+          <Card variant="elevated" className="bg-success/10 border-success/20">
+            <CardContent>
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="h-6 w-6 text-success" />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Portal Access */}
-            {submittedClient && (
-              <Card variant="elevated" className="bg-blue-50 border-blue-200">
-                <CardContent>
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">🌐</span>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium text-blue-900 mb-2">
-                        Submit to DOL Portal
-                      </h3>
-                      <p className="text-blue-700 text-sm mb-4">
-                        Ready to submit your EE-1 form to the Department of Labor portal? 
-                        Click below to open the portal helper with this client's information pre-loaded.
-                      </p>
-                      <Button
-                        onClick={() => {
-                          const portalUrl = `/portal?clientId=${submittedClient.id}&formType=EE-1`;
-                          window.open(portalUrl, '_blank');
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        size="sm"
-                      >
-                        🚀 Open DOL Portal Helper
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </>
+                <div className="ml-4">
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    EE-1 Generated Successfully!
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your EE-1 form has been downloaded and is ready for submission.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </form>
     </div>

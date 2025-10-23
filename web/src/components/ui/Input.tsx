@@ -59,38 +59,36 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
+            style={error ? {
+              borderColor: 'var(--destructive)',
+              backgroundColor: 'color-mix(in srgb, var(--destructive) 10%, transparent)',
+              '--tw-ring-color': 'color-mix(in srgb, var(--destructive) 50%, transparent)',
+            } as React.CSSProperties : undefined}
             className={cn(
               // Base styles
               "block w-full rounded-lg border transition-all duration-200",
               "text-foreground placeholder-muted-foreground",
               "focus:outline-none focus:ring-2 focus:ring-offset-1",
-              
+
               // Size and spacing
               icon ? "pl-10 pr-4 py-3" : "px-4 py-3",
-              
-              // Variants
-              variant === 'default' && [
+
+              // Variants (only apply if no error)
+              !error && variant === 'default' && [
                 "bg-input border-border",
                 "hover:border-border/80",
                 "focus:border-ring focus:ring-ring/20"
               ],
-              
-              variant === 'filled' && [
+
+              !error && variant === 'filled' && [
                 "bg-muted border-border",
                 "hover:bg-accent hover:border-border/80",
                 "focus:bg-input focus:border-ring focus:ring-ring/20"
               ],
-              
-              // Error state
-              error && [
-                "border-destructive bg-destructive/10",
-                "hover:border-destructive/80",
-                "focus:border-destructive focus:ring-destructive/20"
-              ],
-              
+
               // Disabled state
               "disabled:bg-muted disabled:border-border disabled:text-muted-foreground disabled:cursor-not-allowed",
-              
+
               className
             )}
             onFocus={(e) => {

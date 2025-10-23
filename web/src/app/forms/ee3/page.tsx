@@ -59,9 +59,12 @@ export default function EE3Form() {
   const [lastFormData, setLastFormData] = useState<EE3FormData | null>(null);
   const [collapsedEmployment, setCollapsedEmployment] = useState<Set<number>>(new Set());
   const [showPreview, setShowPreview] = useState<{ [key: number]: boolean }>({});
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   const form = useForm<EE3FormData>({
     resolver: zodResolver(ee3Schema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: {
       client_id: '',
       first_name: '',
@@ -154,6 +157,62 @@ export default function EE3Form() {
         }
       }
     }
+  };
+
+  const handleSubmitClick = async () => {
+    setAttemptedSubmit(true);
+
+    // Trigger validation on all fields - this will show error messages
+    const isValid = await form.trigger();
+
+    if (!isValid) {
+      // Find the first error field and scroll to it
+      const errors = form.formState.errors;
+      let firstErrorField: string | null = null;
+
+      // Check top-level fields first
+      if (errors.client_id) firstErrorField = 'client_id';
+      else if (errors.first_name) firstErrorField = 'first_name';
+      else if (errors.last_name) firstErrorField = 'last_name';
+      else if (errors.ssn) firstErrorField = 'ssn';
+      else if (errors.employment_history) {
+        // Find first employment history error
+        for (let i = 0; i < form.getValues('employment_history').length; i++) {
+          const empErrors = errors.employment_history?.[i];
+          if (empErrors) {
+            // Expand the collapsed section if needed
+            setCollapsedEmployment(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(i);
+              return newSet;
+            });
+
+            // Find specific field with error
+            const fieldKeys = Object.keys(empErrors);
+            if (fieldKeys.length > 0) {
+              firstErrorField = `employment_history.${i}.${fieldKeys[0]}`;
+            }
+            break;
+          }
+        }
+      }
+
+      // Scroll to and focus the first error field
+      if (firstErrorField) {
+        setTimeout(() => {
+          const element = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.focus();
+          }
+        }, 100);
+      }
+
+      return;
+    }
+
+    // If valid, submit the form
+    form.handleSubmit(onSubmit)();
   };
 
   const onSubmit = async (data: EE3FormData) => {
@@ -680,8 +739,9 @@ export default function EE3Form() {
         {/* Action Buttons */}
         <div className="flex flex-col gap-4 items-center">
           <Button
-            type="submit"
-            disabled={loading || progressPercentage < 100}
+            type="button"
+            onClick={handleSubmitClick}
+            disabled={loading}
             size="lg"
             loading={loading}
             icon={<FileDown className="h-4 w-4" />}
@@ -690,7 +750,7 @@ export default function EE3Form() {
             {loading ? 'Generating...' : 'Generate EE-3'}
           </Button>
 
-          {progressPercentage < 100 && (
+          {attemptedSubmit && Object.keys(form.formState.errors).length > 0 && (
             <div className="flex items-center text-sm text-muted-foreground">
               <AlertCircle className="h-4 w-4 mr-2" />
               Please complete all required fields before generating the form.
