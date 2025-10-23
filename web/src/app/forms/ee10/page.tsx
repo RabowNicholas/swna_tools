@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
+import { PortalAccess } from '@/components/portal/PortalAccess';
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -127,11 +128,21 @@ const ee10Schema = z.object({
 
 type EE10FormData = z.infer<typeof ee10Schema>;
 
+interface Client {
+  id: string;
+  fields: {
+    Name: string;
+    "Case ID"?: string;
+    [key: string]: string | undefined;
+  };
+}
+
 export default function EE10Form() {
   const { clients, loading: clientsLoading, error: clientsError } = useClients();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
 
   const form = useForm<EE10FormData>({
     resolver: zodResolver(ee10Schema),
@@ -256,6 +267,7 @@ export default function EE10Form() {
         document.body.removeChild(a);
 
         setFormSubmitted(true);
+        setSubmittedClient(selectedClient);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to generate EE-10");
@@ -498,23 +510,30 @@ export default function EE10Form() {
 
         {/* Success Message */}
         {formSubmitted && (
-          <Card variant="elevated" className="bg-success/10 border-success/20">
-            <CardContent>
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="h-6 w-6 text-success" />
+          <>
+            <Card variant="elevated" className="bg-success/10 border-success/20">
+              <CardContent>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <CheckCircle className="h-6 w-6 text-success" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      EE-10 form generated successfully!
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your EE-10 form has been downloaded and is ready for submission.
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-foreground mb-2">
-                    EE-10 form generated successfully!
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your EE-10 form has been downloaded and is ready for submission.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Portal Access */}
+            {submittedClient && (
+              <PortalAccess client={submittedClient} autoOpen={true} />
+            )}
+          </>
         )}
       </form>
     </div>
