@@ -28,6 +28,48 @@ const employmentSchema = z.object({
   work_duties: z.string().min(1, 'Work duties are required'),
   union_member: z.boolean().optional(),
   dosimetry_worn: z.boolean().optional(),
+}).refine((data) => {
+  // Validate start date
+  if (data.start_date) {
+    const startDate = new Date(data.start_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const minDate = new Date('1900-01-01');
+
+    if (startDate > today) {
+      return false;
+    }
+    if (startDate < minDate) {
+      return false;
+    }
+  }
+
+  // Validate end date if provided
+  if (data.end_date) {
+    const endDate = new Date(data.end_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const minDate = new Date('1900-01-01');
+
+    if (endDate > today) {
+      return false;
+    }
+    if (endDate < minDate) {
+      return false;
+    }
+
+    // End date must be after start date
+    if (data.start_date) {
+      const startDate = new Date(data.start_date);
+      if (endDate < startDate) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}, {
+  message: 'Invalid employment dates',
 });
 
 const ee3Schema = z.object({
@@ -51,6 +93,26 @@ interface Client {
   };
 }
 
+// Helper to validate employment dates and return specific error messages
+const validateEmploymentDate = (date: string, label: string): string | null => {
+  if (!date) return null;
+
+  const dateObj = new Date(date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const minDate = new Date('1900-01-01');
+
+  if (dateObj > today) {
+    return `${label} cannot be in the future`;
+  }
+
+  if (dateObj < minDate) {
+    return `${label} must be after January 1, 1900`;
+  }
+
+  return null;
+};
+
 export default function EE3Form() {
   const { clients, loading: clientsLoading, error: clientsError } = useClients();
   const [loading, setLoading] = useState(false);
@@ -60,6 +122,7 @@ export default function EE3Form() {
   const [collapsedEmployment, setCollapsedEmployment] = useState<Set<number>>(new Set());
   const [showPreview, setShowPreview] = useState<{ [key: number]: boolean }>({});
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [employmentDateErrors, setEmploymentDateErrors] = useState<Record<number, { start?: string; end?: string }>>({});
 
   const form = useForm<EE3FormData>({
     resolver: zodResolver(ee3Schema),
@@ -162,10 +225,38 @@ export default function EE3Form() {
   const handleSubmitClick = async () => {
     setAttemptedSubmit(true);
 
+    // Validate employment dates
+    const employmentHistory = form.getValues('employment_history');
+    const dateErrors: Record<number, { start?: string; end?: string }> = {};
+
+    employmentHistory.forEach((employment, index) => {
+      const startError = validateEmploymentDate(employment.start_date, 'Start date');
+      const endError = employment.end_date ? validateEmploymentDate(employment.end_date, 'End date') : null;
+
+      // Check if end date is after start date
+      let endDateError = endError;
+      if (employment.start_date && employment.end_date && !startError && !endError) {
+        const start = new Date(employment.start_date);
+        const end = new Date(employment.end_date);
+        if (end < start) {
+          endDateError = 'End date must be after start date';
+        }
+      }
+
+      if (startError || endDateError) {
+        dateErrors[index] = {
+          start: startError || undefined,
+          end: endDateError || undefined
+        };
+      }
+    });
+
+    setEmploymentDateErrors(dateErrors);
+
     // Trigger validation on all fields - this will show error messages
     const isValid = await form.trigger();
 
-    if (!isValid) {
+    if (!isValid || Object.keys(dateErrors).length > 0) {
       // Find the first error field and scroll to it
       const errors = form.formState.errors;
       let firstErrorField: string | null = null;
@@ -635,7 +726,10 @@ export default function EE3Form() {
                       type="date"
                       label="Start Date"
                       required
-                      error={form.formState.errors.employment_history?.[index]?.start_date?.message}
+                      error={
+                        employmentDateErrors[index]?.start ||
+                        form.formState.errors.employment_history?.[index]?.start_date?.message
+                      }
                       {...form.register(`employment_history.${index}.start_date`)}
                     />
 
@@ -643,7 +737,10 @@ export default function EE3Form() {
                       type="date"
                       label="End Date"
                       helperText="Leave blank if current position"
-                      error={form.formState.errors.employment_history?.[index]?.end_date?.message}
+                      error={
+                        employmentDateErrors[index]?.end ||
+                        form.formState.errors.employment_history?.[index]?.end_date?.message
+                      }
                       {...form.register(`employment_history.${index}.end_date`)}
                     />
 
