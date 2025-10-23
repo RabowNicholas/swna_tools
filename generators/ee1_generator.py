@@ -240,19 +240,40 @@ class EE1Generator:
                     # Old format: direct file object (fallback)
                     signature_image = Image.open(signature_file)
 
-                # Resize signature to reasonable size (adjust as needed) - increased for better quality
-                max_width, max_height = 300, 100  # Doubled size for better quality
-                signature_image.thumbnail(
-                    (max_width, max_height), Image.Resampling.LANCZOS
-                )
+                # Calculate scaling to fit signature area while maintaining aspect ratio
+                # Signature area: approximately 300 width x 100 height points
+                max_width, max_height = 300, 100
 
-                # Convert to RGB if necessary
+                # Get original dimensions
+                orig_width, orig_height = signature_image.size
+
+                # Calculate scale factor to fit within bounds while maintaining aspect ratio
+                width_scale = max_width / orig_width
+                height_scale = max_height / orig_height
+                scale = min(width_scale, height_scale)
+
+                # Only resize if image is larger than the target area
+                if scale < 1:
+                    new_width = int(orig_width * scale)
+                    new_height = int(orig_height * scale)
+                    signature_image = signature_image.resize(
+                        (new_width, new_height),
+                        Image.Resampling.LANCZOS
+                    )
+
+                # Convert to RGB if necessary (for PDF compatibility)
                 if signature_image.mode in ("RGBA", "LA", "P"):
-                    signature_image = signature_image.convert("RGB")
+                    # Create white background for transparency
+                    background = Image.new("RGB", signature_image.size, (255, 255, 255))
+                    if signature_image.mode == "RGBA":
+                        background.paste(signature_image, mask=signature_image.split()[3])
+                    else:
+                        background.paste(signature_image)
+                    signature_image = background
 
-                # Create temporary buffer for signature with high quality
+                # Create temporary buffer for signature - use PNG for better quality
                 sig_buffer = BytesIO()
-                signature_image.save(sig_buffer, format="JPEG", quality=95)  # High quality JPEG
+                signature_image.save(sig_buffer, format="PNG", optimize=False)
                 sig_buffer.seek(0)
 
                 # Add signature to signature overlay (behind form)
@@ -262,6 +283,7 @@ class EE1Generator:
                     33,  # y position
                     width=signature_image.width,
                     height=signature_image.height,
+                    preserveAspectRatio=True,
                 )
             except Exception as e:
                 # If signature processing fails, add text placeholder
