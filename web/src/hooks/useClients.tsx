@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { clientStorage, Client } from '@/lib/clientStorage';
+import { useClientContext } from '@/contexts/ClientContext';
 
 export interface UseClientsReturn {
   clients: Client[];
@@ -13,6 +14,24 @@ export interface UseClientsReturn {
 }
 
 export function useClients(): UseClientsReturn {
+  // Try to use context first, fallback to local state
+  try {
+    const context = useClientContext();
+    return {
+      clients: context.clients,
+      loading: context.loading,
+      error: context.error,
+      refreshClients: context.refreshClients,
+      getClientById: context.getClientById,
+      getCacheInfo: context.getCacheInfo
+    };
+  } catch (error) {
+    // Context not available, fallback to local implementation
+    // This ensures backwards compatibility
+    console.warn('ClientContext not available, using local implementation');
+  }
+
+  // Fallback local implementation
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +39,7 @@ export function useClients(): UseClientsReturn {
   const refreshClients = useCallback(async (force: boolean = false) => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const fetchedClients = await clientStorage.getClients(force);
       setClients(fetchedClients);
