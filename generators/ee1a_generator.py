@@ -108,11 +108,23 @@ class EE1AGenerator:
         for i, diagnosis in enumerate(diagnoses):
             if i < 5:  # Only 5 fields available (a-e)
                 y_pos = diagnosis_y_positions[i]
-                overlay.drawString(33, y_pos, diagnosis["diagnosis"])
+                # Support both old format (diagnosis) and new format (diagnosis_text)
+                diagnosis_text = diagnosis.get("diagnosis_text") or diagnosis.get("diagnosis", "")
+                overlay.drawString(33, y_pos, diagnosis_text)
 
                 # 6. Date of Diagnosis (Month, Day, Year)
-                if diagnosis["date"]:
-                    date_obj = diagnosis["date"]
+                # Support both old format (date as datetime) and new format (diagnosis_date as string)
+                date_value = diagnosis.get("diagnosis_date") or diagnosis.get("date")
+                if date_value:
+                    # If it's a string, parse it
+                    if isinstance(date_value, str):
+                        try:
+                            date_obj = datetime.strptime(date_value, "%Y-%m-%d")
+                        except ValueError:
+                            continue
+                    else:
+                        date_obj = date_value
+
                     # Split into separate fields as shown in template
                     overlay.drawString(510, y_pos, f"{date_obj.month:02d}")  # Month
                     overlay.drawString(543, y_pos, f"{date_obj.day:02d}")  # Day
@@ -152,8 +164,6 @@ class EE1AGenerator:
                 overlay.drawString(85, 185, "[Signature processing failed]")
 
         # Add current date next to signature (like EE1)
-        from datetime import datetime
-
         current_date = datetime.now().strftime("%m/%d/%Y")
         overlay.drawString(385, 175, current_date)  # Date position next to signature
 
