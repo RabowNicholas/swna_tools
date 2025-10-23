@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Heart, Star, ExternalLink, Globe } from "lucide-react";
+import { useClientContext } from "@/contexts/ClientContext";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Typography, TextHierarchy } from "@/components/ui/Typography";
@@ -25,14 +26,20 @@ export default function Home() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [hasMounted, setHasMounted] = useState(false);
 
-  // Load favorites from localStorage on mount
+  // Pre-load client data to cache it for other pages
+  const { preloadClients } = useClientContext();
+
+  // Load favorites from localStorage on mount and preload clients
   useEffect(() => {
     setHasMounted(true);
     const savedFavorites = localStorage.getItem("swna-favorites");
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
     }
-  }, []);
+
+    // Preload clients in the background
+    preloadClients().catch(console.error);
+  }, [preloadClients]);
 
   // Save favorites to localStorage whenever it changes (only after mount)
   useEffect(() => {
