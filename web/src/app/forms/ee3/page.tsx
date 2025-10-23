@@ -35,7 +35,7 @@ const ee3Schema = z.object({
   first_name: z.string().min(1, 'First name is required'),
   last_name: z.string().min(1, 'Last name is required'),
   former_name: z.string().optional(),
-  ssn: z.string().regex(/^\\d{9}$/, 'SSN must be 9 digits'),
+  ssn: z.string().regex(/^\d{9}$/, 'SSN must be 9 digits'),
   employment_history: z.array(employmentSchema).min(1, 'At least one employment record is required'),
 });
 
@@ -148,7 +148,7 @@ export default function EE3Form() {
       // Set SSN if available
       const ssn = client.fields['Social Security Number'];
       if (ssn) {
-        const cleanSSN = ssn.toString().replace(/\\D/g, '');
+        const cleanSSN = ssn.toString().replace(/\D/g, '');
         if (cleanSSN.length === 9) {
           form.setValue('ssn', cleanSSN);
         }
@@ -423,6 +423,10 @@ export default function EE3Form() {
                 <Button
                   type="button"
                   onClick={() => {
+                    if (fields.length >= 3) {
+                      alert('Maximum of 3 employers can be added through this form. For more than 3 employers, please fill out the EE-3 form manually.');
+                      return;
+                    }
                     const newIndex = fields.length;
                     append({
                       start_date: '',
@@ -447,6 +451,7 @@ export default function EE3Form() {
                   variant="outline"
                   size="sm"
                   icon={<Plus className="h-4 w-4" />}
+                  disabled={fields.length >= 3}
                 >
                   Add Employment
                 </Button>
@@ -673,43 +678,25 @@ export default function EE3Form() {
         </Card>
 
         {/* Action Buttons */}
-        <Card variant="elevated" className="bg-gradient-to-r from-gray-50 to-gray-100">
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 sm:justify-end">
-              <Button 
-                type="submit" 
-                disabled={loading || progressPercentage < 100} 
-                size="lg"
-                loading={loading}
-                icon={<FileDown className="h-4 w-4" />}
-                className="sm:order-2"
-              >
-                {loading ? 'Generating...' : 'Generate EE-3'}
-              </Button>
+        <div className="flex flex-col gap-4 items-center">
+          <Button
+            type="submit"
+            disabled={loading || progressPercentage < 100}
+            size="lg"
+            loading={loading}
+            icon={<FileDown className="h-4 w-4" />}
+            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50"
+          >
+            {loading ? 'Generating...' : 'Generate EE-3'}
+          </Button>
 
-              {formSubmitted && (
-                <Button 
-                  type="button" 
-                  onClick={handlePortalAccess}
-                  disabled={portalLoading}
-                  variant="outline"
-                  size="lg"
-                  loading={portalLoading}
-                  className="sm:order-1"
-                >
-                  {portalLoading ? 'Accessing Portal...' : '🔗 Access Portal'}
-                </Button>
-              )}
+          {progressPercentage < 100 && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Please complete all required fields before generating the form.
             </div>
-            
-            {progressPercentage < 100 && (
-              <div className="mt-4 flex items-center text-sm text-muted-foreground">
-                <AlertCircle className="h-4 w-4 mr-2" />
-                Please complete all required fields before generating the form.
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
         {formSubmitted && (
           <Card variant="elevated" className="bg-success/10 border-success/20">
@@ -722,27 +709,9 @@ export default function EE3Form() {
                   <h3 className="text-lg font-medium text-foreground mb-2">
                     EE-3 Generated Successfully!
                   </h3>
-                  <div className="text-sm text-muted-foreground space-y-3">
-                    <p className="font-medium">Your EE-3 form has been downloaded. Next steps:</p>
-                    <div className="bg-card rounded-lg p-4 space-y-2 border border-border">
-                      <div className="flex items-center space-x-3">
-                        <Badge variant="success" size="sm">1</Badge>
-                        <span>Click &ldquo;Access Portal&rdquo; to open the DOL portal automatically</span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Badge variant="success" size="sm">2</Badge>
-                        <span>The form will be filled out automatically</span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Badge variant="warning" size="sm">3</Badge>
-                        <span>Manually select and upload your generated PDF file</span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Badge variant="success" size="sm">4</Badge>
-                        <span>Complete the submission process</span>
-                      </div>
-                    </div>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Your EE-3 form has been downloaded and is ready for submission.
+                  </p>
                 </div>
               </div>
             </CardContent>
