@@ -42,7 +42,14 @@ class WithdrawalLetterGenerator:
 
         # Format the date as "Month DD, YYYY"
         if letter_date:
-            formatted_date = letter_date.strftime("%B %d, %Y")
+            # Handle both string dates (from web app) and datetime objects (from Streamlit)
+            if isinstance(letter_date, str):
+                # Parse ISO date string (YYYY-MM-DD) from web app
+                date_obj = datetime.strptime(letter_date, "%Y-%m-%d")
+                formatted_date = date_obj.strftime("%B %d, %Y")
+            else:
+                # datetime object from Streamlit
+                formatted_date = letter_date.strftime("%B %d, %Y")
         else:
             formatted_date = datetime.now().strftime("%B %d, %Y")
 
