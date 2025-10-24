@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { clientStorage, Client } from '@/lib/clientStorage';
 
 interface ClientContextType {
@@ -10,16 +10,15 @@ interface ClientContextType {
   refreshClients: (force?: boolean) => Promise<void>;
   getClientById: (id: string) => Client | null;
   getCacheInfo: () => { cached: boolean; timestamp?: number; expiresAt?: number; clientCount?: number };
-  preloadClients: () => Promise<void>;
 }
 
 const ClientContext = createContext<ClientContextType | undefined>(undefined);
 
 export function ClientProvider({ children }: { children: React.ReactNode }) {
   const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start as loading
   const [error, setError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const hasInitialized = useRef(false);
 
   const refreshClients = useCallback(async (force: boolean = false) => {
     setLoading(true);
@@ -37,12 +36,13 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const preloadClients = useCallback(async () => {
-    if (isInitialized) return;
+  // Auto-initialize clients on mount
+  useEffect(() => {
+    if (hasInitialized.current) return;
 
-    setIsInitialized(true);
-    await refreshClients();
-  }, [refreshClients, isInitialized]);
+    hasInitialized.current = true;
+    refreshClients();
+  }, [refreshClients]);
 
   const getClientById = useCallback((id: string): Client | null => {
     return clients.find(client => client.id === id) || null;
@@ -59,7 +59,6 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
     refreshClients,
     getClientById,
     getCacheInfo,
-    preloadClients
   };
 
   return (
