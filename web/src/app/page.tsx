@@ -26,20 +26,14 @@ export default function Home() {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [hasMounted, setHasMounted] = useState(false);
 
-  // Pre-load client data to cache it for other pages
-  const { preloadClients } = useClientContext();
-
-  // Load favorites from localStorage on mount and preload clients
+  // Load favorites from localStorage on mount
   useEffect(() => {
     setHasMounted(true);
     const savedFavorites = localStorage.getItem("swna-favorites");
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
     }
-
-    // Preload clients in the background
-    preloadClients().catch(console.error);
-  }, [preloadClients]);
+  }, []);
 
   // Save favorites to localStorage whenever it changes (only after mount)
   useEffect(() => {
