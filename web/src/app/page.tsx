@@ -74,13 +74,13 @@ export default function Home() {
     {
       id: "ee10",
       name: "EE-10 Form",
-      description: "Employment verification form",
+      description: "Impairment evaluation request form with email drafting",
       href: "/forms/ee10",
     },
     {
       id: "en16",
       name: "EN-16 Form",
-      description: "Energy notification form",
+      description: "Employee identification information for energy employee",
       href: "/forms/en16",
     },
     // DOL Letters
