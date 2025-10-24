@@ -20,6 +20,7 @@ import {
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
 import { PortalAccess } from '@/components/portal/PortalAccess';
+import { EmailDraft } from '@/components/email/EmailDraft';
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -531,7 +532,21 @@ export default function EE10Form() {
 
             {/* Portal Access */}
             {submittedClient && (
-              <PortalAccess client={submittedClient} autoOpen={true} />
+              <>
+                <PortalAccess client={submittedClient} autoOpen={true} />
+
+                {/* Email Drafting */}
+                <EmailDraft
+                  client={submittedClient}
+                  doctor={form.watch('doctor')}
+                  formData={{
+                    name: form.watch('name'),
+                    caseId: form.watch('case_id'),
+                    phone: form.watch('phone'),
+                    address: `${form.watch('address_main')}\n${form.watch('address_city')}, ${form.watch('address_state')} ${form.watch('address_zip')}`.trim(),
+                  }}
+                />
+              </>
             )}
           </>
         )}
