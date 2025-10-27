@@ -12,8 +12,9 @@ import { Textarea } from '@/components/ui/Textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
 import { Badge } from '@/components/ui/Badge';
-import { Plus, Minus, FileDown, User, Briefcase, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
+import { Plus, Minus, FileDown, Briefcase, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Eye, EyeOff } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
 
 // Zod schema for form validation
 const employmentSchema = z.object({
@@ -202,13 +203,15 @@ export default function EE3Form() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
     if (client) {
-      const name = client.fields.Name || '';
-      const nameParts = name.split(',');
+      // Parse name using shared utility
+      const rawName = client.fields.Name || '';
+      const fullName = parseClientName(rawName);
+      const nameParts = fullName.split(' ');
       if (nameParts.length >= 2) {
-        const lastName = nameParts[0].trim();
-        const firstPart = nameParts[1].split('-')[0].trim();
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ');
+        form.setValue('first_name', firstName);
         form.setValue('last_name', lastName);
-        form.setValue('first_name', firstPart);
       }
 
       // Set SSN if available
@@ -487,35 +490,16 @@ export default function EE3Form() {
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-primary" />
-              <CardTitle>Client Selection</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Select
-                label="Select Client"
-                placeholder="Choose a client..."
-                required
-                error={form.formState.errors.client_id?.message}
-                {...form.register('client_id')}
-                onChange={(e) => {
-                  form.setValue('client_id', e.target.value);
-                  handleClientChange(e.target.value);
-                }}
-              >
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.fields.Name}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
+        <ClientSelector
+          clients={clients}
+          value={form.watch('client_id')}
+          onChange={(clientId) => {
+            form.setValue('client_id', clientId);
+            handleClientChange(clientId);
+          }}
+          error={form.formState.errors.client_id?.message}
+          label="Select Client"
+        />
 
         {/* Personal Information */}
         <Card variant="elevated">

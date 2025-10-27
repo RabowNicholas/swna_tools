@@ -7,14 +7,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { Textarea } from '@/components/ui/Textarea';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
 import { Badge } from '@/components/ui/Badge';
 import {
   FileDown,
-  User,
   MapPin,
   AlertCircle,
   CheckCircle,
@@ -23,6 +21,7 @@ import {
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
+import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -198,17 +197,9 @@ export default function AddressChangeForm() {
     if (client) {
       const fields = client.fields;
 
-      // Parse name
-      const name = fields.Name || "";
-      const nameParts = name.split(",");
-      let clientName = name;
-      if (nameParts.length >= 2) {
-        const lastName = nameParts[0].trim();
-        const firstPart = nameParts[1].split("-")[0].trim();
-        clientName = `${firstPart} ${lastName}`;
-      }
-
-      form.setValue("client_name", clientName);
+      // Parse name using shared utility
+      const displayName = parseClientName(fields.Name || '');
+      form.setValue("client_name", displayName);
       form.setValue("case_id", fields["Case ID"] || "");
       
       // Fill previous address from current client data
@@ -362,43 +353,16 @@ export default function AddressChangeForm() {
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-primary" />
-              <CardTitle>Client Selection</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Select
-              label="Choose which client you're preparing this address change letter for"
-              placeholder="Select..."
-              required
-              error={form.formState.errors.client_id?.message}
-              {...form.register("client_id")}
-              onChange={(e) => {
-                form.setValue("client_id", e.target.value);
-                handleClientChange(e.target.value);
-              }}
-            >
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.fields.Name}
-                </option>
-              ))}
-            </Select>
-            {watchedFields.client_id && (
-              <div className="mt-2 text-sm text-success flex items-center">
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Selected:{" "}
-                {
-                  clients.find((c) => c.id === watchedFields.client_id)?.fields
-                    .Name
-                }
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ClientSelector
+          clients={clients}
+          value={form.watch('client_id')}
+          onChange={(clientId) => {
+            form.setValue("client_id", clientId);
+            handleClientChange(clientId);
+          }}
+          error={form.formState.errors.client_id?.message}
+          label="Choose which client you're preparing this address change letter for"
+        />
 
         {/* Case Information */}
         <Card variant="elevated">
