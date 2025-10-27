@@ -4,6 +4,7 @@ import "./globals.css";
 import { LayoutProvider } from "@/components/layout/LayoutProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ClientProvider } from "@/contexts/ClientContext";
+import { SessionProvider } from "@/components/auth/SessionProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,13 +25,15 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <body className={`${inter.className} h-full bg-background antialiased`}>
-        <ThemeProvider defaultTheme="system" storageKey="swna-theme">
-          <ClientProvider>
-            <LayoutProvider>
-              {children}
-            </LayoutProvider>
-          </ClientProvider>
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider defaultTheme="system" storageKey="swna-theme">
+            <ClientProvider>
+              <LayoutProvider>
+                {children}
+              </LayoutProvider>
+            </ClientProvider>
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   );

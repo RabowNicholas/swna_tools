@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeGenerator, createPdfResponse } from '@/lib/generator-utils';
+import { requireAuth } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth();
+
     const formData = await request.formData();
-    
+
     const clientRecordStr = formData.get('client_record') as string;
     const formDataStr = formData.get('form_data') as string;
     const signatureFile = formData.get('signature_file') as File | null;
-    
+
     if (!clientRecordStr || !formDataStr) {
       return NextResponse.json({ error: 'Missing client_record or form_data' }, { status: 400 });
     }
 
     const client_record = JSON.parse(clientRecordStr);
     const parsedFormData = JSON.parse(formDataStr);
-    
+
     // Convert signature file to base64 if present
     if (signatureFile) {
       const fileBuffer = await signatureFile.arrayBuffer();
@@ -40,8 +43,12 @@ export async function POST(request: NextRequest) {
     }
 
     return createPdfResponse(result.filename!, result.pdf_data!);
-    
+
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     console.error('EE-1 generation error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

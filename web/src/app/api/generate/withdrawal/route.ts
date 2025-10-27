@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { executeGenerator, createPdfResponse } from '@/lib/generator-utils';
+import { requireAuth } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth();
+
     const requestData = await request.json();
-    
+
     // Validate required fields
     if (!requestData.client_record || !requestData.form_data) {
       return NextResponse.json(
@@ -25,8 +28,15 @@ export async function POST(request: NextRequest) {
 
     // Return PDF file
     return createPdfResponse(result.filename!, result.pdf_data!);
-    
+
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     console.error('Withdrawal Letter generation error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

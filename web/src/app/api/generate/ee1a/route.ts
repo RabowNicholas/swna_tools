@@ -3,9 +3,12 @@ import { executeGenerator, createPdfResponse } from '@/lib/generator-utils';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { requireAuth } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth();
+
     // Parse FormData to get signature file and form data
     const formData = await request.formData();
     const signatureFile = formData.get('signature_file') as File;
@@ -45,6 +48,10 @@ export async function POST(request: NextRequest) {
     return createPdfResponse(result.filename!, result.pdf_data!);
 
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     console.error('EE-1a generation error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

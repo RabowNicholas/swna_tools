@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { UserButton } from '@/components/auth/UserButton';
 
 interface NavigationItem {
   name: string;
@@ -242,11 +243,16 @@ export function Navigation({ className }: NavigationProps) {
 
           {/* Footer */}
           <div className="border-t border-border p-6 space-y-4">
+            {/* User Button */}
+            <div className="flex justify-center">
+              <UserButton />
+            </div>
+
             {/* Theme toggle */}
             <div className="flex justify-center">
               <ThemeToggle />
             </div>
-            
+
             {/* Copyright */}
             <div className="text-xs text-muted-foreground text-center space-y-1">
               <div>© 2024 SWNA Tools</div>
