@@ -11,7 +11,6 @@ import { Select } from '@/components/ui/Select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import {
   FileDown,
-  User,
   AlertCircle,
   CheckCircle,
   Stethoscope,
@@ -21,6 +20,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
 import { PortalAccess } from '@/components/portal/PortalAccess';
 import { EmailDraft } from '@/components/email/EmailDraft';
+import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -174,26 +174,17 @@ export default function EE10Form() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
-      const fields = client.fields;
-
-      // Parse name and convert to "First Last" format
-      const rawName = fields.Name || "";
-      try {
-        const [last, rest] = rawName.split(",", 2);
-        const first = rest.split("-")[0].trim();
-        const fullName = `${first} ${last.trim()}`;
-        form.setValue("name", fullName);
-      } catch {
-        form.setValue("name", rawName);
-      }
+      // Parse client name using shared utility
+      const displayName = parseClientName(client.fields.Name || '');
+      form.setValue("name", displayName);
 
       // Set other fields
-      form.setValue("case_id", fields["Case ID"] || "");
-      form.setValue("address_main", fields["Street Address"] || "");
-      form.setValue("address_city", fields["City"] || "");
-      form.setValue("address_state", getStateAbbreviation(fields["State"] || ""));
-      form.setValue("address_zip", fields["ZIP Code"] || "");
-      form.setValue("phone", fields["Phone"] || "");
+      form.setValue("case_id", client.fields["Case ID"] || "");
+      form.setValue("address_main", client.fields["Street Address"] || "");
+      form.setValue("address_city", client.fields["City"] || "");
+      form.setValue("address_state", getStateAbbreviation(client.fields["State"] || ""));
+      form.setValue("address_zip", client.fields["ZIP Code"] || "");
+      form.setValue("phone", client.fields["Phone"] || "");
     }
   };
 
@@ -317,43 +308,16 @@ export default function EE10Form() {
 
       <form className="space-y-8">
         {/* Client Selection */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-primary" />
-              <CardTitle>Client Selection</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Select
-              label="Choose which client you're preparing this form for"
-              placeholder="Select..."
-              required
-              error={attemptedSubmit ? form.formState.errors.client_id?.message : undefined}
-              {...form.register("client_id")}
-              onChange={(e) => {
-                form.setValue("client_id", e.target.value);
-                handleClientChange(e.target.value);
-              }}
-            >
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.fields.Name}
-                </option>
-              ))}
-            </Select>
-            {form.watch('client_id') && (
-              <div className="mt-2 text-sm text-success flex items-center">
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Selected:{" "}
-                {
-                  clients.find((c) => c.id === form.watch('client_id'))?.fields
-                    .Name
-                }
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ClientSelector
+          clients={clients}
+          value={form.watch('client_id')}
+          onChange={(clientId) => {
+            form.setValue("client_id", clientId);
+            handleClientChange(clientId);
+          }}
+          error={attemptedSubmit ? form.formState.errors.client_id?.message : undefined}
+          label="Choose which client you're preparing this form for"
+        />
 
         {/* Doctor Selection */}
         <Card variant="elevated">

@@ -8,13 +8,13 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { Combobox } from '@/components/ui/Combobox';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Progress } from '@/components/ui/Progress';
 import { Badge } from '@/components/ui/Badge';
-import { Plus, Minus, FileDown, User, DollarSign, AlertCircle, MapPin, Receipt } from 'lucide-react';
+import { Plus, Minus, FileDown, DollarSign, AlertCircle, MapPin, Receipt } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
+import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
 
 // Invoice item options
 const INVOICE_ITEMS = [
@@ -113,17 +113,9 @@ export default function InvoiceForm() {
       // Only fetch invoice items if this is a different client (like Streamlit logic)
       const shouldFetchItems = lastSelectedClient !== clientId;
       setLastSelectedClient(clientId);
-      const name = client.fields.Name || '';
-      
-      // Parse client name (assumes format: "Last, First - XXXX")
-      try {
-        const [lastName, rest] = name.split(',', 2);
-        const firstName = rest?.split('-')[0]?.trim() || '';
-        const displayName = firstName && lastName ? `${firstName} ${lastName.trim()}` : name;
-        form.setValue('client_name', displayName);
-      } catch {
-        form.setValue('client_name', name);
-      }
+      // Parse client name using shared utility
+      const displayName = parseClientName(client.fields.Name || '');
+      form.setValue('client_name', displayName);
 
       // Set case ID
       const caseId = client.fields['Case ID'];
@@ -340,33 +332,15 @@ export default function InvoiceForm() {
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-primary" />
-              <CardTitle>Client Selection</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Combobox
-                label="Select Client"
-                placeholder="Type to search clients..."
-                required
-                error={form.formState.errors.client_id?.message}
-                value={form.watch('client_id')}
-                onChange={(clientId) => {
-                  form.setValue('client_id', clientId);
-                  handleClientChange(clientId);
-                }}
-                options={clients.map(client => ({
-                  id: client.id,
-                  name: client.fields.Name || 'Unnamed Client'
-                }))}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <ClientSelector
+          clients={clients}
+          value={form.watch('client_id')}
+          onChange={(clientId) => {
+            form.setValue('client_id', clientId);
+            handleClientChange(clientId);
+          }}
+          error={form.formState.errors.client_id?.message}
+        />
 
         {/* Invoice Details */}
         <Card variant="elevated">

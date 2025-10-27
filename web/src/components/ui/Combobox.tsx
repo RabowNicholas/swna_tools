@@ -20,6 +20,8 @@ interface ComboboxProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  /** Custom text to show when no options match the search query */
+  noResultsText?: string;
 }
 
 export function Combobox({
@@ -32,6 +34,7 @@ export function Combobox({
   required,
   disabled,
   className,
+  noResultsText,
 }: ComboboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -128,7 +131,7 @@ export function Combobox({
                 ? "border-destructive focus:border-destructive focus:ring-destructive"
                 : "border-border focus:border-ring"
             )}
-            placeholder={selectedOption ? selectedOption.name : placeholder}
+            placeholder={query === '' && selectedOption ? selectedOption.name : placeholder}
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -167,7 +170,7 @@ export function Combobox({
             >
               {filteredOptions.length === 0 ? (
                 <li className="px-3 py-2 text-sm text-muted-foreground">
-                  No clients found{query && ` matching "${query}"`}
+                  {noResultsText || `No results found${query && ` matching "${query}"`}`}
                 </li>
               ) : (
                 filteredOptions.map((option, index) => (

@@ -13,7 +13,6 @@ import { Progress } from "@/components/ui/Progress";
 import { Badge } from "@/components/ui/Badge";
 import {
   FileDown,
-  User,
   Heart,
   Upload,
   Eye,
@@ -24,6 +23,7 @@ import {
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import Image from "next/image";
+import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -250,14 +250,15 @@ export default function EE1Form() {
     if (client) {
       const fields = client.fields;
 
-      // Parse name
-      const name = fields.Name || "";
-      const nameParts = name.split(",");
+      // Parse name using shared utility
+      const rawName = fields.Name || "";
+      const fullName = parseClientName(rawName);
+      const nameParts = fullName.split(" ");
       if (nameParts.length >= 2) {
-        const lastName = nameParts[0].trim();
-        const firstPart = nameParts[1].split("-")[0].trim();
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(" ");
+        form.setValue("first_name", firstName);
         form.setValue("last_name", lastName);
-        form.setValue("first_name", firstPart);
       }
 
       // Set other fields
@@ -666,43 +667,16 @@ export default function EE1Form() {
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-primary" />
-              <CardTitle>Client Selection</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Select
-              label="Choose which client you're preparing this form for"
-              placeholder="Select..."
-              required
-              error={form.formState.errors.client_id?.message}
-              {...form.register("client_id")}
-              onChange={(e) => {
-                form.setValue("client_id", e.target.value);
-                handleClientChange(e.target.value);
-              }}
-            >
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.fields.Name}
-                </option>
-              ))}
-            </Select>
-            {watchedFields.client_id && (
-              <div className="mt-2 text-sm text-success flex items-center">
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Selected:{" "}
-                {
-                  clients.find((c) => c.id === watchedFields.client_id)?.fields
-                    .Name
-                }
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ClientSelector
+          clients={clients}
+          value={form.watch('client_id')}
+          onChange={(clientId) => {
+            form.setValue("client_id", clientId);
+            handleClientChange(clientId);
+          }}
+          error={form.formState.errors.client_id?.message}
+          label="Choose which client you're preparing this form for"
+        />
 
         {/* Personal Information */}
         <Card variant="elevated">

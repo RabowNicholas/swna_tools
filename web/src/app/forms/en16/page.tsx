@@ -7,12 +7,12 @@ import { z } from 'zod';
 import { useClientContext } from '@/contexts/ClientContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { FileText, User, CheckCircle, Zap } from 'lucide-react';
+import { FileText, CheckCircle, Zap } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PortalAccess } from '@/components/portal/PortalAccess';
+import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
 
 // Zod schema for form validation
 const en16Schema = z.object({
@@ -53,22 +53,9 @@ export default function EN16Form() {
     if (client) {
       const fields = client.fields;
 
-      // Parse name: "Last, First - SSN" -> "First Last"
-      const rawName = fields.Name || "";
-      try {
-        const parts = rawName.split(",");
-        if (parts.length >= 2) {
-          const lastName = parts[0].trim();
-          const firstPart = parts[1].split("-")[0].trim();
-          const fullName = `${firstPart} ${lastName}`;
-          form.setValue("name", fullName);
-        } else {
-          form.setValue("name", rawName);
-        }
-      } catch {
-        form.setValue("name", rawName);
-      }
-
+      // Parse name using shared utility
+      const displayName = parseClientName(fields.Name || '');
+      form.setValue("name", displayName);
       form.setValue("case_id", fields["Case ID"] || "");
     }
   };
@@ -178,47 +165,17 @@ export default function EN16Form() {
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-primary" />
-              <CardTitle>Client Selection</CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Choose which client you're preparing this form for
-            </p>
-          </CardHeader>
-          <CardContent>
-            <Select
-              label="Select Client"
-              placeholder="Select..."
-              required
-              error={form.formState.errors.client_id?.message}
-              helperText="Select an existing client record to auto-populate their basic information"
-              {...form.register("client_id")}
-              onChange={(e) => {
-                form.setValue("client_id", e.target.value);
-                handleClientChange(e.target.value);
-              }}
-            >
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.fields.Name}
-                </option>
-              ))}
-            </Select>
-            {form.watch("client_id") && (
-              <div className="mt-3 p-3 bg-success/10 border border-success/20 rounded-md">
-                <div className="flex items-center text-sm text-success">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  <span className="font-medium">
-                    Selected: {clients.find((c) => c.id === form.watch("client_id"))?.fields.Name}
-                  </span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ClientSelector
+          clients={clients}
+          value={form.watch('client_id')}
+          onChange={(clientId) => {
+            form.setValue("client_id", clientId);
+            handleClientChange(clientId);
+          }}
+          error={form.formState.errors.client_id?.message}
+          label="Select Client"
+          cardTitle="Client Selection"
+        />
 
         {/* Client Information (Auto-filled) */}
         {form.watch("client_id") && (
