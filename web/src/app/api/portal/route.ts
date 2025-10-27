@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { chromium } from 'playwright';
+import { requireAuth } from '@/lib/auth';
 
 interface PortalRequest {
   case_id: string;
@@ -10,8 +11,10 @@ interface PortalRequest {
 
 export async function POST(request: NextRequest) {
   let browser;
-  
+
   try {
+    await requireAuth();
+
     const { case_id, last_name, ssn_last4 }: PortalRequest = await request.json();
 
     // Validate required fields
@@ -87,8 +90,15 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     console.error('Portal automation error:', error);
-    
+
     // Make sure browser is closed even on error
     if (browser) {
       try {
@@ -99,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Portal automation failed',
         details: 'Check server logs for more information'
       },
