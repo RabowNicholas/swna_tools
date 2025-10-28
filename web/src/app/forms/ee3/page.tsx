@@ -115,7 +115,7 @@ const validateEmploymentDate = (date: string, label: string): string | null => {
 };
 
 export default function EE3Form() {
-  const { clients, loading: clientsLoading, error: clientsError } = useClients();
+  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClients();
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -497,6 +497,7 @@ export default function EE3Form() {
             form.setValue('client_id', clientId);
             handleClientChange(clientId);
           }}
+          onRefresh={() => refreshClients(true)}
           error={form.formState.errors.client_id?.message}
           label="Select Client"
         />

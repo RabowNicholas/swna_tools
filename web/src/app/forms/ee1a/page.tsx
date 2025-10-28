@@ -176,6 +176,7 @@ export default function EE1AForm() {
     clients,
     loading: clientsLoading,
     error: clientsError,
+    refreshClients,
   } = useClients();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -467,6 +468,7 @@ export default function EE1AForm() {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
           }}
+          onRefresh={() => refreshClients(true)}
           error={attemptedSubmit ? form.formState.errors.client_id?.message : undefined}
           label="Choose which client you're preparing this form for"
         />

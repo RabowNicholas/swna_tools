@@ -177,7 +177,7 @@ interface Client {
 }
 
 export default function EE1Form() {
-  const { clients, loading: clientsLoading, error: clientsError } = useClients();
+  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClients();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
@@ -674,6 +674,7 @@ export default function EE1Form() {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
           }}
+          onRefresh={() => refreshClients(true)}
           error={form.formState.errors.client_id?.message}
           label="Choose which client you're preparing this form for"
         />

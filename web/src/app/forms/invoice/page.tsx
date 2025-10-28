@@ -67,7 +67,7 @@ interface Client {
 }
 
 export default function InvoiceForm() {
-  const { clients, loading: clientsLoading, error: clientsError } = useClients();
+  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClients();
   const [loading, setLoading] = useState(false);
   const [lastSelectedClient, setLastSelectedClient] = useState<string>('');
 
@@ -339,6 +339,7 @@ export default function InvoiceForm() {
             form.setValue('client_id', clientId);
             handleClientChange(clientId);
           }}
+          onRefresh={() => refreshClients(true)}
           error={form.formState.errors.client_id?.message}
         />
 

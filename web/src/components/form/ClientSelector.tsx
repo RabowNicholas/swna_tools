@@ -3,8 +3,10 @@
 import { Combobox } from '@/components/ui/Combobox';
 import { Select } from '@/components/ui/Select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { User, CheckCircle } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { User, CheckCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
 
 export interface ClientSelectorClient {
   id: string;
@@ -89,6 +91,12 @@ export interface ClientSelectorProps {
    * Whether the selector is disabled
    */
   disabled?: boolean;
+
+  /**
+   * Optional callback to refresh the client list
+   * When provided, shows a refresh button in the header
+   */
+  onRefresh?: () => Promise<void>;
 }
 
 /**
@@ -96,7 +104,9 @@ export interface ClientSelectorProps {
  * Provides both Combobox (searchable) and Select (dropdown) variants.
  *
  * @example
- * // With Combobox (default)
+ * // With Combobox (default) and refresh button
+ * const { clients, refreshClients } = useClientContext();
+ *
  * <ClientSelector
  *   clients={clients}
  *   value={form.watch('client_id')}
@@ -104,6 +114,7 @@ export interface ClientSelectorProps {
  *     form.setValue('client_id', clientId);
  *     handleClientChange(clientId, client);
  *   }}
+ *   onRefresh={() => refreshClients(true)}
  *   error={form.formState.errors.client_id?.message}
  * />
  *
@@ -142,8 +153,23 @@ export function ClientSelector({
   cardTitle = 'Client Selection',
   className,
   disabled = false,
+  onRefresh,
 }: ClientSelectorProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const selectedClient = clients.find(c => c.id === value);
+
+  const handleRefresh = async () => {
+    if (!onRefresh) return;
+
+    setIsRefreshing(true);
+    try {
+      await onRefresh();
+    } catch (error) {
+      console.error('Error refreshing clients:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleChange = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
@@ -200,9 +226,23 @@ export function ClientSelector({
   return (
     <Card variant="elevated" className={className}>
       <CardHeader>
-        <div className="flex items-center space-x-2">
-          <User className="h-5 w-5 text-primary" />
-          <CardTitle>{cardTitle}</CardTitle>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <User className="h-5 w-5 text-primary" />
+            <CardTitle>{cardTitle}</CardTitle>
+          </div>
+          {onRefresh && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing || disabled}
+              icon={<RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />}
+              aria-label="Refresh client list"
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent>
