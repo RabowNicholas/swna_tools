@@ -83,24 +83,57 @@ export class ClientStorageService {
   }
 
   /**
-   * Store clients in cache
+   * Store clients in cache (only essential fields to reduce size)
    */
   private storeInCache(clients: Client[]): void {
     if (typeof window === 'undefined') return;
-    
+
     try {
       const now = Date.now();
+
+      // Only store essential fields to reduce localStorage usage
+      const lightweightClients = clients.map(client => ({
+        id: client.id,
+        fields: {
+          Name: client.fields.Name,
+          'Case ID': client.fields['Case ID'],
+          'Social Security Number': client.fields['Social Security Number'],
+          'Street Address': client.fields['Street Address'],
+          City: client.fields.City,
+          State: client.fields.State,
+          'ZIP Code': client.fields['ZIP Code'],
+          Phone: client.fields.Phone,
+          'Date of Birth': client.fields['Date of Birth'],
+        }
+      }));
+
       const cache: ClientCache = {
-        clients,
+        clients: lightweightClients,
         timestamp: now,
         expiresAt: now + CACHE_DURATION
       };
 
-      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+      const cacheString = JSON.stringify(cache);
+      const cacheSizeMB = new Blob([cacheString]).size / (1024 * 1024);
+
+      // If cache is too large (>4MB), don't store it
+      if (cacheSizeMB > 4) {
+        console.warn(`Cache too large (${cacheSizeMB.toFixed(2)}MB), skipping localStorage cache`);
+        return;
+      }
+
+      localStorage.setItem(CACHE_KEY, cacheString);
     } catch (error) {
-      console.error('Error storing to cache:', error);
-      // If storage fails (quota exceeded, etc.), clear cache and continue
-      this.clearCache();
+      // Check if it's a quota error
+      if (error instanceof DOMException && (
+        error.name === 'QuotaExceededError' ||
+        error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+      )) {
+        console.warn('localStorage quota exceeded, clearing old cache and skipping new cache');
+        this.clearCache();
+      } else {
+        console.error('Error storing to cache:', error);
+      }
     }
   }
 

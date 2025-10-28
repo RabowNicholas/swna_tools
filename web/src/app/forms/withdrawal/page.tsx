@@ -35,7 +35,7 @@ interface Client {
 }
 
 export default function WithdrawalForm() {
-  const { clients, loading: clientsLoading, error: clientsError } = useClientContext();
+  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClientContext();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
@@ -174,6 +174,7 @@ export default function WithdrawalForm() {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
           }}
+          onRefresh={() => refreshClients(true)}
           error={form.formState.errors.client_id?.message}
         />
 

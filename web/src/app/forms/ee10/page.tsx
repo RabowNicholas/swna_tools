@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Stethoscope,
   FileText,
+  User,
 } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { cn } from '@/lib/utils';
@@ -139,7 +140,7 @@ interface Client {
 }
 
 export default function EE10Form() {
-  const { clients, loading: clientsLoading, error: clientsError } = useClients();
+  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClients();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
@@ -315,6 +316,7 @@ export default function EE10Form() {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
           }}
+          onRefresh={() => refreshClients(true)}
           error={attemptedSubmit ? form.formState.errors.client_id?.message : undefined}
           label="Choose which client you're preparing this form for"
         />
