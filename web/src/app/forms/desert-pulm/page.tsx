@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useClients } from '@/hooks/useClients';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { Textarea } from '@/components/ui/Textarea';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Progress } from '@/components/ui/Progress';
-import { Badge } from '@/components/ui/Badge';
+import { useState, useEffect } from "react";
+import { useClients } from "@/hooks/useClients";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Textarea } from "@/components/ui/Textarea";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Progress } from "@/components/ui/Progress";
+import { Badge } from "@/components/ui/Badge";
 import {
   FileDown,
   User,
@@ -21,69 +21,72 @@ import {
   Calendar,
   Heart,
   Activity,
-} from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { cn } from '@/lib/utils';
-import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
+} from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { cn } from "@/lib/utils";
+import {
+  ClientSelector,
+  parseClientName,
+} from "@/components/form/ClientSelector";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
-  "Alabama": "AL",
-  "Alaska": "AK", 
-  "Arizona": "AZ",
-  "Arkansas": "AR",
-  "California": "CA",
-  "Colorado": "CO",
-  "Connecticut": "CT",
-  "Delaware": "DE",
-  "Florida": "FL",
-  "Georgia": "GA",
-  "Hawaii": "HI",
-  "Idaho": "ID",
-  "Illinois": "IL",
-  "Indiana": "IN",
-  "Iowa": "IA",
-  "Kansas": "KS",
-  "Kentucky": "KY",
-  "Louisiana": "LA",
-  "Maine": "ME",
-  "Maryland": "MD",
-  "Massachusetts": "MA",
-  "Michigan": "MI",
-  "Minnesota": "MN",
-  "Mississippi": "MS",
-  "Missouri": "MO",
-  "Montana": "MT",
-  "Nebraska": "NE",
-  "Nevada": "NV",
+  Alabama: "AL",
+  Alaska: "AK",
+  Arizona: "AZ",
+  Arkansas: "AR",
+  California: "CA",
+  Colorado: "CO",
+  Connecticut: "CT",
+  Delaware: "DE",
+  Florida: "FL",
+  Georgia: "GA",
+  Hawaii: "HI",
+  Idaho: "ID",
+  Illinois: "IL",
+  Indiana: "IN",
+  Iowa: "IA",
+  Kansas: "KS",
+  Kentucky: "KY",
+  Louisiana: "LA",
+  Maine: "ME",
+  Maryland: "MD",
+  Massachusetts: "MA",
+  Michigan: "MI",
+  Minnesota: "MN",
+  Mississippi: "MS",
+  Missouri: "MO",
+  Montana: "MT",
+  Nebraska: "NE",
+  Nevada: "NV",
   "New Hampshire": "NH",
   "New Jersey": "NJ",
   "New Mexico": "NM",
   "New York": "NY",
   "North Carolina": "NC",
   "North Dakota": "ND",
-  "Ohio": "OH",
-  "Oklahoma": "OK",
-  "Oregon": "OR",
-  "Pennsylvania": "PA",
+  Ohio: "OH",
+  Oklahoma: "OK",
+  Oregon: "OR",
+  Pennsylvania: "PA",
   "Rhode Island": "RI",
   "South Carolina": "SC",
   "South Dakota": "SD",
-  "Tennessee": "TN",
-  "Texas": "TX",
-  "Utah": "UT",
-  "Vermont": "VT",
-  "Virginia": "VA",
-  "Washington": "WA",
+  Tennessee: "TN",
+  Texas: "TX",
+  Utah: "UT",
+  Vermont: "VT",
+  Virginia: "VA",
+  Washington: "WA",
   "West Virginia": "WV",
-  "Wisconsin": "WI",
-  "Wyoming": "WY",
+  Wisconsin: "WI",
+  Wyoming: "WY",
   "District of Columbia": "DC",
   "Puerto Rico": "PR",
   "Virgin Islands": "VI",
   "American Samoa": "AS",
-  "Guam": "GU",
-  "Northern Mariana Islands": "MP"
+  Guam: "GU",
+  "Northern Mariana Islands": "MP",
 };
 
 // Helper function to get state abbreviation
@@ -91,24 +94,24 @@ const getStateAbbreviation = (stateName: string): string => {
   if (!stateName) {
     return "";
   }
-  
+
   // Check exact match first
   if (stateName in STATE_NAME_TO_ABBR) {
     return STATE_NAME_TO_ABBR[stateName];
   }
-  
+
   // Check case-insensitive match
   for (const [fullName, abbr] of Object.entries(STATE_NAME_TO_ABBR)) {
     if (stateName.toLowerCase() === fullName.toLowerCase()) {
       return abbr;
     }
   }
-  
+
   // If it's already an abbreviation (2 letters), return as-is
   if (stateName.length === 2 && /^[A-Za-z]+$/.test(stateName)) {
     return stateName.toUpperCase();
   }
-  
+
   // Return original string if no match found
   return stateName;
 };
@@ -156,7 +159,12 @@ interface Client {
 }
 
 export default function DesertPulmForm() {
-  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClients();
+  const {
+    clients,
+    loading: clientsLoading,
+    error: clientsError,
+    refreshClients,
+  } = useClients();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
@@ -198,7 +206,7 @@ export default function DesertPulmForm() {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
       // Parse client name using shared utility
-      const displayName = parseClientName(client.fields.Name || '');
+      const displayName = parseClientName(client.fields.Name || "");
       form.setValue("client_name", displayName);
       form.setValue("case_id", client.fields["Case ID"] || "");
 
@@ -263,7 +271,10 @@ export default function DesertPulmForm() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `DesertPulm_Referral_${data.client_name.replace(/\s+/g, "_")}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
+        a.download = `DesertPulm_Referral_${data.client_name.replace(
+          /\s+/g,
+          "_"
+        )}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -273,11 +284,17 @@ export default function DesertPulmForm() {
         setSubmittedClient(selectedClient);
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate Desert Pulmonary referral");
+        throw new Error(
+          errorData.error || "Failed to generate Desert Pulmonary referral"
+        );
       }
     } catch (error) {
       console.error("Error generating Desert Pulmonary referral:", error);
-      alert(error instanceof Error ? error.message : "Failed to generate Desert Pulmonary referral");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate Desert Pulmonary referral"
+      );
     } finally {
       setLoading(false);
     }
@@ -299,7 +316,8 @@ export default function DesertPulmForm() {
   ].filter(Boolean).length;
 
   const totalRequiredFields = 10;
-  const progressPercentage = (requiredFieldsComplete / totalRequiredFields) * 100;
+  const progressPercentage =
+    (requiredFieldsComplete / totalRequiredFields) * 100;
 
   if (clientsLoading) {
     return (
@@ -316,7 +334,9 @@ export default function DesertPulmForm() {
           <div className="text-destructive mb-4">
             <AlertCircle className="h-12 w-12 mx-auto" />
           </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Clients</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            Error Loading Clients
+          </h3>
           <p className="text-muted-foreground">{clientsError}</p>
         </div>
       </div>
@@ -333,7 +353,8 @@ export default function DesertPulmForm() {
               🫁 Desert Pulmonary Referral Generator
             </h1>
             <p className="text-muted-foreground">
-              Generate medical referral documentation for Desert Pulmonary specialists
+              Generate medical referral documentation for Desert Pulmonary
+              specialists
             </p>
           </div>
           <Badge
@@ -444,7 +465,9 @@ export default function DesertPulmForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Referring Physician Phone"
-                  error={form.formState.errors.referring_physician_phone?.message}
+                  error={
+                    form.formState.errors.referring_physician_phone?.message
+                  }
                   helperText="Phone number of the referring physician"
                   {...form.register("referring_physician_phone")}
                 />
@@ -602,34 +625,45 @@ export default function DesertPulmForm() {
         </Card>
 
         {/* Action Buttons */}
-        <Card variant="elevated" className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5">
+        <Card
+          variant="elevated"
+          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
+        >
           <CardContent className="p-8">
             <div className="text-center space-y-6">
               {/* Progress indicator */}
               <div className="space-y-3">
                 <div className="flex items-center justify-center space-x-3">
-                  <div className={cn(
-                    "w-3 h-3 rounded-full transition-colors",
-                    progressPercentage === 100 ? "bg-success animate-pulse" : "bg-muted-foreground/30"
-                  )} />
+                  <div
+                    className={cn(
+                      "w-3 h-3 rounded-full transition-colors",
+                      progressPercentage === 100
+                        ? "bg-success animate-pulse"
+                        : "bg-muted-foreground/30"
+                    )}
+                  />
                   <span className="text-sm font-medium text-muted-foreground">
-                    Form {progressPercentage === 100 ? 'Complete' : 'In Progress'}
+                    Form{" "}
+                    {progressPercentage === 100 ? "Complete" : "In Progress"}
                   </span>
                 </div>
-                
+
                 {progressPercentage < 100 && (
                   <div className="flex items-center justify-center text-sm text-muted-foreground max-w-md mx-auto">
                     <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>Complete all required fields to generate your Desert Pulmonary referral</span>
+                    <span>
+                      Complete all required fields to generate your Desert
+                      Pulmonary referral
+                    </span>
                   </div>
                 )}
               </div>
 
               {/* Main action button */}
               <div className="flex justify-center">
-                <Button 
-                  type="submit" 
-                  disabled={loading || progressPercentage < 100} 
+                <Button
+                  type="submit"
+                  disabled={loading || progressPercentage < 100}
                   variant={progressPercentage === 100 ? "primary" : "secondary"}
                   hierarchy="primary"
                   size="xl"
@@ -646,9 +680,9 @@ export default function DesertPulmForm() {
                       <span>Generating Referral...</span>
                     </span>
                   ) : progressPercentage === 100 ? (
-                    'Generate Desert Pulmonary Referral'
+                    "Generate Desert Pulmonary Referral"
                   ) : (
-                    'Complete Form to Generate'
+                    "Complete Form to Generate"
                   )}
                 </Button>
               </div>
@@ -666,7 +700,10 @@ export default function DesertPulmForm() {
         {/* Success Message */}
         {formSubmitted && (
           <>
-            <Card variant="elevated" className="bg-success/10 border-success/20">
+            <Card
+              variant="elevated"
+              className="bg-success/10 border-success/20"
+            >
               <CardContent>
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -677,8 +714,8 @@ export default function DesertPulmForm() {
                       🎉 Desert Pulmonary referral generated successfully!
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Your medical referral documentation has been downloaded and is ready for
-                      submission to Desert Pulmonary.
+                      Your medical referral documentation has been downloaded
+                      and is ready for submission to Desert Pulmonary.
                     </p>
                   </div>
                 </div>
@@ -700,13 +737,14 @@ export default function DesertPulmForm() {
                         Submit to DOL Portal
                       </h3>
                       <p className="text-blue-700 text-sm mb-4">
-                        Ready to submit your Desert Pulmonary referral to the Department of Labor portal? 
-                        Click below to open the portal helper with this client's information pre-loaded.
+                        Ready to submit your Desert Pulmonary referral to the
+                        Department of Labor portal? Click below to open the
+                        portal helper with this client's information pre-loaded.
                       </p>
                       <Button
                         onClick={() => {
                           const portalUrl = `/portal?clientId=${submittedClient.id}&formType=Desert Pulmonary`;
-                          window.open(portalUrl, '_blank');
+                          window.open(portalUrl, "_blank");
                         }}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                         size="sm"

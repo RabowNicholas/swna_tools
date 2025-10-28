@@ -1,18 +1,21 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { useClientContext } from '@/contexts/ClientContext';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { FileText, CheckCircle, Zap } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { PortalAccess } from '@/components/portal/PortalAccess';
-import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useClientContext } from "@/contexts/ClientContext";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { FileText, CheckCircle, Zap } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { PortalAccess } from "@/components/portal/PortalAccess";
+import {
+  ClientSelector,
+  parseClientName,
+} from "@/components/form/ClientSelector";
 
 // Zod schema for form validation
 const en16Schema = z.object({
@@ -33,7 +36,12 @@ interface Client {
 }
 
 export default function EN16Form() {
-  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClientContext();
+  const {
+    clients,
+    loading: clientsLoading,
+    error: clientsError,
+    refreshClients,
+  } = useClientContext();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
@@ -54,7 +62,7 @@ export default function EN16Form() {
       const fields = client.fields;
 
       // Parse name using shared utility
-      const displayName = parseClientName(fields.Name || '');
+      const displayName = parseClientName(fields.Name || "");
       form.setValue("name", displayName);
       form.setValue("case_id", fields["Case ID"] || "");
     }
@@ -95,7 +103,9 @@ export default function EN16Form() {
         const nameParts = data.name.trim().split(" ");
         const firstInitial = nameParts[0]?.[0] || "X";
         const lastName = nameParts[nameParts.length - 1] || "Client";
-        const currentDate = new Date().toLocaleDateString("en-US").replace(/\//g, ".");
+        const currentDate = new Date()
+          .toLocaleDateString("en-US")
+          .replace(/\//g, ".");
         a.download = `EN16_${firstInitial}.${lastName}_${currentDate}.pdf`;
 
         document.body.appendChild(a);
@@ -111,7 +121,9 @@ export default function EN16Form() {
       }
     } catch (error) {
       console.error("Error generating EN-16:", error);
-      alert(error instanceof Error ? error.message : "Failed to generate EN-16");
+      alert(
+        error instanceof Error ? error.message : "Failed to generate EN-16"
+      );
     } finally {
       setLoading(false);
     }
@@ -133,7 +145,9 @@ export default function EN16Form() {
             <div className="text-destructive mb-4">
               <Zap className="h-12 w-12 mx-auto" />
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Clients</h3>
+            <h3 className="text-lg font-medium text-foreground mb-2">
+              Error Loading Clients
+            </h3>
             <p className="text-muted-foreground">{clientsError}</p>
           </CardContent>
         </Card>
@@ -152,7 +166,8 @@ export default function EN16Form() {
               <div>
                 <CardTitle className="text-2xl">EN-16 Form Generator</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Generate Employee Identification Information for Energy Employee
+                  Generate Employee Identification Information for Energy
+                  Employee
                 </p>
               </div>
             </div>
@@ -167,7 +182,7 @@ export default function EN16Form() {
         {/* Client Selection */}
         <ClientSelector
           clients={clients}
-          value={form.watch('client_id')}
+          value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
@@ -217,7 +232,10 @@ export default function EN16Form() {
         )}
 
         {/* Generate Button */}
-        <Card variant="elevated" className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5">
+        <Card
+          variant="elevated"
+          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
+        >
           <CardContent className="p-8">
             <div className="text-center space-y-6">
               <div className="flex justify-center">
@@ -231,7 +249,9 @@ export default function EN16Form() {
                   className="min-w-[250px]"
                   icon={<Zap className="h-5 w-5" />}
                 >
-                  {loading ? "Generating EN-16..." : "Generate Client's EN-16 Form"}
+                  {loading
+                    ? "Generating EN-16..."
+                    : "Generate Client's EN-16 Form"}
                 </Button>
               </div>
 
@@ -259,7 +279,8 @@ export default function EN16Form() {
                     🎉 EN-16 form generated successfully!
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Your EN-16 energy notification form has been downloaded and is ready for submission.
+                    Your EN-16 energy notification form has been downloaded and
+                    is ready for submission.
                   </p>
                 </div>
               </div>

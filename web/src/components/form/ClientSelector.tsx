@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { Combobox } from '@/components/ui/Combobox';
-import { Select } from '@/components/ui/Select';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { User, CheckCircle, RefreshCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { Combobox } from "@/components/ui/Combobox";
+import { Select } from "@/components/ui/Select";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { User, CheckCircle, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 export interface ClientSelectorClient {
   id: string;
   fields: {
     Name: string;
-    'Case ID'?: string;
-    'Street Address'?: string;
-    'City'?: string;
-    'State'?: string;
-    'ZIP Code'?: string;
+    "Case ID"?: string;
+    "Street Address"?: string;
+    City?: string;
+    State?: string;
+    "ZIP Code"?: string;
     [key: string]: string | string[] | undefined;
   };
 }
@@ -51,7 +51,7 @@ export interface ClientSelectorProps {
    * Whether to use Combobox (searchable) or regular Select dropdown
    * @default 'combobox'
    */
-  variant?: 'combobox' | 'select';
+  variant?: "combobox" | "select";
 
   /**
    * Custom label for the field
@@ -145,18 +145,18 @@ export function ClientSelector({
   onChange,
   error,
   required = true,
-  variant = 'combobox',
-  label = 'Select Client',
+  variant = "combobox",
+  label = "Select Client",
   placeholder,
   showCard = true,
   showConfirmation = true,
-  cardTitle = 'Client Selection',
+  cardTitle = "Client Selection",
   className,
   disabled = false,
   onRefresh,
 }: ClientSelectorProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const selectedClient = clients.find(c => c.id === value);
+  const selectedClient = clients.find((c) => c.id === value);
 
   const handleRefresh = async () => {
     if (!onRefresh) return;
@@ -165,37 +165,37 @@ export function ClientSelector({
     try {
       await onRefresh();
     } catch (error) {
-      console.error('Error refreshing clients:', error);
+      console.error("Error refreshing clients:", error);
     } finally {
       setIsRefreshing(false);
     }
   };
 
   const handleChange = (clientId: string) => {
-    const client = clients.find(c => c.id === clientId);
+    const client = clients.find((c) => c.id === clientId);
     onChange(clientId, client);
   };
 
   const selectorContent = (
     <div className={cn(!showCard && className)}>
-      {variant === 'combobox' ? (
+      {variant === "combobox" ? (
         <Combobox
           label={label}
-          placeholder={placeholder || 'Type to search clients...'}
+          placeholder={placeholder || "Type to search clients..."}
           required={required}
           error={error}
           value={value}
           onChange={handleChange}
           disabled={disabled}
-          options={clients.map(client => ({
+          options={clients.map((client) => ({
             id: client.id,
-            name: client.fields.Name || 'Unnamed Client'
+            name: client.fields.Name || "Unnamed Client",
           }))}
         />
       ) : (
         <Select
           label={label}
-          placeholder={placeholder || 'Select...'}
+          placeholder={placeholder || "Select..."}
           required={required}
           error={error}
           value={value}
@@ -204,7 +204,7 @@ export function ClientSelector({
         >
           {clients.map((client) => (
             <option key={client.id} value={client.id}>
-              {client.fields.Name || 'Unnamed Client'}
+              {client.fields.Name || "Unnamed Client"}
             </option>
           ))}
         </Select>
@@ -237,17 +237,19 @@ export function ClientSelector({
               size="sm"
               onClick={handleRefresh}
               disabled={isRefreshing || disabled}
-              icon={<RefreshCw className={cn('h-4 w-4', isRefreshing && 'animate-spin')} />}
+              icon={
+                <RefreshCw
+                  className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+                />
+              }
               aria-label="Refresh client list"
             >
-              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              {isRefreshing ? "Refreshing..." : "Refresh"}
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        {selectorContent}
-      </CardContent>
+      <CardContent>{selectorContent}</CardContent>
     </Card>
   );
 }
@@ -264,14 +266,14 @@ export function ClientSelector({
  * parseClientName("Invalid") // returns "Invalid"
  */
 export function parseClientName(rawName: string): string {
-  if (!rawName) return '';
+  if (!rawName) return "";
 
   try {
     // Parse format: "Last, First - XXXX" -> "First Last"
-    const [lastName, rest] = rawName.split(',', 2);
+    const [lastName, rest] = rawName.split(",", 2);
     if (!rest) return rawName;
 
-    const firstName = rest.split('-')[0]?.trim() || '';
+    const firstName = rest.split("-")[0]?.trim() || "";
     if (firstName && lastName) {
       return `${firstName} ${lastName.trim()}`;
     }

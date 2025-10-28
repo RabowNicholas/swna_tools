@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useClients } from '@/hooks/useClients';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
+import { useState, useEffect } from "react";
+import { useClients } from "@/hooks/useClients";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
   FileDown,
   AlertCircle,
@@ -16,71 +16,74 @@ import {
   Stethoscope,
   FileText,
   User,
-} from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { cn } from '@/lib/utils';
-import { PortalAccess } from '@/components/portal/PortalAccess';
-import { EmailDraft } from '@/components/email/EmailDraft';
-import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
+} from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { cn } from "@/lib/utils";
+import { PortalAccess } from "@/components/portal/PortalAccess";
+import { EmailDraft } from "@/components/email/EmailDraft";
+import {
+  ClientSelector,
+  parseClientName,
+} from "@/components/form/ClientSelector";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
-  "Alabama": "AL",
-  "Alaska": "AK",
-  "Arizona": "AZ",
-  "Arkansas": "AR",
-  "California": "CA",
-  "Colorado": "CO",
-  "Connecticut": "CT",
-  "Delaware": "DE",
-  "Florida": "FL",
-  "Georgia": "GA",
-  "Hawaii": "HI",
-  "Idaho": "ID",
-  "Illinois": "IL",
-  "Indiana": "IN",
-  "Iowa": "IA",
-  "Kansas": "KS",
-  "Kentucky": "KY",
-  "Louisiana": "LA",
-  "Maine": "ME",
-  "Maryland": "MD",
-  "Massachusetts": "MA",
-  "Michigan": "MI",
-  "Minnesota": "MN",
-  "Mississippi": "MS",
-  "Missouri": "MO",
-  "Montana": "MT",
-  "Nebraska": "NE",
-  "Nevada": "NV",
+  Alabama: "AL",
+  Alaska: "AK",
+  Arizona: "AZ",
+  Arkansas: "AR",
+  California: "CA",
+  Colorado: "CO",
+  Connecticut: "CT",
+  Delaware: "DE",
+  Florida: "FL",
+  Georgia: "GA",
+  Hawaii: "HI",
+  Idaho: "ID",
+  Illinois: "IL",
+  Indiana: "IN",
+  Iowa: "IA",
+  Kansas: "KS",
+  Kentucky: "KY",
+  Louisiana: "LA",
+  Maine: "ME",
+  Maryland: "MD",
+  Massachusetts: "MA",
+  Michigan: "MI",
+  Minnesota: "MN",
+  Mississippi: "MS",
+  Missouri: "MO",
+  Montana: "MT",
+  Nebraska: "NE",
+  Nevada: "NV",
   "New Hampshire": "NH",
   "New Jersey": "NJ",
   "New Mexico": "NM",
   "New York": "NY",
   "North Carolina": "NC",
   "North Dakota": "ND",
-  "Ohio": "OH",
-  "Oklahoma": "OK",
-  "Oregon": "OR",
-  "Pennsylvania": "PA",
+  Ohio: "OH",
+  Oklahoma: "OK",
+  Oregon: "OR",
+  Pennsylvania: "PA",
   "Rhode Island": "RI",
   "South Carolina": "SC",
   "South Dakota": "SD",
-  "Tennessee": "TN",
-  "Texas": "TX",
-  "Utah": "UT",
-  "Vermont": "VT",
-  "Virginia": "VA",
-  "Washington": "WA",
+  Tennessee: "TN",
+  Texas: "TX",
+  Utah: "UT",
+  Vermont: "VT",
+  Virginia: "VA",
+  Washington: "WA",
   "West Virginia": "WV",
-  "Wisconsin": "WI",
-  "Wyoming": "WY",
+  Wisconsin: "WI",
+  Wyoming: "WY",
   "District of Columbia": "DC",
   "Puerto Rico": "PR",
   "Virgin Islands": "VI",
   "American Samoa": "AS",
-  "Guam": "GU",
-  "Northern Mariana Islands": "MP"
+  Guam: "GU",
+  "Northern Mariana Islands": "MP",
 };
 
 // Helper function to get state abbreviation
@@ -116,16 +119,26 @@ const ee10Schema = z.object({
   name: z.string().min(1, "Client name is required"),
   case_id: z.string().min(1, "Case ID is required"),
   doctor: z.enum(["La Plata", "Dr. Lewis"], {
-    errorMap: () => ({ message: "Please select a doctor" })
+    errorMap: () => ({ message: "Please select a doctor" }),
   }),
   claim_type: z.enum(["Initial Impairment Claim", "Repeat Impairment Claim"], {
-    errorMap: () => ({ message: "Please select a claim type" })
+    errorMap: () => ({ message: "Please select a claim type" }),
   }),
   address_main: z.string().min(1, "Street address is required"),
   address_city: z.string().min(1, "City is required"),
-  address_state: z.string().min(2, "State is required").max(2, "State must be 2 characters"),
-  address_zip: z.string().regex(/^\d{5}(-\d{4})?$/, "ZIP code must be 5 or 9 digits"),
-  phone: z.string().regex(/^\d{3}\.\d{3}\.\d{4}$/, "Phone number must be in format: 123.123.1234"),
+  address_state: z
+    .string()
+    .min(2, "State is required")
+    .max(2, "State must be 2 characters"),
+  address_zip: z
+    .string()
+    .regex(/^\d{5}(-\d{4})?$/, "ZIP code must be 5 or 9 digits"),
+  phone: z
+    .string()
+    .regex(
+      /^\d{3}\.\d{3}\.\d{4}$/,
+      "Phone number must be in format: 123.123.1234"
+    ),
 });
 
 type EE10FormData = z.infer<typeof ee10Schema>;
@@ -140,7 +153,12 @@ interface Client {
 }
 
 export default function EE10Form() {
-  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClients();
+  const {
+    clients,
+    loading: clientsLoading,
+    error: clientsError,
+    refreshClients,
+  } = useClients();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
@@ -148,8 +166,8 @@ export default function EE10Form() {
 
   const form = useForm<EE10FormData>({
     resolver: zodResolver(ee10Schema),
-    mode: 'onSubmit',
-    reValidateMode: 'onChange',
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: {
       client_id: "",
       name: "",
@@ -176,14 +194,17 @@ export default function EE10Form() {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
       // Parse client name using shared utility
-      const displayName = parseClientName(client.fields.Name || '');
+      const displayName = parseClientName(client.fields.Name || "");
       form.setValue("name", displayName);
 
       // Set other fields
       form.setValue("case_id", client.fields["Case ID"] || "");
       form.setValue("address_main", client.fields["Street Address"] || "");
       form.setValue("address_city", client.fields["City"] || "");
-      form.setValue("address_state", getStateAbbreviation(client.fields["State"] || ""));
+      form.setValue(
+        "address_state",
+        getStateAbbreviation(client.fields["State"] || "")
+      );
       form.setValue("address_zip", client.fields["ZIP Code"] || "");
       form.setValue("phone", client.fields["Phone"] || "");
     }
@@ -198,9 +219,11 @@ export default function EE10Form() {
 
     if (!isFormValid) {
       // Find first error field and scroll to it
-      const firstErrorField = document.querySelector('[aria-invalid="true"]') as HTMLElement;
+      const firstErrorField = document.querySelector(
+        '[aria-invalid="true"]'
+      ) as HTMLElement;
       if (firstErrorField) {
-        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        firstErrorField.scrollIntoView({ behavior: "smooth", block: "center" });
         firstErrorField.focus();
       }
       return;
@@ -253,7 +276,9 @@ export default function EE10Form() {
         const firstName = nameParts[0] || "X";
         const lastName = nameParts.slice(1).join(" ") || "Unknown";
 
-        a.download = `EE10_${firstName.charAt(0)}.${lastName}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
+        a.download = `EE10_${firstName.charAt(0)}.${lastName}_${new Date()
+          .toLocaleDateString("en-US")
+          .replace(/\//g, ".")}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -267,7 +292,9 @@ export default function EE10Form() {
       }
     } catch (error) {
       console.error("Error generating EE-10:", error);
-      alert(error instanceof Error ? error.message : "Failed to generate EE-10");
+      alert(
+        error instanceof Error ? error.message : "Failed to generate EE-10"
+      );
     } finally {
       setLoading(false);
     }
@@ -288,7 +315,9 @@ export default function EE10Form() {
           <div className="text-destructive mb-4">
             <AlertCircle className="h-12 w-12 mx-auto" />
           </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Clients</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            Error Loading Clients
+          </h3>
           <p className="text-muted-foreground">{clientsError}</p>
         </div>
       </div>
@@ -303,7 +332,8 @@ export default function EE10Form() {
           EE-10 Form Generator
         </h1>
         <p className="text-muted-foreground">
-          Request for Assistance in Obtaining Employment Records or Other Information
+          Request for Assistance in Obtaining Employment Records or Other
+          Information
         </p>
       </div>
 
@@ -311,13 +341,17 @@ export default function EE10Form() {
         {/* Client Selection */}
         <ClientSelector
           clients={clients}
-          value={form.watch('client_id')}
+          value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
           }}
           onRefresh={() => refreshClients(true)}
-          error={attemptedSubmit ? form.formState.errors.client_id?.message : undefined}
+          error={
+            attemptedSubmit
+              ? form.formState.errors.client_id?.message
+              : undefined
+          }
           label="Choose which client you're preparing this form for"
         />
 
@@ -336,7 +370,11 @@ export default function EE10Form() {
             <Select
               label="Choose Doctor"
               required
-              error={attemptedSubmit ? form.formState.errors.doctor?.message : undefined}
+              error={
+                attemptedSubmit
+                  ? form.formState.errors.doctor?.message
+                  : undefined
+              }
               helperText="Select the doctor who will review the employment records"
               {...form.register("doctor")}
             >
@@ -364,7 +402,11 @@ export default function EE10Form() {
                 <Input
                   label="Client's Full Name"
                   required
-                  error={attemptedSubmit ? form.formState.errors.name?.message : undefined}
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.name?.message
+                      : undefined
+                  }
                   helperText="Client's full legal name"
                   {...form.register("name")}
                 />
@@ -372,7 +414,11 @@ export default function EE10Form() {
                 <Input
                   label="Case ID"
                   required
-                  error={attemptedSubmit ? form.formState.errors.case_id?.message : undefined}
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.case_id?.message
+                      : undefined
+                  }
                   helperText="The case identification number"
                   {...form.register("case_id")}
                 />
@@ -382,7 +428,11 @@ export default function EE10Form() {
               <Input
                 label="Street Address"
                 required
-                error={attemptedSubmit ? form.formState.errors.address_main?.message : undefined}
+                error={
+                  attemptedSubmit
+                    ? form.formState.errors.address_main?.message
+                    : undefined
+                }
                 helperText="Client's street address (include apartment/unit number if applicable)"
                 {...form.register("address_main")}
               />
@@ -392,7 +442,11 @@ export default function EE10Form() {
                   <Input
                     label="City"
                     required
-                    error={attemptedSubmit ? form.formState.errors.address_city?.message : undefined}
+                    error={
+                      attemptedSubmit
+                        ? form.formState.errors.address_city?.message
+                        : undefined
+                    }
                     {...form.register("address_city")}
                   />
                 </div>
@@ -402,7 +456,11 @@ export default function EE10Form() {
                   placeholder="NY"
                   required
                   helperText="2-letter code"
-                  error={attemptedSubmit ? form.formState.errors.address_state?.message : undefined}
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.address_state?.message
+                      : undefined
+                  }
                   {...form.register("address_state")}
                 />
               </div>
@@ -411,7 +469,11 @@ export default function EE10Form() {
                 <Input
                   label="ZIP Code"
                   required
-                  error={attemptedSubmit ? form.formState.errors.address_zip?.message : undefined}
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.address_zip?.message
+                      : undefined
+                  }
                   helperText="5 or 9 digit ZIP code"
                   {...form.register("address_zip")}
                 />
@@ -420,7 +482,11 @@ export default function EE10Form() {
                   label="Phone Number"
                   placeholder="555.123.4567"
                   required
-                  error={attemptedSubmit ? form.formState.errors.phone?.message : undefined}
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.phone?.message
+                      : undefined
+                  }
                   helperText="Format: 123.123.1234"
                   {...form.register("phone")}
                 />
@@ -444,12 +510,20 @@ export default function EE10Form() {
             <Select
               label="Claim Type"
               required
-              error={attemptedSubmit ? form.formState.errors.claim_type?.message : undefined}
+              error={
+                attemptedSubmit
+                  ? form.formState.errors.claim_type?.message
+                  : undefined
+              }
               helperText="Select whether this is the client's first impairment claim or a repeat claim"
               {...form.register("claim_type")}
             >
-              <option value="Initial Impairment Claim">Initial Impairment Claim</option>
-              <option value="Repeat Impairment Claim">Repeat Impairment Claim</option>
+              <option value="Initial Impairment Claim">
+                Initial Impairment Claim
+              </option>
+              <option value="Repeat Impairment Claim">
+                Repeat Impairment Claim
+              </option>
             </Select>
           </CardContent>
         </Card>
@@ -471,14 +545,17 @@ export default function EE10Form() {
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}
           >
-            {loading ? 'Generating Form...' : 'Generate EE-10 Form'}
+            {loading ? "Generating Form..." : "Generate EE-10 Form"}
           </Button>
         </div>
 
         {/* Success Message */}
         {formSubmitted && (
           <>
-            <Card variant="elevated" className="bg-success/10 border-success/20">
+            <Card
+              variant="elevated"
+              className="bg-success/10 border-success/20"
+            >
               <CardContent>
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -489,7 +566,8 @@ export default function EE10Form() {
                       EE-10 form generated successfully!
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Your EE-10 form has been downloaded and is ready for submission.
+                      Your EE-10 form has been downloaded and is ready for
+                      submission.
                     </p>
                   </div>
                 </div>
@@ -504,12 +582,16 @@ export default function EE10Form() {
                 {/* Email Drafting */}
                 <EmailDraft
                   client={submittedClient}
-                  doctor={form.watch('doctor')}
+                  doctor={form.watch("doctor")}
                   formData={{
-                    name: form.watch('name'),
-                    caseId: form.watch('case_id'),
-                    phone: form.watch('phone'),
-                    address: `${form.watch('address_main')}\n${form.watch('address_city')}, ${form.watch('address_state')} ${form.watch('address_zip')}`.trim(),
+                    name: form.watch("name"),
+                    caseId: form.watch("case_id"),
+                    phone: form.watch("phone"),
+                    address: `${form.watch("address_main")}\n${form.watch(
+                      "address_city"
+                    )}, ${form.watch("address_state")} ${form.watch(
+                      "address_zip"
+                    )}`.trim(),
                   }}
                 />
               </>

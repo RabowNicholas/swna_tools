@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useClients } from '@/hooks/useClients';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Progress } from '@/components/ui/Progress';
-import { Badge } from '@/components/ui/Badge';
+import { useState, useEffect } from "react";
+import { useClients } from "@/hooks/useClients";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Progress } from "@/components/ui/Progress";
+import { Badge } from "@/components/ui/Badge";
 import {
   FileDown,
   MapPin,
@@ -18,69 +18,72 @@ import {
   CheckCircle,
   Calendar,
   Home,
-} from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { cn } from '@/lib/utils';
-import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
+} from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { cn } from "@/lib/utils";
+import {
+  ClientSelector,
+  parseClientName,
+} from "@/components/form/ClientSelector";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
-  "Alabama": "AL",
-  "Alaska": "AK", 
-  "Arizona": "AZ",
-  "Arkansas": "AR",
-  "California": "CA",
-  "Colorado": "CO",
-  "Connecticut": "CT",
-  "Delaware": "DE",
-  "Florida": "FL",
-  "Georgia": "GA",
-  "Hawaii": "HI",
-  "Idaho": "ID",
-  "Illinois": "IL",
-  "Indiana": "IN",
-  "Iowa": "IA",
-  "Kansas": "KS",
-  "Kentucky": "KY",
-  "Louisiana": "LA",
-  "Maine": "ME",
-  "Maryland": "MD",
-  "Massachusetts": "MA",
-  "Michigan": "MI",
-  "Minnesota": "MN",
-  "Mississippi": "MS",
-  "Missouri": "MO",
-  "Montana": "MT",
-  "Nebraska": "NE",
-  "Nevada": "NV",
+  Alabama: "AL",
+  Alaska: "AK",
+  Arizona: "AZ",
+  Arkansas: "AR",
+  California: "CA",
+  Colorado: "CO",
+  Connecticut: "CT",
+  Delaware: "DE",
+  Florida: "FL",
+  Georgia: "GA",
+  Hawaii: "HI",
+  Idaho: "ID",
+  Illinois: "IL",
+  Indiana: "IN",
+  Iowa: "IA",
+  Kansas: "KS",
+  Kentucky: "KY",
+  Louisiana: "LA",
+  Maine: "ME",
+  Maryland: "MD",
+  Massachusetts: "MA",
+  Michigan: "MI",
+  Minnesota: "MN",
+  Mississippi: "MS",
+  Missouri: "MO",
+  Montana: "MT",
+  Nebraska: "NE",
+  Nevada: "NV",
   "New Hampshire": "NH",
   "New Jersey": "NJ",
   "New Mexico": "NM",
   "New York": "NY",
   "North Carolina": "NC",
   "North Dakota": "ND",
-  "Ohio": "OH",
-  "Oklahoma": "OK",
-  "Oregon": "OR",
-  "Pennsylvania": "PA",
+  Ohio: "OH",
+  Oklahoma: "OK",
+  Oregon: "OR",
+  Pennsylvania: "PA",
   "Rhode Island": "RI",
   "South Carolina": "SC",
   "South Dakota": "SD",
-  "Tennessee": "TN",
-  "Texas": "TX",
-  "Utah": "UT",
-  "Vermont": "VT",
-  "Virginia": "VA",
-  "Washington": "WA",
+  Tennessee: "TN",
+  Texas: "TX",
+  Utah: "UT",
+  Vermont: "VT",
+  Virginia: "VA",
+  Washington: "WA",
   "West Virginia": "WV",
-  "Wisconsin": "WI",
-  "Wyoming": "WY",
+  Wisconsin: "WI",
+  Wyoming: "WY",
   "District of Columbia": "DC",
   "Puerto Rico": "PR",
   "Virgin Islands": "VI",
   "American Samoa": "AS",
-  "Guam": "GU",
-  "Northern Mariana Islands": "MP"
+  Guam: "GU",
+  "Northern Mariana Islands": "MP",
 };
 
 // Helper function to get state abbreviation
@@ -88,24 +91,24 @@ const getStateAbbreviation = (stateName: string): string => {
   if (!stateName) {
     return "";
   }
-  
+
   // Check exact match first
   if (stateName in STATE_NAME_TO_ABBR) {
     return STATE_NAME_TO_ABBR[stateName];
   }
-  
+
   // Check case-insensitive match
   for (const [fullName, abbr] of Object.entries(STATE_NAME_TO_ABBR)) {
     if (stateName.toLowerCase() === fullName.toLowerCase()) {
       return abbr;
     }
   }
-  
+
   // If it's already an abbreviation (2 letters), return as-is
   if (stateName.length === 2 && /^[A-Za-z]+$/.test(stateName)) {
     return stateName.toUpperCase();
   }
-  
+
   // Return original string if no match found
   return stateName;
 };
@@ -118,7 +121,9 @@ const addressChangeSchema = z.object({
   dol_number: z.string().optional(),
   change_date: z.string().min(1, "Address change date is required"),
   // Previous Address
-  previous_address_street: z.string().min(1, "Previous street address is required"),
+  previous_address_street: z
+    .string()
+    .min(1, "Previous street address is required"),
   previous_address_city: z.string().min(1, "Previous city is required"),
   previous_address_state: z.string().min(1, "Previous state is required"),
   previous_address_zip: z.string().min(1, "Previous ZIP code is required"),
@@ -155,7 +160,12 @@ interface Client {
 }
 
 export default function AddressChangeForm() {
-  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClients();
+  const {
+    clients,
+    loading: clientsLoading,
+    error: clientsError,
+    refreshClients,
+  } = useClients();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
@@ -198,16 +208,19 @@ export default function AddressChangeForm() {
       const fields = client.fields;
 
       // Parse name using shared utility
-      const displayName = parseClientName(fields.Name || '');
+      const displayName = parseClientName(fields.Name || "");
       form.setValue("client_name", displayName);
       form.setValue("case_id", fields["Case ID"] || "");
-      
+
       // Fill previous address from current client data
       form.setValue("previous_address_street", fields["Street Address"] || "");
       form.setValue("previous_address_city", fields["City"] || "");
-      form.setValue("previous_address_state", getStateAbbreviation(fields["State"] || ""));
+      form.setValue(
+        "previous_address_state",
+        getStateAbbreviation(fields["State"] || "")
+      );
       form.setValue("previous_address_zip", fields["ZIP Code"] || "");
-      
+
       // Fill contact information
       form.setValue("phone_number", fields["Phone"] || "");
       form.setValue("email_address", fields["Email"] || "");
@@ -259,7 +272,10 @@ export default function AddressChangeForm() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `AddressChange_${data.client_name.replace(/\s+/g, "_")}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
+        a.download = `AddressChange_${data.client_name.replace(
+          /\s+/g,
+          "_"
+        )}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -269,11 +285,17 @@ export default function AddressChangeForm() {
         setSubmittedClient(selectedClient);
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate address change letter");
+        throw new Error(
+          errorData.error || "Failed to generate address change letter"
+        );
       }
     } catch (error) {
       console.error("Error generating address change letter:", error);
-      alert(error instanceof Error ? error.message : "Failed to generate address change letter");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to generate address change letter"
+      );
     } finally {
       setLoading(false);
     }
@@ -298,7 +320,8 @@ export default function AddressChangeForm() {
   ].filter(Boolean).length;
 
   const totalRequiredFields = 13;
-  const progressPercentage = (requiredFieldsComplete / totalRequiredFields) * 100;
+  const progressPercentage =
+    (requiredFieldsComplete / totalRequiredFields) * 100;
 
   if (clientsLoading) {
     return (
@@ -315,7 +338,9 @@ export default function AddressChangeForm() {
           <div className="text-destructive mb-4">
             <AlertCircle className="h-12 w-12 mx-auto" />
           </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Clients</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            Error Loading Clients
+          </h3>
           <p className="text-muted-foreground">{clientsError}</p>
         </div>
       </div>
@@ -355,7 +380,7 @@ export default function AddressChangeForm() {
         {/* Client Selection */}
         <ClientSelector
           clients={clients}
-          value={form.watch('client_id')}
+          value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
@@ -582,34 +607,45 @@ export default function AddressChangeForm() {
         </Card>
 
         {/* Action Buttons */}
-        <Card variant="elevated" className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5">
+        <Card
+          variant="elevated"
+          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
+        >
           <CardContent className="p-8">
             <div className="text-center space-y-6">
               {/* Progress indicator */}
               <div className="space-y-3">
                 <div className="flex items-center justify-center space-x-3">
-                  <div className={cn(
-                    "w-3 h-3 rounded-full transition-colors",
-                    progressPercentage === 100 ? "bg-success animate-pulse" : "bg-muted-foreground/30"
-                  )} />
+                  <div
+                    className={cn(
+                      "w-3 h-3 rounded-full transition-colors",
+                      progressPercentage === 100
+                        ? "bg-success animate-pulse"
+                        : "bg-muted-foreground/30"
+                    )}
+                  />
                   <span className="text-sm font-medium text-muted-foreground">
-                    Form {progressPercentage === 100 ? 'Complete' : 'In Progress'}
+                    Form{" "}
+                    {progressPercentage === 100 ? "Complete" : "In Progress"}
                   </span>
                 </div>
-                
+
                 {progressPercentage < 100 && (
                   <div className="flex items-center justify-center text-sm text-muted-foreground max-w-md mx-auto">
                     <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>Complete all required fields to generate your address change letter</span>
+                    <span>
+                      Complete all required fields to generate your address
+                      change letter
+                    </span>
                   </div>
                 )}
               </div>
 
               {/* Main action button */}
               <div className="flex justify-center">
-                <Button 
-                  type="submit" 
-                  disabled={loading || progressPercentage < 100} 
+                <Button
+                  type="submit"
+                  disabled={loading || progressPercentage < 100}
                   variant={progressPercentage === 100 ? "primary" : "secondary"}
                   hierarchy="primary"
                   size="xl"
@@ -626,9 +662,9 @@ export default function AddressChangeForm() {
                       <span>Generating Letter...</span>
                     </span>
                   ) : progressPercentage === 100 ? (
-                    'Generate Address Change Letter'
+                    "Generate Address Change Letter"
                   ) : (
-                    'Complete Form to Generate'
+                    "Complete Form to Generate"
                   )}
                 </Button>
               </div>
@@ -636,7 +672,8 @@ export default function AddressChangeForm() {
               {/* Additional context when ready */}
               {progressPercentage === 100 && !loading && (
                 <div className="text-xs text-muted-foreground bg-success/10 border border-success/20 rounded-lg p-3 max-w-md mx-auto">
-                  ✓ Ready to generate your formal address change notification letter
+                  ✓ Ready to generate your formal address change notification
+                  letter
                 </div>
               )}
             </div>
@@ -646,7 +683,10 @@ export default function AddressChangeForm() {
         {/* Success Message */}
         {formSubmitted && (
           <>
-            <Card variant="elevated" className="bg-success/10 border-success/20">
+            <Card
+              variant="elevated"
+              className="bg-success/10 border-success/20"
+            >
               <CardContent>
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -657,8 +697,9 @@ export default function AddressChangeForm() {
                       🎉 Address change letter generated successfully!
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Your formal address change notification letter has been downloaded and is ready for
-                      submission to the Department of Labor.
+                      Your formal address change notification letter has been
+                      downloaded and is ready for submission to the Department
+                      of Labor.
                     </p>
                   </div>
                 </div>
@@ -680,13 +721,14 @@ export default function AddressChangeForm() {
                         Submit to DOL Portal
                       </h3>
                       <p className="text-blue-700 text-sm mb-4">
-                        Ready to submit your address change letter to the Department of Labor portal? 
-                        Click below to open the portal helper with this client's information pre-loaded.
+                        Ready to submit your address change letter to the
+                        Department of Labor portal? Click below to open the
+                        portal helper with this client's information pre-loaded.
                       </p>
                       <Button
                         onClick={() => {
                           const portalUrl = `/portal?clientId=${submittedClient.id}&formType=Address Change`;
-                          window.open(portalUrl, '_blank');
+                          window.open(portalUrl, "_blank");
                         }}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                         size="sm"

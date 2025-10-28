@@ -20,7 +20,10 @@ import {
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
-import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
+import {
+  ClientSelector,
+  parseClientName,
+} from "@/components/form/ClientSelector";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -463,13 +466,17 @@ export default function EE1AForm() {
         {/* Client Selection */}
         <ClientSelector
           clients={clients}
-          value={form.watch('client_id')}
+          value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
           }}
           onRefresh={() => refreshClients(true)}
-          error={attemptedSubmit ? form.formState.errors.client_id?.message : undefined}
+          error={
+            attemptedSubmit
+              ? form.formState.errors.client_id?.message
+              : undefined
+          }
           label="Choose which client you're preparing this form for"
         />
 

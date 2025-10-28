@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { auth } from "@/auth";
 
 /**
  * Get the current session on the server
@@ -16,7 +16,7 @@ export async function requireAuth() {
   const session = await getSession();
 
   if (!session || !session.user) {
-    throw new Error('Unauthorized');
+    throw new Error("Unauthorized");
   }
 
   return session;
@@ -26,5 +26,5 @@ export async function requireAuth() {
  * Check if user has admin role
  */
 export function isAdmin(session: any): boolean {
-  return session?.user?.role === 'admin';
+  return session?.user?.role === "admin";
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useClients } from '@/hooks/useClients';
+import { useClients } from "@/hooks/useClients";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,66 +23,69 @@ import {
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import Image from "next/image";
-import { ClientSelector, parseClientName } from '@/components/form/ClientSelector';
+import {
+  ClientSelector,
+  parseClientName,
+} from "@/components/form/ClientSelector";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
-  "Alabama": "AL",
-  "Alaska": "AK", 
-  "Arizona": "AZ",
-  "Arkansas": "AR",
-  "California": "CA",
-  "Colorado": "CO",
-  "Connecticut": "CT",
-  "Delaware": "DE",
-  "Florida": "FL",
-  "Georgia": "GA",
-  "Hawaii": "HI",
-  "Idaho": "ID",
-  "Illinois": "IL",
-  "Indiana": "IN",
-  "Iowa": "IA",
-  "Kansas": "KS",
-  "Kentucky": "KY",
-  "Louisiana": "LA",
-  "Maine": "ME",
-  "Maryland": "MD",
-  "Massachusetts": "MA",
-  "Michigan": "MI",
-  "Minnesota": "MN",
-  "Mississippi": "MS",
-  "Missouri": "MO",
-  "Montana": "MT",
-  "Nebraska": "NE",
-  "Nevada": "NV",
+  Alabama: "AL",
+  Alaska: "AK",
+  Arizona: "AZ",
+  Arkansas: "AR",
+  California: "CA",
+  Colorado: "CO",
+  Connecticut: "CT",
+  Delaware: "DE",
+  Florida: "FL",
+  Georgia: "GA",
+  Hawaii: "HI",
+  Idaho: "ID",
+  Illinois: "IL",
+  Indiana: "IN",
+  Iowa: "IA",
+  Kansas: "KS",
+  Kentucky: "KY",
+  Louisiana: "LA",
+  Maine: "ME",
+  Maryland: "MD",
+  Massachusetts: "MA",
+  Michigan: "MI",
+  Minnesota: "MN",
+  Mississippi: "MS",
+  Missouri: "MO",
+  Montana: "MT",
+  Nebraska: "NE",
+  Nevada: "NV",
   "New Hampshire": "NH",
   "New Jersey": "NJ",
   "New Mexico": "NM",
   "New York": "NY",
   "North Carolina": "NC",
   "North Dakota": "ND",
-  "Ohio": "OH",
-  "Oklahoma": "OK",
-  "Oregon": "OR",
-  "Pennsylvania": "PA",
+  Ohio: "OH",
+  Oklahoma: "OK",
+  Oregon: "OR",
+  Pennsylvania: "PA",
   "Rhode Island": "RI",
   "South Carolina": "SC",
   "South Dakota": "SD",
-  "Tennessee": "TN",
-  "Texas": "TX",
-  "Utah": "UT",
-  "Vermont": "VT",
-  "Virginia": "VA",
-  "Washington": "WA",
+  Tennessee: "TN",
+  Texas: "TX",
+  Utah: "UT",
+  Vermont: "VT",
+  Virginia: "VA",
+  Washington: "WA",
   "West Virginia": "WV",
-  "Wisconsin": "WI",
-  "Wyoming": "WY",
+  Wisconsin: "WI",
+  Wyoming: "WY",
   "District of Columbia": "DC",
   "Puerto Rico": "PR",
   "Virgin Islands": "VI",
   "American Samoa": "AS",
-  "Guam": "GU",
-  "Northern Mariana Islands": "MP"
+  Guam: "GU",
+  "Northern Mariana Islands": "MP",
 };
 
 // Helper function to get state abbreviation
@@ -90,24 +93,24 @@ const getStateAbbreviation = (stateName: string): string => {
   if (!stateName) {
     return "";
   }
-  
+
   // Check exact match first
   if (stateName in STATE_NAME_TO_ABBR) {
     return STATE_NAME_TO_ABBR[stateName];
   }
-  
+
   // Check case-insensitive match
   for (const [fullName, abbr] of Object.entries(STATE_NAME_TO_ABBR)) {
     if (stateName.toLowerCase() === fullName.toLowerCase()) {
       return abbr;
     }
   }
-  
+
   // If it's already an abbreviation (2 letters), return as-is
   if (stateName.length === 2 && /^[A-Za-z]+$/.test(stateName)) {
     return stateName.toUpperCase();
   }
-  
+
   // Return original string if no match found
   return stateName;
 };
@@ -153,9 +156,19 @@ const ee1Schema = z.object({
     .refine((val) => val, { message: "Sex is required" }),
   address_main: z.string().min(1, "Street address is required"),
   address_city: z.string().min(1, "City is required"),
-  address_state: z.string().min(2, "State is required").max(2, "State must be 2 characters"),
-  address_zip: z.string().regex(/^\d{5}(-\d{4})?$/, "ZIP code must be 5 or 9 digits"),
-  phone: z.string().regex(/^\d{3}\.\d{3}\.\d{4}$/, "Phone number must be in format: 123.123.1234"),
+  address_state: z
+    .string()
+    .min(2, "State is required")
+    .max(2, "State must be 2 characters"),
+  address_zip: z
+    .string()
+    .regex(/^\d{5}(-\d{4})?$/, "ZIP code must be 5 or 9 digits"),
+  phone: z
+    .string()
+    .regex(
+      /^\d{3}\.\d{3}\.\d{4}$/,
+      "Phone number must be in format: 123.123.1234"
+    ),
 });
 
 type EE1FormData = z.infer<typeof ee1Schema>;
@@ -177,7 +190,12 @@ interface Client {
 }
 
 export default function EE1Form() {
-  const { clients, loading: clientsLoading, error: clientsError, refreshClients } = useClients();
+  const {
+    clients,
+    loading: clientsLoading,
+    error: clientsError,
+    refreshClients,
+  } = useClients();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
@@ -185,13 +203,15 @@ export default function EE1Form() {
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [showSignaturePreview, setShowSignaturePreview] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
-  const [diagnosisErrors, setDiagnosisErrors] = useState<Record<string, string[]>>({
+  const [diagnosisErrors, setDiagnosisErrors] = useState<
+    Record<string, string[]>
+  >({
     cancer: [],
     beryllium_sensitivity: [],
     chronic_beryllium_disease: [],
     chronic_silicosis: [],
     other: [],
-    general: []
+    general: [],
   });
 
   // Initialize diagnosis categories
@@ -220,8 +240,8 @@ export default function EE1Form() {
 
   const form = useForm<EE1FormData>({
     resolver: zodResolver(ee1Schema),
-    mode: 'onSubmit',
-    reValidateMode: 'onChange',
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: {
       client_id: "",
       first_name: "",
@@ -272,7 +292,10 @@ export default function EE1Form() {
 
       form.setValue("address_main", fields["Street Address"] || "");
       form.setValue("address_city", fields["City"] || "");
-      form.setValue("address_state", getStateAbbreviation(fields["State"] || ""));
+      form.setValue(
+        "address_state",
+        getStateAbbreviation(fields["State"] || "")
+      );
       form.setValue("address_zip", fields["ZIP Code"] || "");
       form.setValue("phone", fields["Phone"] || "");
 
@@ -354,7 +377,7 @@ export default function EE1Form() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const minDate = new Date('1900-01-01');
+    const minDate = new Date("1900-01-01");
     const dateToCheck = new Date(date);
     dateToCheck.setHours(0, 0, 0, 0);
 
@@ -377,7 +400,7 @@ export default function EE1Form() {
       chronic_beryllium_disease: [],
       chronic_silicosis: [],
       other: [],
-      general: []
+      general: [],
     };
 
     const categories = diagnosisCategories;
@@ -390,7 +413,10 @@ export default function EE1Form() {
         const label = String.fromCharCode(65 + i);
         if (diagnosis.text) {
           if (diagnosis.date) {
-            const dateError = validateDate(diagnosis.date, `Cancer diagnosis ${label}`);
+            const dateError = validateDate(
+              diagnosis.date,
+              `Cancer diagnosis ${label}`
+            );
             if (dateError) {
               errors.cancer.push(dateError);
             } else {
@@ -403,7 +429,9 @@ export default function EE1Form() {
       });
       if (cancerHasValid) hasValidDiagnosis = true;
       else if (!categories.cancer.diagnoses.some((d) => d.text)) {
-        errors.cancer.push("At least one specific cancer diagnosis is required when Cancer is selected.");
+        errors.cancer.push(
+          "At least one specific cancer diagnosis is required when Cancer is selected."
+        );
       }
     }
 
@@ -436,7 +464,10 @@ export default function EE1Form() {
         const label = String.fromCharCode(65 + i);
         if (diagnosis.text) {
           if (diagnosis.date) {
-            const dateError = validateDate(diagnosis.date, `Other condition ${label}`);
+            const dateError = validateDate(
+              diagnosis.date,
+              `Other condition ${label}`
+            );
             if (dateError) {
               errors.other.push(dateError);
             } else {
@@ -449,12 +480,16 @@ export default function EE1Form() {
       });
       if (otherHasValid) hasValidDiagnosis = true;
       else if (!categories.other.diagnoses.some((d) => d.text)) {
-        errors.other.push("At least one specific other condition is required when Other is selected.");
+        errors.other.push(
+          "At least one specific other condition is required when Other is selected."
+        );
       }
     }
 
     if (!hasValidDiagnosis) {
-      errors.general.push("At least one diagnosis category with date is required.");
+      errors.general.push(
+        "At least one diagnosis category with date is required."
+      );
     }
 
     setDiagnosisErrors(errors);
@@ -475,24 +510,26 @@ export default function EE1Form() {
       let firstErrorField: string | null = null;
 
       // Check fields in order of appearance
-      if (errors.client_id) firstErrorField = 'client_id';
-      else if (errors.first_name) firstErrorField = 'first_name';
-      else if (errors.last_name) firstErrorField = 'last_name';
-      else if (errors.ssn) firstErrorField = 'ssn';
-      else if (errors.dob) firstErrorField = 'dob';
-      else if (errors.sex) firstErrorField = 'sex';
-      else if (errors.address_main) firstErrorField = 'address_main';
-      else if (errors.address_city) firstErrorField = 'address_city';
-      else if (errors.address_state) firstErrorField = 'address_state';
-      else if (errors.address_zip) firstErrorField = 'address_zip';
-      else if (errors.phone) firstErrorField = 'phone';
+      if (errors.client_id) firstErrorField = "client_id";
+      else if (errors.first_name) firstErrorField = "first_name";
+      else if (errors.last_name) firstErrorField = "last_name";
+      else if (errors.ssn) firstErrorField = "ssn";
+      else if (errors.dob) firstErrorField = "dob";
+      else if (errors.sex) firstErrorField = "sex";
+      else if (errors.address_main) firstErrorField = "address_main";
+      else if (errors.address_city) firstErrorField = "address_city";
+      else if (errors.address_state) firstErrorField = "address_state";
+      else if (errors.address_zip) firstErrorField = "address_zip";
+      else if (errors.phone) firstErrorField = "phone";
 
       // Scroll to and focus the first error field
       if (firstErrorField) {
         setTimeout(() => {
-          const element = document.querySelector(`[name="${firstErrorField}"]`) as HTMLElement;
+          const element = document.querySelector(
+            `[name="${firstErrorField}"]`
+          ) as HTMLElement;
           if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
             element.focus();
           }
         }, 100);
@@ -506,9 +543,12 @@ export default function EE1Form() {
     if (diagnosisErrorsList.length > 0) {
       // Scroll to diagnosis section
       setTimeout(() => {
-        const diagnosisSection = document.getElementById('diagnosis-section');
+        const diagnosisSection = document.getElementById("diagnosis-section");
         if (diagnosisSection) {
-          diagnosisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          diagnosisSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
         }
       }, 100);
       return;
@@ -536,8 +576,8 @@ export default function EE1Form() {
 
       // Create FormData for file upload support
       const formDataForAPI = new FormData();
-      formDataForAPI.append('client_record', JSON.stringify(selectedClient));
-      
+      formDataForAPI.append("client_record", JSON.stringify(selectedClient));
+
       // Create form data without signature file
       const formDataWithoutFile = {
         first_name: data.first_name,
@@ -554,12 +594,12 @@ export default function EE1Form() {
         phone: data.phone,
         diagnosis_categories: diagnosisCategories,
       };
-      
-      formDataForAPI.append('form_data', JSON.stringify(formDataWithoutFile));
-      
+
+      formDataForAPI.append("form_data", JSON.stringify(formDataWithoutFile));
+
       // Add signature file if present
       if (signatureFile) {
-        formDataForAPI.append('signature_file', signatureFile);
+        formDataForAPI.append("signature_file", signatureFile);
       }
 
       const response = await fetch("/api/generate/ee1", {
@@ -640,11 +680,23 @@ export default function EE1Form() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="text-red-600 mb-4">
-            <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="h-12 w-12 mx-auto"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Clients</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Error Loading Clients
+          </h3>
           <p className="text-gray-600">{clientsError}</p>
         </div>
       </div>
@@ -660,7 +712,8 @@ export default function EE1Form() {
             Generate EE-1 Form
           </h1>
           <p className="text-muted-foreground">
-            Worker&apos;s Claim for Benefits Under the Energy Employees Occupational Illness Compensation Program Act
+            Worker&apos;s Claim for Benefits Under the Energy Employees
+            Occupational Illness Compensation Program Act
           </p>
         </div>
       </div>
@@ -669,7 +722,7 @@ export default function EE1Form() {
         {/* Client Selection */}
         <ClientSelector
           clients={clients}
-          value={form.watch('client_id')}
+          value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
@@ -826,11 +879,15 @@ export default function EE1Form() {
                 <Heart className="h-5 w-5 text-error" />
                 <CardTitle>Client&apos;s Medical Diagnoses</CardTitle>
               </div>
-              {attemptedSubmit && Object.values(diagnosisErrors).flat().length > 0 && (
-                <Badge variant="error" size="sm">
-                  {Object.values(diagnosisErrors).flat().length} Error{Object.values(diagnosisErrors).flat().length !== 1 ? 's' : ''}
-                </Badge>
-              )}
+              {attemptedSubmit &&
+                Object.values(diagnosisErrors).flat().length > 0 && (
+                  <Badge variant="error" size="sm">
+                    {Object.values(diagnosisErrors).flat().length} Error
+                    {Object.values(diagnosisErrors).flat().length !== 1
+                      ? "s"
+                      : ""}
+                  </Badge>
+                )}
             </div>
             <p className="text-sm text-muted-foreground">
               Client&apos;s Diagnosed Condition(s) Being Claimed as Work-Related
@@ -839,12 +896,16 @@ export default function EE1Form() {
               <div
                 className="mt-3 p-3 border-2 rounded-lg"
                 style={{
-                  backgroundColor: 'color-mix(in srgb, var(--destructive) 15%, transparent)',
-                  borderColor: 'var(--destructive)'
+                  backgroundColor:
+                    "color-mix(in srgb, var(--destructive) 15%, transparent)",
+                  borderColor: "var(--destructive)",
                 }}
               >
                 {diagnosisErrors.general.map((error, i) => (
-                  <div key={i} className="flex items-center text-sm text-destructive font-medium">
+                  <div
+                    key={i}
+                    className="flex items-center text-sm text-destructive font-medium"
+                  >
                     <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                     {error}
                   </div>
@@ -948,7 +1009,10 @@ export default function EE1Form() {
                   {attemptedSubmit && diagnosisErrors.cancer.length > 0 && (
                     <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
                       {diagnosisErrors.cancer.map((error, i) => (
-                        <div key={i} className="flex items-start text-sm text-destructive">
+                        <div
+                          key={i}
+                          className="flex items-start text-sm text-destructive"
+                        >
                           <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
                           {error}
                         </div>
@@ -986,10 +1050,12 @@ export default function EE1Form() {
                   key={key}
                   variant="outlined"
                   className={
-                    attemptedSubmit && diagnosisErrors[key as keyof typeof diagnosisErrors]?.length > 0
+                    attemptedSubmit &&
+                    diagnosisErrors[key as keyof typeof diagnosisErrors]
+                      ?.length > 0
                       ? "border-destructive bg-destructive/10"
                       : diagnosisCategories[key as keyof DiagnosisCategories]
-                        .selected
+                          .selected
                       ? "border-info/50 bg-info/5"
                       : ""
                   }
@@ -1055,16 +1121,23 @@ export default function EE1Form() {
                         />
                       )}
                     </div>
-                    {attemptedSubmit && diagnosisErrors[key as keyof typeof diagnosisErrors]?.length > 0 && (
-                      <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
-                        {diagnosisErrors[key as keyof typeof diagnosisErrors].map((error, i) => (
-                          <div key={i} className="flex items-start text-sm text-destructive">
-                            <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-                            {error}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    {attemptedSubmit &&
+                      diagnosisErrors[key as keyof typeof diagnosisErrors]
+                        ?.length > 0 && (
+                        <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
+                          {diagnosisErrors[
+                            key as keyof typeof diagnosisErrors
+                          ].map((error, i) => (
+                            <div
+                              key={i}
+                              className="flex items-start text-sm text-destructive"
+                            >
+                              <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
+                              {error}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                   </CardContent>
                 </Card>
               ))}
@@ -1162,7 +1235,10 @@ export default function EE1Form() {
                   {attemptedSubmit && diagnosisErrors.other.length > 0 && (
                     <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
                       {diagnosisErrors.other.map((error, i) => (
-                        <div key={i} className="flex items-start text-sm text-destructive">
+                        <div
+                          key={i}
+                          className="flex items-start text-sm text-destructive"
+                        >
                           <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
                           {error}
                         </div>
@@ -1263,13 +1339,15 @@ export default function EE1Form() {
             {loading ? "Generating..." : "Generate EE-1"}
           </Button>
 
-          {attemptedSubmit && (Object.keys(form.formState.errors).length > 0 || !hasValidDiagnosis) && (
-            <div className="flex items-center text-sm text-muted-foreground">
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Please complete all required fields and select at least one
-              diagnosis before generating the form.
-            </div>
-          )}
+          {attemptedSubmit &&
+            (Object.keys(form.formState.errors).length > 0 ||
+              !hasValidDiagnosis) && (
+              <div className="flex items-center text-sm text-muted-foreground">
+                <AlertCircle className="h-4 w-4 mr-2" />
+                Please complete all required fields and select at least one
+                diagnosis before generating the form.
+              </div>
+            )}
         </div>
 
         {/* Success Message */}
@@ -1285,7 +1363,8 @@ export default function EE1Form() {
                     EE-1 Generated Successfully!
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Your EE-1 form has been downloaded and is ready for submission.
+                    Your EE-1 form has been downloaded and is ready for
+                    submission.
                   </p>
                 </div>
               </div>
