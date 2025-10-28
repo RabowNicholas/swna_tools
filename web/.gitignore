@@ -75,3 +75,6 @@ pids
 # Temporary folders
 tmp/
 temp/
+
+# Credentials and sensitive files
+USER_CREDENTIALS.txt
