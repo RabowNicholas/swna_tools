@@ -3,6 +3,7 @@ import Credentials from 'next-auth/providers/credentials';
 import { findUserByEmail, verifyPassword } from '@/lib/users';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true, // Required for Vercel/production deployments
   providers: [
     Credentials({
       credentials: {
@@ -47,6 +48,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     maxAge: 7 * 24 * 60 * 60, // 7 days
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith('/')) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    },
     authorized: async ({ auth, request }) => {
       const { pathname } = request.nextUrl;
       const isLoggedIn = !!auth;
