@@ -28,18 +28,32 @@ def create_response(success: bool, filename: str = None, pdf_data: bytes = None,
 
 if __name__ == "__main__":
     try:
+        print("[EE-10 Wrapper] Starting execution", file=sys.stderr)
+
         # Read JSON input from stdin
-        input_data = json.loads(sys.stdin.read())
+        input_raw = sys.stdin.read()
+        print(f"[EE-10 Wrapper] Received input size: {len(input_raw)} bytes", file=sys.stderr)
+
+        input_data = json.loads(input_raw)
 
         client_record = input_data.get('client_record', {})
         form_data = input_data.get('form_data', {})
         doctor = input_data.get('doctor', 'La Plata')  # Extract doctor parameter
 
+        print(f"[EE-10 Wrapper] Doctor selection: {doctor}", file=sys.stderr)
+        print(f"[EE-10 Wrapper] Client: {client_record.get('Name', 'unknown')}", file=sys.stderr)
+        print(f"[EE-10 Wrapper] Form data keys: {list(form_data.keys())}", file=sys.stderr)
+
         # Instantiate generator
+        print("[EE-10 Wrapper] Instantiating EE10Generator", file=sys.stderr)
         generator = EE10Generator()
 
         # Generate document with doctor parameter
+        print("[EE-10 Wrapper] Starting PDF generation...", file=sys.stderr)
         filename, pdf_bytes = generator.generate(client_record, doctor, form_data)
+
+        pdf_size = len(pdf_bytes.getvalue())
+        print(f"[EE-10 Wrapper] PDF generated successfully: {filename}, size: {pdf_size} bytes", file=sys.stderr)
 
         # Create success response
         response = create_response(
@@ -48,14 +62,21 @@ if __name__ == "__main__":
             pdf_data=pdf_bytes.getvalue()
         )
 
+        print("[EE-10 Wrapper] Sending response to Node.js", file=sys.stderr)
         print(response)
         sys.exit(0)
 
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+
+        print(f"[EE-10 Wrapper] ERROR: {str(e)}", file=sys.stderr)
+        print(f"[EE-10 Wrapper] Stack trace:\n{error_trace}", file=sys.stderr)
+
         # Create error response
         error_response = create_response(
             success=False,
-            error=str(e)
+            error=f"{str(e)}\n\nStack trace:\n{error_trace}"
         )
         print(error_response, file=sys.stderr)
         sys.exit(1)
