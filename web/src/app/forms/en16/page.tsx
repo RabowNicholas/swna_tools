@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
+import { trackEvent } from "@/lib/analytics";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useClientContext } from "@/contexts/ClientContext";
@@ -36,6 +38,7 @@ interface Client {
 }
 
 export default function EN16Form() {
+  const { data: session } = useSession();
   const {
     clients,
     loading: clientsLoading,
@@ -43,6 +46,13 @@ export default function EN16Form() {
     refreshClients,
   } = useClientContext();
   const [loading, setLoading] = useState(false);
+
+  // Track form view
+  useEffect(() => {
+    if (session?.user) {
+      trackEvent.formViewed('en16', session.user.id);
+    }
+  }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
 
@@ -112,6 +122,11 @@ export default function EN16Form() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+
+        // Track PDF generation
+        if (session?.user) {
+          trackEvent.pdfGenerated('en16', session.user.id, data.client_id);
+        }
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);

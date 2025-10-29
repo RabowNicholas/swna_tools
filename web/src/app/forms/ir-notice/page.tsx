@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
+import { trackEvent } from "@/lib/analytics";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -159,6 +161,7 @@ interface Client {
 }
 
 export default function IRNoticeForm() {
+  const { data: session } = useSession();
   const {
     clients,
     loading: clientsLoading,
@@ -166,6 +169,13 @@ export default function IRNoticeForm() {
     refreshClients,
   } = useClients();
   const [loading, setLoading] = useState(false);
+
+  // Track form view
+  useEffect(() => {
+    if (session?.user) {
+      trackEvent.formViewed('ir-notice', session.user.id);
+    }
+  }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
 
@@ -262,6 +272,11 @@ export default function IRNoticeForm() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+
+        // Track PDF generation
+        if (session?.user) {
+          trackEvent.pdfGenerated('ir-notice', session.user.id, data.client_id);
+        }
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);

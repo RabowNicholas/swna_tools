@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +31,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { trackEvent } from "@/lib/analytics";
 
 // Zod schema for form validation
 const employmentSchema = z
@@ -137,6 +139,7 @@ const validateEmploymentDate = (date: string, label: string): string | null => {
 };
 
 export default function EE3Form() {
+  const { data: session } = useSession();
   const {
     clients,
     loading: clientsLoading,
@@ -144,6 +147,13 @@ export default function EE3Form() {
     refreshClients,
   } = useClients();
   const [loading, setLoading] = useState(false);
+
+  // Track form view
+  useEffect(() => {
+    if (session?.user) {
+      trackEvent.formViewed('ee3', session.user.id);
+    }
+  }, [session]);
   const [portalLoading, setPortalLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [lastFormData, setLastFormData] = useState<EE3FormData | null>(null);
@@ -411,6 +421,11 @@ export default function EE3Form() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+
+        // Track PDF generation
+        if (session?.user) {
+          trackEvent.pdfGenerated('ee3', session.user.id, data.client_id);
+        }
 
         // Mark form as submitted and store data for portal access
         setFormSubmitted(true);
