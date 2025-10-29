@@ -23,6 +23,7 @@ import {
   ChevronUp,
   Eye,
   EyeOff,
+  User,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
@@ -578,7 +579,7 @@ export default function EE3Form() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
-          clients={clients}
+          clients={clients as any}
           value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);

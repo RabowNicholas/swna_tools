@@ -14,38 +14,21 @@ export interface UseClientsReturn {
 }
 
 export function useClients(): UseClientsReturn {
-  // Try to use context first, fallback to local state
-  try {
-    const context = useClientContext();
-    return {
-      clients: context.clients,
-      loading: context.loading,
-      error: context.error,
-      refreshClients: context.refreshClients,
-      getClientById: context.getClientById,
-      getCacheInfo: context.getCacheInfo
-    };
-  } catch (error) {
-    // Context not available, fallback to local implementation
-    // This ensures backwards compatibility
-    console.warn('ClientContext not available, using local implementation');
-  }
-
-  // Fallback local implementation
+  // Fallback local implementation (always initialize hooks first)
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const refreshClients = useCallback(async (force: boolean = false) => {
     setLoading(true);
-    setError(null);
+    setLocalError(null);
 
     try {
       const fetchedClients = await clientStorage.getClients(force);
       setClients(fetchedClients);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load clients';
-      setError(errorMessage);
+      setLocalError(errorMessage);
       console.error('Error loading clients:', err);
     } finally {
       setLoading(false);
@@ -65,10 +48,26 @@ export function useClients(): UseClientsReturn {
     refreshClients();
   }, [refreshClients]);
 
+  // Try to use context, fallback to local state
+  try {
+    const context = useClientContext();
+    return {
+      clients: context.clients,
+      loading: context.loading,
+      error: context.error,
+      refreshClients: context.refreshClients,
+      getClientById: context.getClientById,
+      getCacheInfo: context.getCacheInfo
+    };
+  } catch {
+    // Context not available, return local implementation
+    console.warn('ClientContext not available, using local implementation');
+  }
+
   return {
     clients,
     loading,
-    error,
+    error: localError,
     refreshClients,
     getClientById,
     getCacheInfo

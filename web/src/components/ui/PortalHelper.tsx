@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 import { 
   Copy, 
   Check, 
@@ -12,8 +12,8 @@ import {
   AlertTriangle,
   Info
 } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/Alert";
+import { Input } from "@/components/ui/Input";
 
 interface Client {
   id: string;
@@ -160,7 +160,7 @@ function CopyField({ label, value, hint, icon }: CopyFieldProps) {
       </div>
       <Button
         onClick={handleCopy}
-        variant={copied ? "default" : "outline"}
+        variant={copied ? "primary" : "outline"}
         size="sm"
         className={`flex-shrink-0 min-w-[80px] ${
           copied 

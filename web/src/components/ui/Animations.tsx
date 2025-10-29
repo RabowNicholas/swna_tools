@@ -364,7 +364,7 @@ export const ProgressiveDisclosure: React.FC<ProgressiveDisclosureProps> = ({
 
 // Custom CSS for additional animations
 export const AnimationStyles = () => (
-  <style jsx global>{`
+  <style>{`
     @keyframes shimmer {
       0% { transform: translateX(-100%); }
       100% { transform: translateX(100%); }

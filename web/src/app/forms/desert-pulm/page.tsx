@@ -228,7 +228,7 @@ export default function DesertPulmForm() {
   const onSubmit = async (data: DesertPulmFormData) => {
     setLoading(true);
     try {
-      const selectedClient = clients.find((c) => c.id === data.client_id);
+      const selectedClient = clients.find((c) => c.id === data.client_id) as any;
       if (!selectedClient) {
         throw new Error("Selected client not found");
       }
@@ -376,7 +376,7 @@ export default function DesertPulmForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
-          clients={clients}
+          clients={clients as any}
           value={watchedFields.client_id}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);

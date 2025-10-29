@@ -20,6 +20,7 @@ import {
   AlertCircle,
   CheckCircle,
   Info,
+  User,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import Image from "next/image";
@@ -266,7 +267,7 @@ export default function EE1Form() {
 
   // Handle client selection and auto-fill
   const handleClientChange = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
+    const client = clients.find((c) => c.id === clientId) as any;
     if (client) {
       const fields = client.fields;
 
@@ -569,7 +570,7 @@ export default function EE1Form() {
         return;
       }
 
-      const selectedClient = clients.find((c) => c.id === data.client_id);
+      const selectedClient = clients.find((c) => c.id === data.client_id) as any;
       if (!selectedClient) {
         throw new Error("Selected client not found");
       }
@@ -721,7 +722,7 @@ export default function EE1Form() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
-          clients={clients}
+          clients={clients as any}
           value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);

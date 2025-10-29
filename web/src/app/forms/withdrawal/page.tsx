@@ -61,7 +61,7 @@ export default function WithdrawalForm() {
 
   // Handle client selection and auto-fill
   const handleClientChange = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
+    const client = clients.find((c) => c.id === clientId) as any;
     if (client) {
       // Parse client name using shared utility
       const displayName = parseClientName(client.fields.Name || "");
@@ -73,7 +73,7 @@ export default function WithdrawalForm() {
   const onSubmit = async (data: WithdrawalFormData) => {
     setLoading(true);
     try {
-      const selectedClient = clients.find((c) => c.id === data.client_id);
+      const selectedClient = clients.find((c) => c.id === data.client_id) as any;
       if (!selectedClient) {
         throw new Error("Selected client not found");
       }
@@ -178,7 +178,7 @@ export default function WithdrawalForm() {
                 </p>
               </div>
             </div>
-            <Badge variant="destructive" size="lg">
+            <Badge variant="error" size="lg">
               DOL Letter
             </Badge>
           </div>
@@ -188,7 +188,7 @@ export default function WithdrawalForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
-          clients={clients}
+          clients={clients as any}
           value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);
@@ -316,7 +316,7 @@ export default function WithdrawalForm() {
             </CardContent>
           </Card>
 
-          <PortalAccess client={submittedClient} autoOpen={true} />
+          <PortalAccess client={submittedClient as any} autoOpen={true} />
         </>
       )}
     </div>

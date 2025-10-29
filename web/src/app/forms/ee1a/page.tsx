@@ -17,6 +17,7 @@ import {
   Trash2,
   Upload,
   FileText,
+  User,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
@@ -356,7 +357,7 @@ export default function EE1AForm() {
   const onSubmit = async (data: EE1AFormData) => {
     setLoading(true);
     try {
-      const selectedClient = clients.find((c) => c.id === data.client_id);
+      const selectedClient = clients.find((c) => c.id === data.client_id) as any;
       if (!selectedClient) {
         throw new Error("Selected client not found");
       }
@@ -465,7 +466,7 @@ export default function EE1AForm() {
       <form className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
-          clients={clients}
+          clients={clients as any}
           value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);

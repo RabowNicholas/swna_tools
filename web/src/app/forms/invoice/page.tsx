@@ -402,7 +402,7 @@ export default function InvoiceForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
-          clients={clients}
+          clients={clients as any}
           value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);

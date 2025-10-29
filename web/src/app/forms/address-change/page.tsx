@@ -18,6 +18,7 @@ import {
   CheckCircle,
   Calendar,
   Home,
+  User,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
@@ -230,7 +231,7 @@ export default function AddressChangeForm() {
   const onSubmit = async (data: AddressChangeFormData) => {
     setLoading(true);
     try {
-      const selectedClient = clients.find((c) => c.id === data.client_id);
+      const selectedClient = clients.find((c) => c.id === data.client_id) as Client | undefined;
       if (!selectedClient) {
         throw new Error("Selected client not found");
       }
@@ -379,7 +380,7 @@ export default function AddressChangeForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
-          clients={clients}
+          clients={clients as any}
           value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);

@@ -57,7 +57,7 @@ export default function EN16Form() {
 
   // Handle client selection and auto-fill
   const handleClientChange = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
+    const client = clients.find((c) => c.id === clientId) as any;
     if (client) {
       const fields = client.fields;
 
@@ -71,7 +71,7 @@ export default function EN16Form() {
   const onSubmit = async (data: EN16FormData) => {
     setLoading(true);
     try {
-      const selectedClient = clients.find((c) => c.id === data.client_id);
+      const selectedClient = clients.find((c) => c.id === data.client_id) as any;
       if (!selectedClient) {
         throw new Error("Selected client not found");
       }
@@ -171,7 +171,7 @@ export default function EN16Form() {
                 </p>
               </div>
             </div>
-            <Badge variant="primary" size="lg">
+            <Badge variant="default" size="lg">
               Energy Notification
             </Badge>
           </div>
@@ -181,7 +181,7 @@ export default function EN16Form() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
-          clients={clients}
+          clients={clients as any}
           value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);
@@ -287,7 +287,7 @@ export default function EN16Form() {
             </CardContent>
           </Card>
 
-          <PortalAccess client={submittedClient} autoOpen={true} />
+          <PortalAccess client={submittedClient as any} autoOpen={true} />
         </>
       )}
     </div>
