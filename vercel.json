@@ -1,18 +1,5 @@
 {
   "buildCommand": "cd web && npm run build",
   "outputDirectory": "web/.next",
-  "installCommand": "cd web && npm install",
-  "functions": {
-    "web/api/python/*.py": {
-      "runtime": "@vercel/python@4.3.0",
-      "maxDuration": 30,
-      "includeFiles": "../{generators/**,templates/**}"
-    },
-    "web/src/app/api/generate/**/*.ts": {
-      "maxDuration": 30
-    },
-    "web/src/app/api/portal/**/*.ts": {
-      "maxDuration": 60
-    }
-  }
+  "installCommand": "cd web && npm install"
 }

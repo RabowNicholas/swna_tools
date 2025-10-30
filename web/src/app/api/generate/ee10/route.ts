@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
 
     // Call Python serverless function
     const pythonEndpoint = process.env.VERCEL_URL
-      ? `https://${process.env.VERCEL_URL}/api/python/generate-ee10`
-      : 'http://localhost:3000/api/python/generate-ee10';
+      ? `https://${process.env.VERCEL_URL}/api/generate-ee10`
+      : 'http://localhost:3000/api/generate-ee10';
 
     console.log('[EE-10] Calling Python endpoint:', pythonEndpoint);
 
