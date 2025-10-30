@@ -49,18 +49,44 @@ export async function POST(request: NextRequest) {
 
     const executionTime = Date.now() - startTime;
     console.log('[EE-10] Generator execution completed in', executionTime, 'ms');
+    console.log('[EE-10] Python response status:', pythonResponse.status);
+    console.log('[EE-10] Python response headers:', Object.fromEntries(pythonResponse.headers.entries()));
+
+    // Get response text first to see what we actually got
+    const responseText = await pythonResponse.text();
+    console.log('[EE-10] Python response body (first 500 chars):', responseText.substring(0, 500));
 
     if (!pythonResponse.ok) {
-      const errorData = await pythonResponse.json();
-      console.error('[EE-10] Generation failed:', errorData.error);
-      console.error('[EE-10] Python trace:', errorData.trace);
-      return NextResponse.json({
-        error: errorData.error,
-        details: errorData.trace
-      }, { status: 500 });
+      console.error('[EE-10] Generation failed with status:', pythonResponse.status);
+      console.error('[EE-10] Response body:', responseText);
+
+      // Try to parse as JSON, but if it fails, return the text
+      try {
+        const errorData = JSON.parse(responseText);
+        return NextResponse.json({
+          error: errorData.error || 'Python function failed',
+          details: errorData.trace || responseText
+        }, { status: 500 });
+      } catch {
+        return NextResponse.json({
+          error: 'Python function returned non-JSON response',
+          details: responseText
+        }, { status: 500 });
+      }
     }
 
-    const result = await pythonResponse.json();
+    // Try to parse the response
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('[EE-10] Failed to parse Python response as JSON');
+      console.error('[EE-10] Response was:', responseText);
+      return NextResponse.json({
+        error: 'Invalid JSON response from Python function',
+        details: responseText
+      }, { status: 500 });
+    }
 
     console.log('[EE-10] PDF generated successfully, size:', result.pdf_data?.length || 0, 'bytes');
     console.log('[EE-10] Filename:', result.filename);
