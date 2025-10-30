@@ -4,7 +4,7 @@
   "installCommand": "cd web && npm install",
   "functions": {
     "web/api/python/*.py": {
-      "runtime": "python3.9",
+      "runtime": "@vercel/python@4.3.0",
       "maxDuration": 30,
       "includeFiles": "../{generators/**,templates/**}"
     },
