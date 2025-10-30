@@ -1,14 +1,10 @@
 {
   "functions": {
     "src/app/api/generate/**/*.ts": {
-      "maxDuration": 30,
-      "runtime": "nodejs20.x"
+      "maxDuration": 30
     },
     "src/app/api/portal/**/*.ts": {
-      "maxDuration": 60,
-      "runtime": "nodejs20.x"
+      "maxDuration": 60
     }
-  },
-  "buildCommand": "cd .. && pip install -r requirements.txt && cd web && npm run build",
-  "installCommand": "npm install"
+  }
 }
