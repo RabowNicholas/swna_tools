@@ -35,15 +35,25 @@ export async function POST(request: NextRequest) {
     console.log('[EE-10] Starting Python generator execution...');
 
     // Call Python serverless function
+    // Use internal URL to bypass deployment protection
     const pythonEndpoint = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}/api/generate-ee10`
       : 'http://localhost:3000/api/generate-ee10';
 
     console.log('[EE-10] Calling Python endpoint:', pythonEndpoint);
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Add bypass token if available
+    if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+      headers['x-vercel-protection-bypass'] = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+    }
+
     const pythonResponse = await fetch(pythonEndpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(requestData)
     });
 
