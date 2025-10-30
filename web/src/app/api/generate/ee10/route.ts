@@ -33,25 +33,40 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('[EE-10] Starting Python generator execution...');
-    const result = await executeGenerator('ee10_wrapper.py', requestData);
+
+    // Call Python serverless function
+    const pythonEndpoint = process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}/api/python/generate-ee10`
+      : 'http://localhost:3000/api/python/generate-ee10';
+
+    console.log('[EE-10] Calling Python endpoint:', pythonEndpoint);
+
+    const pythonResponse = await fetch(pythonEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestData)
+    });
 
     const executionTime = Date.now() - startTime;
     console.log('[EE-10] Generator execution completed in', executionTime, 'ms');
 
-    if (!result.success) {
-      console.error('[EE-10] Generation failed:', result.error);
-      console.error('[EE-10] Stderr output:', result.stderr);
+    if (!pythonResponse.ok) {
+      const errorData = await pythonResponse.json();
+      console.error('[EE-10] Generation failed:', errorData.error);
+      console.error('[EE-10] Python trace:', errorData.trace);
       return NextResponse.json({
-        error: result.error,
-        details: result.stderr
+        error: errorData.error,
+        details: errorData.trace
       }, { status: 500 });
     }
+
+    const result = await pythonResponse.json();
 
     console.log('[EE-10] PDF generated successfully, size:', result.pdf_data?.length || 0, 'bytes');
     console.log('[EE-10] Filename:', result.filename);
     console.log('[EE-10] Total execution time:', executionTime, 'ms');
 
-    return createPdfResponse(result.filename!, result.pdf_data!);
+    return createPdfResponse(result.filename, result.pdf_data);
 
   } catch (error) {
     const executionTime = Date.now() - startTime;

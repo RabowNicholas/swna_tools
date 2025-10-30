@@ -1,0 +1,18 @@
+{
+  "buildCommand": "cd web && npm run build",
+  "outputDirectory": "web/.next",
+  "installCommand": "cd web && npm install",
+  "functions": {
+    "web/api/python/*.py": {
+      "runtime": "python3.9",
+      "maxDuration": 30,
+      "includeFiles": "../{generators/**,templates/**}"
+    },
+    "web/src/app/api/generate/**/*.ts": {
+      "maxDuration": 30
+    },
+    "web/src/app/api/portal/**/*.ts": {
+      "maxDuration": 60
+    }
+  }
+}
