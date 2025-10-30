@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { executeGenerator, createPdfResponse } from '@/lib/generator-utils';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
-import { tmpdir } from 'os';
 import { requireAuth } from '@/lib/auth';
+import { EE1AGenerator } from '@/lib/generators/ee1a-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,28 +21,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing client_record or form_data' }, { status: 400 });
     }
 
-    if (!signatureFile) {
-      return NextResponse.json({ error: 'Missing signature file' }, { status: 400 });
+    // Process signature file if provided
+    if (signatureFile) {
+      const bytes = await signatureFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      // Convert to base64 for generator
+      requestData.form_data.signature_file = {
+        data: buffer.toString('base64')
+      };
     }
 
-    // Save signature file to temp directory
-    const tempDir = tmpdir();
-    const signaturePath = join(tempDir, `signature_${Date.now()}_${signatureFile.name}`);
+    // Generate PDF using TypeScript generator
+    const generator = new EE1AGenerator();
+    const result = await generator.generate(
+      requestData.client_record,
+      requestData.doctor || '',
+      requestData.form_data
+    );
 
-    const bytes = await signatureFile.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(signaturePath, buffer);
-
-    // Add signature path to request data
-    requestData.form_data.signature_file = signaturePath;
-
-    const result = await executeGenerator('ee1a_wrapper.py', requestData);
-
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
-    }
-
-    return createPdfResponse(result.filename!, result.pdf_data!);
+    // Return PDF as download
+    return new NextResponse(result.pdfBytes as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${result.filename}"`,
+      },
+    });
 
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -53,6 +54,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('EE-1a generation error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error', message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }

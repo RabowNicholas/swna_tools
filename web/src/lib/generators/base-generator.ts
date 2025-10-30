@@ -12,9 +12,8 @@ export abstract class BaseGenerator {
   protected templatePath: string;
 
   constructor(templateName: string) {
-    // Templates are in the project root /templates directory
-    const projectRoot = path.join(process.cwd(), '..');
-    this.templatePath = path.join(projectRoot, 'templates', templateName);
+    // Templates are in public/templates directory
+    this.templatePath = path.join(process.cwd(), 'public', 'templates', templateName);
   }
 
   /**

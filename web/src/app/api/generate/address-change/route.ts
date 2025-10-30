@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { executeGenerator, createPdfResponse } from '@/lib/generator-utils';
 import { requireAuth } from '@/lib/auth';
+import { AddressChangeGenerator } from '@/lib/generators/address-change-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,13 +12,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing client_record or form_data' }, { status: 400 });
     }
 
-    const result = await executeGenerator('address_change_wrapper.py', requestData);
+    // Generate PDF using TypeScript generator
+    const generator = new AddressChangeGenerator();
+    const result = await generator.generate(
+      requestData.client_record,
+      requestData.doctor || '',
+      requestData.form_data
+    );
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
-    }
-
-    return createPdfResponse(result.filename!, result.pdf_data!);
+    // Return PDF as download
+    return new NextResponse(result.pdfBytes as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${result.filename}"`,
+      },
+    });
 
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -26,6 +35,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Address Change generation error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error', message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }

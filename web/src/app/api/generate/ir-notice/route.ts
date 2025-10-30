@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { executeGenerator, createPdfResponse } from '@/lib/generator-utils';
 import { requireAuth } from '@/lib/auth';
+import { LaPlataNoticeGenerator } from '@/lib/generators/ir-notice-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,13 +12,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing client_record or form_data' }, { status: 400 });
     }
 
-    const result = await executeGenerator('ir_notice_wrapper.py', requestData);
+    // Extract fields from form_data
+    const clientName = requestData.form_data.client_name || '';
+    const fileNumber = requestData.form_data.file_number || '';
+    const appointmentDate = requestData.form_data.appointment_date || '';
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+    if (!clientName || !fileNumber || !appointmentDate) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    return createPdfResponse(result.filename!, result.pdf_data!);
+    // Generate PDF using TypeScript generator
+    const generator = new LaPlataNoticeGenerator();
+    const result = await generator.generate(clientName, fileNumber, appointmentDate);
+
+    // Return PDF as download
+    return new NextResponse(result.pdfBytes as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${result.filename}"`,
+      },
+    });
 
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -26,6 +40,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('IR Notice generation error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error', message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }

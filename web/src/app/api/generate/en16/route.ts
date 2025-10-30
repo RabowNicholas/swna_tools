@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { executeGenerator, createPdfResponse } from '@/lib/generator-utils';
 import { requireAuth } from '@/lib/auth';
+import { EN16Generator } from '@/lib/generators/en16-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,13 +12,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing client_record or form_data' }, { status: 400 });
     }
 
-    const result = await executeGenerator('en16_wrapper.py', requestData);
+    // Extract claimant and case_id from form_data
+    const claimant = requestData.form_data.claimant || '';
+    const caseId = requestData.form_data.case_id || '';
 
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+    if (!claimant || !caseId) {
+      return NextResponse.json({ error: 'Missing claimant or case_id in form_data' }, { status: 400 });
     }
 
-    return createPdfResponse(result.filename!, result.pdf_data!);
+    // Generate PDF using TypeScript generator
+    const generator = new EN16Generator();
+    const result = await generator.generate(claimant, caseId);
+
+    // Return PDF as download
+    return new NextResponse(result.pdfBytes as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${result.filename}"`,
+      },
+    });
 
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -26,6 +39,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('EN-16 generation error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error', message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }

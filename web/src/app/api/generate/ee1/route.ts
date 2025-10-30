@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { executeGenerator, createPdfResponse } from '@/lib/generator-utils';
 import { requireAuth } from '@/lib/auth';
+import { EE1Generator } from '@/lib/generators/ee1-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,25 +24,26 @@ export async function POST(request: NextRequest) {
       const fileBuffer = await signatureFile.arrayBuffer();
       const base64Data = Buffer.from(fileBuffer).toString('base64');
       parsedFormData.signature_file = {
-        name: signatureFile.name,
-        type: signatureFile.type,
-        size: signatureFile.size,
         data: base64Data
       };
     }
 
-    const requestData = {
+    // Generate PDF using TypeScript generator
+    const generator = new EE1Generator();
+    const result = await generator.generate(
       client_record,
-      form_data: parsedFormData
-    };
+      '',  // doctor parameter not used in EE1
+      parsedFormData
+    );
 
-    const result = await executeGenerator('ee1_wrapper.py', requestData);
-
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
-    }
-
-    return createPdfResponse(result.filename!, result.pdf_data!);
+    // Return PDF as download
+    return new NextResponse(result.pdfBytes as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${result.filename}"`,
+      },
+    });
 
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -50,6 +51,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('EE-1 generation error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error', message: error instanceof Error ? error.message : String(error) },
+      { status: 500 }
+    );
   }
 }

@@ -51,7 +51,7 @@ export function parsePhoneNumber(phone: string): {
 }
 
 /**
- * Formats current date as MM/DD/YYYY
+ * Formats date as MM/DD/YYYY
  */
 export function formatDateMMDDYYYY(date: Date = new Date()): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');

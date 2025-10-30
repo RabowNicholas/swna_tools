@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { executeGenerator, createPdfResponse } from '@/lib/generator-utils';
 import { requireAuth } from '@/lib/auth';
+import { InvoiceGenerator } from '@/lib/generators/invoice-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,18 +16,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Execute Invoice generator
-    const result = await executeGenerator('invoice_wrapper.py', requestData);
+    // Generate Excel file using TypeScript generator
+    const generator = new InvoiceGenerator();
+    const result = await generator.generate(requestData.form_data);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500 }
-      );
-    }
-
-    // Return PDF file
-    return createPdfResponse(result.filename!, result.pdf_data!);
+    // Return Excel file as download (NOTE: .xlsx not .pdf)
+    return new NextResponse(result.excelBytes as unknown as BodyInit, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="${result.filename}"`,
+      },
+    });
 
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     console.error('Invoice generation error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', message: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
