@@ -181,8 +181,7 @@ export default function EN16Form() {
               <div>
                 <CardTitle className="text-2xl">EN-16 Form Generator</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Generate Employee Identification Information for Energy
-                  Employee
+                  DOL required questionnaire
                 </p>
               </div>
             </div>

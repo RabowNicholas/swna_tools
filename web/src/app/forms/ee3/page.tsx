@@ -571,24 +571,11 @@ export default function EE3Form() {
               Generate EE-3 Form
             </h1>
             <p className="text-muted-foreground">
-              Employee employment history documentation with automated portal
-              submission
+              Employee employment history documentation
             </p>
           </div>
-          <Badge
-            variant={progressPercentage === 100 ? "success" : "secondary"}
-            size="lg"
-          >
-            {Math.round(progressPercentage)}% Complete
-          </Badge>
         </div>
 
-        <Progress
-          value={progressPercentage}
-          variant={progressPercentage === 100 ? "success" : "default"}
-          showLabel
-          label="Form Completion"
-        />
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">

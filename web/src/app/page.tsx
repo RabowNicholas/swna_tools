@@ -55,82 +55,78 @@ export default function Home() {
     {
       id: "ee3",
       name: "EE-3 Form",
-      description:
-        "Employee employment history documentation with automated portal submission",
+      description: "",
       href: "/forms/ee3",
     },
     {
       id: "ee1",
       name: "EE-1 Form",
-      description: "Initial employment form",
+      description: "",
       href: "/forms/ee1",
     },
     {
       id: "ee1a",
       name: "EE-1a Form",
-      description: "Supplemental employment form",
+      description: "",
       href: "/forms/ee1a",
     },
     {
       id: "ee10",
       name: "EE-10 Form",
-      description: "Impairment evaluation request form with email drafting",
+      description: "",
       href: "/forms/ee10",
     },
     {
       id: "en16",
       name: "EN-16 Form",
-      description: "Employee identification information for energy employee",
+      description: "",
       href: "/forms/en16",
     },
     // DOL Letters
     {
       id: "withdrawal",
       name: "Withdrawal Letter",
-      description: "Case withdrawal documentation",
+      description: "",
       href: "/forms/withdrawal",
     },
     {
       id: "address-change",
       name: "Address Change Letter",
-      description: "Address modification notification",
+      description: "",
       href: "/forms/address-change",
     },
     {
       id: "ir-notice",
       name: "IR Notice La Plata",
-      description: "Independent review notice",
+      description: "",
       href: "/forms/ir-notice",
     },
     // Medical
     {
       id: "desert-pulm",
       name: "Desert Pulmonary Referral",
-      description: "Medical referral documentation",
+      description: "",
       href: "/forms/desert-pulm",
     },
     // Billing
     {
       id: "invoice",
       name: "Invoice Generator",
-      description:
-        "Professional billing and invoicing with automatic calculations",
+      description: "",
       href: "/forms/invoice",
     },
     // Client Management
     {
       id: "clients",
       name: "Client Manager",
-      description:
-        "View and manage client data from Airtable with search and filtering",
+      description: "",
       href: "/clients",
     },
     // Portal Access
     {
       id: "portal",
       name: "DOL Portal Access",
-      description:
-        "Submit forms to the Department of Labor portal with pre-filled client information",
+      description: "",
       href: "/portal",
     },
   ];

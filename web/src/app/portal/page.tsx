@@ -245,12 +245,6 @@ function PortalPageContent() {
             })()}
           </div>
           <div className="flex items-center space-x-4">
-            <Badge
-              variant={progressPercentage === 100 ? "success" : "secondary"}
-              size="lg"
-            >
-              {Math.round(progressPercentage)}% Complete
-            </Badge>
             <Button
               variant="ghost"
               onClick={() => router.back()}
@@ -261,12 +255,6 @@ function PortalPageContent() {
           </div>
         </div>
 
-        <Progress
-          value={progressPercentage}
-          variant={progressPercentage === 100 ? "success" : "default"}
-          showLabel
-          label="Portal Setup"
-        />
       </div>
 
       {/* Client Selection */}

@@ -372,20 +372,8 @@ export default function DesertPulmForm() {
               specialists
             </p>
           </div>
-          <Badge
-            variant={progressPercentage === 100 ? "success" : "secondary"}
-            size="lg"
-          >
-            {Math.round(progressPercentage)}% Complete
-          </Badge>
         </div>
 
-        <Progress
-          value={progressPercentage}
-          variant={progressPercentage === 100 ? "success" : "default"}
-          showLabel
-          label="Form Completion"
-        />
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">

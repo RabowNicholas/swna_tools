@@ -347,8 +347,7 @@ export default function EE10Form() {
           EE-10 Form Generator
         </h1>
         <p className="text-muted-foreground">
-          Request for Assistance in Obtaining Employment Records or Other
-          Information
+          Request for approval of evaluating doctor for impairment evaluation
         </p>
       </div>
 
