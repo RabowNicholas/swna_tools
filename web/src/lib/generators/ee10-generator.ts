@@ -27,7 +27,21 @@ export class EE10Generator extends BaseGenerator {
     formData: EE10FormData
   ): Promise<GeneratorResult> {
     const clientName = formData.name || '';
-    const formattedName = formatNameLastFirst(clientName);
+
+    // Parse name: "First Middle Last" -> "Last, First Middle"
+    let formattedName = clientName;
+    try {
+      const nameParts = clientName.trim().split(/\s+/);
+      if (nameParts.length >= 2) {
+        // Last name is the final part, everything else is first/middle
+        const lastName = nameParts[nameParts.length - 1];
+        const firstAndMiddle = nameParts.slice(0, -1).join(' ');
+        formattedName = `${lastName}, ${firstAndMiddle}`;
+      }
+    } catch {
+      formattedName = clientName;
+    }
+
     const caseId = formData.case_id || '';
     const addressMain = formData.address_main || '';
     const addressCity = formData.address_city || '';
