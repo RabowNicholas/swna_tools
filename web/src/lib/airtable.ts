@@ -82,6 +82,7 @@ export class AirtableService {
 
   async updateClient(recordId: string, fields: Record<string, string | number | boolean>): Promise<AirtableRecord> {
     try {
+      console.log('Updating client with fields:', fields);
       const response = await fetch(`${this.baseUrl}/Clients/${recordId}`, {
         method: 'PATCH',
         headers: this.headers,
@@ -89,7 +90,9 @@ export class AirtableService {
       });
 
       if (!response.ok) {
-        throw new Error(`Airtable API error: ${response.status} ${response.statusText}`);
+        const errorBody = await response.text();
+        console.error('Airtable error response:', errorBody);
+        throw new Error(`Airtable API error: ${response.status} ${response.statusText} - ${errorBody}`);
       }
 
       return await response.json();
