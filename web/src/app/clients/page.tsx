@@ -160,12 +160,14 @@ export default function ClientsPage() {
       // Refresh clients data to show updated info
       await refreshClients(true);
 
-      // Find and re-select the updated client
-      const updatedClients = await refreshClients(true);
-      const updatedClient = updatedClients.find(c => c.id === selectedClient.id);
-      if (updatedClient) {
-        setSelectedClient(updatedClient);
-      }
+      // Re-fetch the updated client from state after refresh
+      // The clients state will be updated by the refreshClients callback
+      setTimeout(() => {
+        const updatedClient = clients.find(c => c.id === selectedClient.id);
+        if (updatedClient) {
+          setSelectedClient(updatedClient);
+        }
+      }, 100);
 
       // Exit edit mode
       setIsEditing(false);
@@ -473,7 +475,7 @@ export default function ClientsPage() {
                     {isEditing ? (
                       <div className="flex gap-3">
                         <Button
-                          variant="default"
+                          variant="primary"
                           className="flex-1"
                           onClick={handleSave}
                           disabled={isSaving}
