@@ -234,16 +234,16 @@ export default function ClientsPage() {
           label="Select Client"
         />
 
-          {/* Client Details */}
-          <Card className="bg-card border-2 border-border">
-            <div className="p-4 border-b border-border">
-              <h2 className="text-lg font-semibold text-card-foreground">
-                {selectedClient ? (isEditing ? 'Edit Client Details' : 'Client Details') : 'Select a Client'}
-              </h2>
-            </div>
+        {/* Client Details */}
+        <Card className="bg-card border-2 border-border">
+          <div className="p-4 border-b border-border">
+            <h2 className="text-lg font-semibold text-card-foreground">
+              {selectedClient ? (isEditing ? 'Edit Client Details' : 'Client Details') : 'Select a Client'}
+            </h2>
+          </div>
 
-            {selectedClient ? (
-              <CardContent>
+          {selectedClient ? (
+            <CardContent>
                 <div className="space-y-6">
                   {/* Basic Information */}
                   <section aria-labelledby="basic-info-heading">
@@ -504,16 +504,16 @@ export default function ClientsPage() {
                     )}
                   </div>
                 </div>
-              </CardContent>
-            ) : (
-              <CardContent>
-                <div className="text-center text-muted-foreground">
-                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p>Select a client from the list to view their details</p>
-                </div>
-              </CardContent>
-            )}
-          </Card>
+            </CardContent>
+          ) : (
+            <CardContent>
+              <div className="text-center text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p>Select a client from the list to view their details</p>
+              </div>
+            </CardContent>
+          )}
+        </Card>
       </div>
     </>
   );
