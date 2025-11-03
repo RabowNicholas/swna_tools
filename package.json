@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "SWNA Legal Document Generation Tools",
   "private": true,
-  "workspaces": ["web"],
+  "workspaces": [
+    "web"
+  ],
   "scripts": {
     "dev": "cd web && npm run dev",
     "build": "cd web && npm run build",
@@ -13,6 +15,7 @@
     "install-deps": "npm install && cd web && npm install"
   },
   "devDependencies": {
+    "@types/pica": "^9.0.5",
     "concurrently": "^7.6.0"
   },
   "engines": {

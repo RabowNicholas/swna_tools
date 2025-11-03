@@ -30,6 +30,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { trackEvent } from "@/lib/analytics";
+import Pica from "pica";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -325,62 +326,123 @@ export default function EE1Form() {
     }
   };
 
-  // Process signature image client-side
+  // Process signature image client-side using Pica (Lanczos3 - Adobe quality)
   const processSignatureImage = async (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = document.createElement('img');
-        img.onload = () => {
-          // Target dimensions for EE1 signature
-          const maxWidth = 300;
-          const maxHeight = 100;
+        img.onload = async () => {
+          try {
+            const pica = Pica();
 
-          // Calculate new dimensions (maintain aspect ratio)
-          let width = img.width;
-          let height = img.height;
+            // Target dimensions for EE1 signature (increased for better clarity)
+            const maxWidth = 450;
+            const maxHeight = 150;
 
-          if (width > maxWidth || height > maxHeight) {
-            const aspectRatio = width / height;
-            if (width > maxWidth) {
-              width = maxWidth;
-              height = width / aspectRatio;
+            // Calculate new dimensions (maintain aspect ratio)
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth || height > maxHeight) {
+              const aspectRatio = width / height;
+              if (width > maxWidth) {
+                width = maxWidth;
+                height = width / aspectRatio;
+              }
+              if (height > maxHeight) {
+                height = maxHeight;
+                width = height * aspectRatio;
+              }
             }
-            if (height > maxHeight) {
-              height = maxHeight;
-              width = height * aspectRatio;
+
+            // Round dimensions to integers
+            width = Math.round(width);
+            height = Math.round(height);
+
+            // Step 1: Remove background automatically
+            const bgRemovalCanvas = document.createElement('canvas');
+            bgRemovalCanvas.width = img.width;
+            bgRemovalCanvas.height = img.height;
+            const bgCtx = bgRemovalCanvas.getContext('2d', { willReadFrequently: true });
+
+            if (!bgCtx) {
+              reject(new Error('Failed to get background removal context'));
+              return;
             }
+
+            // Draw original image
+            bgCtx.drawImage(img, 0, 0);
+
+            // Get pixel data for background removal
+            const imageData = bgCtx.getImageData(0, 0, bgRemovalCanvas.width, bgRemovalCanvas.height);
+            const data = imageData.data;
+
+            // Remove white/light backgrounds (threshold-based)
+            const threshold = 240; // RGB values above this are considered "background"
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+
+              // If pixel is light (near white), make it transparent
+              if (r > threshold && g > threshold && b > threshold) {
+                data[i + 3] = 0; // Set alpha to 0 (fully transparent)
+              }
+              // Keep original color for signature pixels (preserves blue/black ink)
+              else {
+                // Just ensure full opacity - preserve original color
+                data[i + 3] = 255;
+              }
+            }
+
+            // Put modified image data back
+            bgCtx.putImageData(imageData, 0, 0);
+
+            // Step 2: Use cleaned image as source for Pica resize
+            const sourceCanvas = document.createElement('canvas');
+            sourceCanvas.width = img.width;
+            sourceCanvas.height = img.height;
+            const sourceCtx = sourceCanvas.getContext('2d');
+
+            if (!sourceCtx) {
+              reject(new Error('Failed to get source canvas context'));
+              return;
+            }
+
+            // Draw background-removed image
+            sourceCtx.drawImage(bgRemovalCanvas, 0, 0);
+
+            // Create destination canvas
+            const destCanvas = document.createElement('canvas');
+            destCanvas.width = width;
+            destCanvas.height = height;
+
+            // Resize with Pica using Lanczos3 filter (highest quality)
+            // Note: Pica automatically preserves alpha channel from source canvas
+            await pica.resize(sourceCanvas, destCanvas, {
+              unsharpAmount: 160,      // Increased sharpening for crisp signatures
+              unsharpRadius: 0.5,      // Tighter radius for fine details
+              unsharpThreshold: 0,     // Sharpen all pixels
+              quality: 2,              // Lanczos2 (faster, same quality as Lanczos3)
+            });
+
+            // Convert to PNG blob with maximum quality
+            destCanvas.toBlob((blob) => {
+              if (blob) {
+                const processedFile = new File(
+                  [blob],
+                  file.name.replace(/\.[^/.]+$/, '.png'),
+                  { type: 'image/png' }
+                );
+                resolve(processedFile);
+              } else {
+                reject(new Error('Failed to create blob'));
+              }
+            }, 'image/png', 1.0);
+          } catch (error) {
+            reject(error);
           }
-
-          // Create canvas and draw resized image
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-
-          if (!ctx) {
-            reject(new Error('Failed to get canvas context'));
-            return;
-          }
-
-          // Fill with white background to flatten transparency
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(0, 0, width, height);
-
-          // Draw image
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Convert to PNG blob
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const processedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.png'), {
-                type: 'image/png'
-              });
-              resolve(processedFile);
-            } else {
-              reject(new Error('Failed to create blob'));
-            }
-          }, 'image/png');
         };
         img.onerror = () => reject(new Error('Failed to load image'));
         img.src = e.target?.result as string;
@@ -1358,6 +1420,21 @@ export default function EE1Form() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              <div className="bg-info/10 border border-info/20 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <Info className="h-5 w-5 text-info flex-shrink-0 mt-0.5" />
+                  <div className="text-sm space-y-2">
+                    <p className="font-medium text-info">Signature Upload Guidelines:</p>
+                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                      <li>Upload a clear image of the signature on a white or light background</li>
+                      <li>PNG or JPG format accepted</li>
+                      <li>Use dark ink (black or dark blue) for best results</li>
+                      <li>Background will be automatically removed during processing</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
               <Input
                 type="file"
                 label="Upload Client's Signature (Optional)"
