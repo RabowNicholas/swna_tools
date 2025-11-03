@@ -8,7 +8,6 @@ import { BaseGenerator } from './base-generator';
 import { ClientRecord, GeneratorResult } from './types';
 import { formatDateMMDDYY, formatDateMMDDYYYY, parsePhoneNumber } from './utils/formatters';
 import { StandardFonts } from 'pdf-lib';
-import sharp from 'sharp';
 
 export interface EE1ADiagnosis {
   diagnosis_text?: string;
@@ -124,26 +123,14 @@ export class EE1AGenerator extends BaseGenerator {
     }
 
     // Signature handling
+    // Note: Image is pre-processed on client-side (resized to 200x60, flattened, PNG format)
     if (signatureFile?.data) {
       try {
-        // Decode base64 image
+        // Decode base64 image (already processed on client)
         const imageBuffer = Buffer.from(signatureFile.data, 'base64');
 
-        // Process with sharp: resize and convert to PNG
-        const maxWidth = 200;
-        const maxHeight = 60;
-
-        const processedImage = await sharp(imageBuffer)
-          .resize(maxWidth, maxHeight, {
-            fit: 'inside',
-            withoutEnlargement: true,
-          })
-          .flatten({ background: { r: 255, g: 255, b: 255 } }) // White background
-          .png()
-          .toBuffer();
-
-        // Embed image in PDF
-        const pngImage = await pdfDoc.embedPng(processedImage);
+        // Directly embed the pre-processed PNG (already resized and flattened on client)
+        const pngImage = await pdfDoc.embedPng(imageBuffer);
         const dims = pngImage.scale(1);
 
         page.drawImage(pngImage, {

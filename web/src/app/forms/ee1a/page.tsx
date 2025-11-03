@@ -258,18 +258,90 @@ export default function EE1AForm() {
     }
   };
 
+  // Process signature image client-side
+  const processSignatureImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = document.createElement('img');
+        img.onload = () => {
+          // Target dimensions for EE1A signature (smaller than EE1)
+          const maxWidth = 200;
+          const maxHeight = 60;
+
+          // Calculate new dimensions (maintain aspect ratio)
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth || height > maxHeight) {
+            const aspectRatio = width / height;
+            if (width > maxWidth) {
+              width = maxWidth;
+              height = width / aspectRatio;
+            }
+            if (height > maxHeight) {
+              height = maxHeight;
+              width = height * aspectRatio;
+            }
+          }
+
+          // Create canvas and draw resized image
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+
+          // Fill with white background to flatten transparency
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(0, 0, width, height);
+
+          // Draw image
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Convert to PNG blob
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const processedFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.png'), {
+                type: 'image/png'
+              });
+              resolve(processedFile);
+            } else {
+              reject(new Error('Failed to create blob'));
+            }
+          }, 'image/png');
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Handle signature file upload
-  const handleSignatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setSignatureFile(file);
+      try {
+        // Process image client-side (resize, flatten, convert to PNG)
+        const processedFile = await processSignatureImage(file);
+        setSignatureFile(processedFile);
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSignaturePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setSignaturePreview(reader.result as string);
+        };
+        reader.readAsDataURL(processedFile);
+      } catch (error) {
+        console.error('Error processing signature image:', error);
+        alert('Failed to process signature image. Please try a different image.');
+      }
     }
   };
 

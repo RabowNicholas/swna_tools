@@ -9,7 +9,6 @@ import { PDFDocument, PDFPage, StandardFonts } from 'pdf-lib';
 import { BaseGenerator } from './base-generator';
 import { ClientRecord, GeneratorResult } from './types';
 import { formatDateMMDDYY, formatDateMMDDYYYY, parsePhoneNumber } from './utils/formatters';
-import sharp from 'sharp';
 
 export interface EE1DiagnosisItem {
   text: string;
@@ -218,23 +217,13 @@ export class EE1Generator extends BaseGenerator {
     }
 
     // Signature handling (on signature overlay - behind form)
+    // Note: Image is pre-processed on client-side (resized to 300x100, flattened, PNG format)
     if (signatureFile?.data) {
       try {
         const imageBuffer = Buffer.from(signatureFile.data, 'base64');
 
-        const maxWidth = 300;
-        const maxHeight = 100;
-
-        const processedImage = await sharp(imageBuffer)
-          .resize(maxWidth, maxHeight, {
-            fit: 'inside',
-            withoutEnlargement: true,
-          })
-          .flatten({ background: { r: 255, g: 255, b: 255 } })
-          .png()
-          .toBuffer();
-
-        const pngImage = await signatureOverlayDoc.embedPng(processedImage);
+        // Directly embed the pre-processed PNG (already resized and flattened on client)
+        const pngImage = await signatureOverlayDoc.embedPng(imageBuffer);
         const dims = pngImage.scale(1);
 
         sigPage.drawImage(pngImage, {
