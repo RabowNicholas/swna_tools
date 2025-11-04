@@ -259,66 +259,23 @@ export default function EE1AForm() {
     }
   };
 
-  // Process signature image server-side using Sharp (high quality)
-  const processSignatureImage = async (file: File): Promise<File> => {
-    try {
-      // Send to server for processing
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('maxWidth', '200');
-      formData.append('maxHeight', '50');
-
-      const response = await fetch('/api/process-signature', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Server processing failed');
-      }
-
-      const result = await response.json();
-
-      // Convert base64 back to File
-      const base64Data = result.image;
-      const binaryString = atob(base64Data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      const blob = new Blob([bytes], { type: 'image/png' });
-      const processedFile = new File(
-        [blob],
-        file.name.replace(/\.[^/.]+$/, '.png'),
-        { type: 'image/png' }
-      );
-
-      return processedFile;
-    } catch (error) {
-      console.error('Server-side processing error:', error);
-      throw error;
-    }
-  };
-
-  // Handle signature file upload
+  // Handle signature file upload (no processing - use original file)
   const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       try {
-        // Process image client-side (resize, flatten, convert to PNG)
-        const processedFile = await processSignatureImage(file);
-        setSignatureFile(processedFile);
+        // Use original file without any processing
+        setSignatureFile(file);
 
         // Create preview
         const reader = new FileReader();
         reader.onloadend = () => {
           setSignaturePreview(reader.result as string);
         };
-        reader.readAsDataURL(processedFile);
+        reader.readAsDataURL(file);
       } catch (error) {
-        console.error('Error processing signature image:', error);
-        alert('Failed to process signature image. Please try a different image.');
+        console.error('Error loading signature image:', error);
+        alert('Failed to load signature image. Please try a different image.');
       }
     }
   };
