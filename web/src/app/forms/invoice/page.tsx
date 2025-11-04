@@ -61,9 +61,7 @@ const invoiceSchema = z.object({
   part_type: z.enum(["Part B", "Part E"]),
   ar_fee: z.string().optional(),
   awarded_amount: z.string().optional(),
-  invoice_items: z
-    .array(invoiceItemSchema)
-    .min(1, "At least one invoice item is required"),
+  invoice_items: z.array(invoiceItemSchema),
 });
 
 type InvoiceFormData = z.infer<typeof invoiceSchema>;
@@ -605,18 +603,16 @@ export default function InvoiceForm() {
                     <h4 className="text-sm font-medium text-foreground">
                       Item #{index + 1}
                     </h4>
-                    {fields.length > 1 && (
-                      <Button
-                        type="button"
-                        onClick={() => remove(index)}
-                        variant="tertiary"
-                        size="sm"
-                        icon={<Minus className="h-4 w-4" />}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        Remove
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      onClick={() => remove(index)}
+                      variant="tertiary"
+                      size="sm"
+                      icon={<Minus className="h-4 w-4" />}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Remove
+                    </Button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
