@@ -340,56 +340,41 @@ export default function EE1Form() {
             const maxWidth = 200;
             const maxHeight = 50;
 
-            // Step 1: Remove background automatically
-            const bgRemovalCanvas = document.createElement('canvas');
-            bgRemovalCanvas.width = img.width;
-            bgRemovalCanvas.height = img.height;
-            const bgCtx = bgRemovalCanvas.getContext('2d', { willReadFrequently: true });
+            // Step 1: Load image to canvas (temporary - for dimension info only)
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = img.width;
+            tempCanvas.height = img.height;
+            const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
 
-            if (!bgCtx) {
-              reject(new Error('Failed to get background removal context'));
+            if (!tempCtx) {
+              reject(new Error('Failed to get canvas context'));
               return;
             }
 
             // Draw original image
-            bgCtx.drawImage(img, 0, 0);
+            tempCtx.drawImage(img, 0, 0);
 
-            // Get pixel data for background removal
-            const imageData = bgCtx.getImageData(0, 0, bgRemovalCanvas.width, bgRemovalCanvas.height);
+            // Get pixel data to find signature bounds (no modification)
+            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
             const data = imageData.data;
 
-            // Remove white/light backgrounds (threshold-based)
-            const threshold = 240; // RGB values above this are considered "background"
-            for (let i = 0; i < data.length; i += 4) {
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-
-              // If pixel is light (near white), make it transparent
-              if (r > threshold && g > threshold && b > threshold) {
-                data[i + 3] = 0; // Set alpha to 0 (fully transparent)
-              }
-              // Keep original color for signature pixels (preserves blue/black ink)
-              else {
-                // Just ensure full opacity - preserve original color
-                data[i + 3] = 255;
-              }
-            }
-
-            // Put modified image data back
-            bgCtx.putImageData(imageData, 0, 0);
-
-            // Step 2: Find bounding box of signature content
-            let minX = bgRemovalCanvas.width;
+            // Find bounding box by looking for dark pixels (signature)
+            const threshold = 240; // Pixels darker than this are considered signature
+            let minX = tempCanvas.width;
             let maxX = 0;
-            let minY = bgRemovalCanvas.height;
+            let minY = tempCanvas.height;
             let maxY = 0;
 
             // Scan all pixels to find signature bounds
-            for (let y = 0; y < bgRemovalCanvas.height; y++) {
-              for (let x = 0; x < bgRemovalCanvas.width; x++) {
-                const alpha = data[(y * bgRemovalCanvas.width + x) * 4 + 3];
-                if (alpha > 128) { // Non-transparent pixel (signature content)
+            for (let y = 0; y < tempCanvas.height; y++) {
+              for (let x = 0; x < tempCanvas.width; x++) {
+                const i = (y * tempCanvas.width + x) * 4;
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+
+                // If pixel is dark (signature content)
+                if (r < threshold || g < threshold || b < threshold) {
                   minX = Math.min(minX, x);
                   maxX = Math.max(maxX, x);
                   minY = Math.min(minY, y);
@@ -401,15 +386,15 @@ export default function EE1Form() {
             // Add small padding around signature
             const padding = 10;
             minX = Math.max(0, minX - padding);
-            maxX = Math.min(bgRemovalCanvas.width - 1, maxX + padding);
+            maxX = Math.min(tempCanvas.width - 1, maxX + padding);
             minY = Math.max(0, minY - padding);
-            maxY = Math.min(bgRemovalCanvas.height - 1, maxY + padding);
+            maxY = Math.min(tempCanvas.height - 1, maxY + padding);
 
             const contentWidth = maxX - minX + 1;
             const contentHeight = maxY - minY + 1;
 
-            // Step 3: Extract cropped region directly from ImageData (no drawImage = no quality loss)
-            const croppedImageData = bgCtx.getImageData(minX, minY, contentWidth, contentHeight);
+            // Step 2: Extract cropped region directly (preserves original quality)
+            const croppedImageData = tempCtx.getImageData(minX, minY, contentWidth, contentHeight);
 
             // Step 4: Calculate final dimensions to fit in target box
             // Only resize if signature is larger than target box
