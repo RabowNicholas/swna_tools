@@ -30,7 +30,6 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { trackEvent } from "@/lib/analytics";
-import Pica from "pica";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -326,154 +325,46 @@ export default function EE1Form() {
     }
   };
 
-  // Process signature image client-side using Pica (Lanczos3 - Adobe quality)
+  // Process signature image server-side using Sharp (high quality)
   const processSignatureImage = async (file: File): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = document.createElement('img');
-        img.onload = async () => {
-          try {
-            const pica = Pica();
+    try {
+      // Send to server for processing
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('maxWidth', '200');
+      formData.append('maxHeight', '50');
 
-            // Target dimensions for EE1 signature
-            const maxWidth = 200;
-            const maxHeight = 50;
+      const response = await fetch('/api/process-signature', {
+        method: 'POST',
+        body: formData,
+      });
 
-            // Step 1: Load image to canvas (temporary - for dimension info only)
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = img.width;
-            tempCanvas.height = img.height;
-            const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
+      if (!response.ok) {
+        throw new Error('Server processing failed');
+      }
 
-            if (!tempCtx) {
-              reject(new Error('Failed to get canvas context'));
-              return;
-            }
+      const result = await response.json();
 
-            // Draw original image
-            tempCtx.drawImage(img, 0, 0);
+      // Convert base64 back to File
+      const base64Data = result.image;
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
 
-            // Get pixel data to find signature bounds (no modification)
-            const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-            const data = imageData.data;
+      const blob = new Blob([bytes], { type: 'image/png' });
+      const processedFile = new File(
+        [blob],
+        file.name.replace(/\.[^/.]+$/, '.png'),
+        { type: 'image/png' }
+      );
 
-            // Find bounding box by looking for dark pixels (signature)
-            const threshold = 240; // Pixels darker than this are considered signature
-            let minX = tempCanvas.width;
-            let maxX = 0;
-            let minY = tempCanvas.height;
-            let maxY = 0;
-
-            // Scan all pixels to find signature bounds
-            for (let y = 0; y < tempCanvas.height; y++) {
-              for (let x = 0; x < tempCanvas.width; x++) {
-                const i = (y * tempCanvas.width + x) * 4;
-                const r = data[i];
-                const g = data[i + 1];
-                const b = data[i + 2];
-
-                // If pixel is dark (signature content)
-                if (r < threshold || g < threshold || b < threshold) {
-                  minX = Math.min(minX, x);
-                  maxX = Math.max(maxX, x);
-                  minY = Math.min(minY, y);
-                  maxY = Math.max(maxY, y);
-                }
-              }
-            }
-
-            // Add small padding around signature
-            const padding = 10;
-            minX = Math.max(0, minX - padding);
-            maxX = Math.min(tempCanvas.width - 1, maxX + padding);
-            minY = Math.max(0, minY - padding);
-            maxY = Math.min(tempCanvas.height - 1, maxY + padding);
-
-            const contentWidth = maxX - minX + 1;
-            const contentHeight = maxY - minY + 1;
-
-            // Step 2: Extract cropped region directly (preserves original quality)
-            const croppedImageData = tempCtx.getImageData(minX, minY, contentWidth, contentHeight);
-
-            // Step 4: Calculate final dimensions to fit in target box
-            // Only resize if signature is larger than target box
-            const aspectRatio = contentWidth / contentHeight;
-            let finalWidth = contentWidth;
-            let finalHeight = contentHeight;
-            let needsResize = false;
-
-            // Only downscale if signature exceeds target box
-            if (contentWidth > maxWidth || contentHeight > maxHeight) {
-              needsResize = true;
-              if (aspectRatio > maxWidth / maxHeight) {
-                // Width-limited (signature is wider)
-                finalWidth = maxWidth;
-                finalHeight = Math.round(maxWidth / aspectRatio);
-              } else {
-                // Height-limited (signature is taller)
-                finalHeight = maxHeight;
-                finalWidth = Math.round(maxHeight * aspectRatio);
-              }
-            }
-
-            // Step 5: Create final canvas
-            const destCanvas = document.createElement('canvas');
-            destCanvas.width = finalWidth;
-            destCanvas.height = finalHeight;
-
-            if (needsResize) {
-              // Create temp canvas for cropped data to feed into Pica
-              const tempCanvas = document.createElement('canvas');
-              tempCanvas.width = contentWidth;
-              tempCanvas.height = contentHeight;
-              const tempCtx = tempCanvas.getContext('2d', { alpha: true });
-              if (!tempCtx) {
-                reject(new Error('Failed to get temp canvas context'));
-                return;
-              }
-              tempCtx.putImageData(croppedImageData, 0, 0);
-
-              // Resize with Pica using Lanczos filter (high quality)
-              await pica.resize(tempCanvas, destCanvas, {
-                unsharpAmount: 200,      // Maximum sharpening for small signatures
-                unsharpRadius: 0.4,      // Tighter radius for fine details
-                unsharpThreshold: 0,     // Sharpen all pixels
-                quality: 3,              // Lanczos3 (highest quality)
-              });
-            } else {
-              // Use original quality - direct pixel copy with putImageData (no quality loss)
-              const destCtx = destCanvas.getContext('2d', { alpha: true });
-              if (!destCtx) {
-                reject(new Error('Failed to get destination canvas context'));
-                return;
-              }
-              destCtx.putImageData(croppedImageData, 0, 0);
-            }
-
-            // Convert to PNG blob with maximum quality
-            destCanvas.toBlob((blob) => {
-              if (blob) {
-                const processedFile = new File(
-                  [blob],
-                  file.name.replace(/\.[^/.]+$/, '.png'),
-                  { type: 'image/png' }
-                );
-                resolve(processedFile);
-              } else {
-                reject(new Error('Failed to create blob'));
-              }
-            }, 'image/png', 1.0);
-          } catch (error) {
-            reject(error);
-          }
-        };
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
+      return processedFile;
+    } catch (error) {
+      console.error('Server-side processing error:', error);
+      throw error;
+    }
   };
 
   // Handle signature file upload
