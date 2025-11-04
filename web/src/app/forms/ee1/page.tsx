@@ -427,30 +427,48 @@ export default function EE1Form() {
             );
 
             // Step 4: Calculate final dimensions to fit in target box
+            // Only resize if signature is larger than target box
             const aspectRatio = contentWidth / contentHeight;
-            let finalWidth = maxWidth;
-            let finalHeight = maxHeight;
+            let finalWidth = contentWidth;
+            let finalHeight = contentHeight;
+            let needsResize = false;
 
-            if (aspectRatio > maxWidth / maxHeight) {
-              // Width-limited (signature is wider)
-              finalHeight = Math.round(maxWidth / aspectRatio);
-            } else {
-              // Height-limited (signature is taller)
-              finalWidth = Math.round(maxHeight * aspectRatio);
+            // Only downscale if signature exceeds target box
+            if (contentWidth > maxWidth || contentHeight > maxHeight) {
+              needsResize = true;
+              if (aspectRatio > maxWidth / maxHeight) {
+                // Width-limited (signature is wider)
+                finalWidth = maxWidth;
+                finalHeight = Math.round(maxWidth / aspectRatio);
+              } else {
+                // Height-limited (signature is taller)
+                finalHeight = maxHeight;
+                finalWidth = Math.round(maxHeight * aspectRatio);
+              }
             }
 
-            // Create destination canvas at calculated size
+            // Step 5: Create final canvas and optionally resize
             const destCanvas = document.createElement('canvas');
             destCanvas.width = finalWidth;
             destCanvas.height = finalHeight;
 
-            // Step 5: Resize with Pica using Lanczos filter (high quality)
-            await pica.resize(croppedCanvas, destCanvas, {
-              unsharpAmount: 200,      // Maximum sharpening for small signatures
-              unsharpRadius: 0.4,      // Tighter radius for fine details
-              unsharpThreshold: 0,     // Sharpen all pixels
-              quality: 3,              // Lanczos3 (highest quality)
-            });
+            if (needsResize) {
+              // Resize with Pica using Lanczos filter (high quality)
+              await pica.resize(croppedCanvas, destCanvas, {
+                unsharpAmount: 200,      // Maximum sharpening for small signatures
+                unsharpRadius: 0.4,      // Tighter radius for fine details
+                unsharpThreshold: 0,     // Sharpen all pixels
+                quality: 3,              // Lanczos3 (highest quality)
+              });
+            } else {
+              // Use original quality - no resize needed
+              const destCtx = destCanvas.getContext('2d');
+              if (!destCtx) {
+                reject(new Error('Failed to get destination canvas context'));
+                return;
+              }
+              destCtx.drawImage(croppedCanvas, 0, 0);
+            }
 
             // Convert to PNG blob with maximum quality
             destCanvas.toBlob((blob) => {
