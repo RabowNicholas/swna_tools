@@ -380,10 +380,10 @@ export default function EE1AForm() {
 
             // Step 5: Resize with Pica using Lanczos filter (high quality)
             await pica.resize(croppedCanvas, destCanvas, {
-              unsharpAmount: 160,      // Increased sharpening for crisp signatures
-              unsharpRadius: 0.5,      // Tighter radius for fine details
+              unsharpAmount: 200,      // Maximum sharpening for small signatures
+              unsharpRadius: 0.4,      // Tighter radius for fine details
               unsharpThreshold: 0,     // Sharpen all pixels
-              quality: 2,              // Lanczos2 (faster, same quality as Lanczos3)
+              quality: 3,              // Lanczos3 (highest quality)
             });
 
             // Convert to PNG blob with maximum quality
