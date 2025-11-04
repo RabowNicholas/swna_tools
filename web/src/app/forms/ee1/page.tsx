@@ -408,29 +408,8 @@ export default function EE1Form() {
             const contentWidth = maxX - minX + 1;
             const contentHeight = maxY - minY + 1;
 
-            // Step 3: Crop to signature content
-            const croppedCanvas = document.createElement('canvas');
-            croppedCanvas.width = contentWidth;
-            croppedCanvas.height = contentHeight;
-            const croppedCtx = croppedCanvas.getContext('2d', {
-              willReadFrequently: false,
-              alpha: true
-            });
-
-            if (!croppedCtx) {
-              reject(new Error('Failed to get cropped canvas context'));
-              return;
-            }
-
-            // Disable image smoothing to preserve quality during crop
-            croppedCtx.imageSmoothingEnabled = false;
-
-            // Draw only the signature content area
-            croppedCtx.drawImage(
-              bgRemovalCanvas,
-              minX, minY, contentWidth, contentHeight,
-              0, 0, contentWidth, contentHeight
-            );
+            // Step 3: Extract cropped region directly from ImageData (no drawImage = no quality loss)
+            const croppedImageData = bgCtx.getImageData(minX, minY, contentWidth, contentHeight);
 
             // Step 4: Calculate final dimensions to fit in target box
             // Only resize if signature is larger than target box
@@ -453,29 +432,38 @@ export default function EE1Form() {
               }
             }
 
-            // Step 5: Create final canvas and optionally resize
+            // Step 5: Create final canvas
             const destCanvas = document.createElement('canvas');
             destCanvas.width = finalWidth;
             destCanvas.height = finalHeight;
 
             if (needsResize) {
+              // Create temp canvas for cropped data to feed into Pica
+              const tempCanvas = document.createElement('canvas');
+              tempCanvas.width = contentWidth;
+              tempCanvas.height = contentHeight;
+              const tempCtx = tempCanvas.getContext('2d', { alpha: true });
+              if (!tempCtx) {
+                reject(new Error('Failed to get temp canvas context'));
+                return;
+              }
+              tempCtx.putImageData(croppedImageData, 0, 0);
+
               // Resize with Pica using Lanczos filter (high quality)
-              await pica.resize(croppedCanvas, destCanvas, {
+              await pica.resize(tempCanvas, destCanvas, {
                 unsharpAmount: 200,      // Maximum sharpening for small signatures
                 unsharpRadius: 0.4,      // Tighter radius for fine details
                 unsharpThreshold: 0,     // Sharpen all pixels
                 quality: 3,              // Lanczos3 (highest quality)
               });
             } else {
-              // Use original quality - no resize needed
+              // Use original quality - direct pixel copy with putImageData (no quality loss)
               const destCtx = destCanvas.getContext('2d', { alpha: true });
               if (!destCtx) {
                 reject(new Error('Failed to get destination canvas context'));
                 return;
               }
-              // Disable smoothing to preserve sharp edges
-              destCtx.imageSmoothingEnabled = false;
-              destCtx.drawImage(croppedCanvas, 0, 0);
+              destCtx.putImageData(croppedImageData, 0, 0);
             }
 
             // Convert to PNG blob with maximum quality
