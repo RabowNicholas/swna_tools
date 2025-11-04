@@ -272,7 +272,7 @@ export default function EE1AForm() {
 
             // Target dimensions for EE1A signature
             const maxWidth = 350;
-            const maxHeight = 100;
+            const maxHeight = 50;
 
             // Step 1: Remove background automatically
             const bgRemovalCanvas = document.createElement('canvas');
