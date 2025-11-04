@@ -346,12 +346,18 @@ export default function EE1AForm() {
             const croppedCanvas = document.createElement('canvas');
             croppedCanvas.width = contentWidth;
             croppedCanvas.height = contentHeight;
-            const croppedCtx = croppedCanvas.getContext('2d');
+            const croppedCtx = croppedCanvas.getContext('2d', {
+              willReadFrequently: false,
+              alpha: true
+            });
 
             if (!croppedCtx) {
               reject(new Error('Failed to get cropped canvas context'));
               return;
             }
+
+            // Disable image smoothing to preserve quality during crop
+            croppedCtx.imageSmoothingEnabled = false;
 
             // Draw only the signature content area
             croppedCtx.drawImage(
@@ -396,11 +402,13 @@ export default function EE1AForm() {
               });
             } else {
               // Use original quality - no resize needed
-              const destCtx = destCanvas.getContext('2d');
+              const destCtx = destCanvas.getContext('2d', { alpha: true });
               if (!destCtx) {
                 reject(new Error('Failed to get destination canvas context'));
                 return;
               }
+              // Disable smoothing to preserve sharp edges
+              destCtx.imageSmoothingEnabled = false;
               destCtx.drawImage(croppedCanvas, 0, 0);
             }
 
