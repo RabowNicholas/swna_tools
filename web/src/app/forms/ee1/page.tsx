@@ -337,7 +337,7 @@ export default function EE1Form() {
             const pica = Pica();
 
             // Target dimensions for EE1 signature
-            const maxWidth = 450;
+            const maxWidth = 200;
             const maxHeight = 50;
 
             // Step 1: Remove background automatically
