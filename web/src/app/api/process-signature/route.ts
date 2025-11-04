@@ -3,12 +3,17 @@ import sharp from 'sharp';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('[API] Processing signature request...');
     const formData = await request.formData();
     const file = formData.get('image') as File;
     const maxWidth = parseInt(formData.get('maxWidth') as string) || 200;
     const maxHeight = parseInt(formData.get('maxHeight') as string) || 50;
 
+    console.log('[API] File received:', file?.name, file?.type, file?.size);
+    console.log('[API] Target dimensions:', maxWidth, 'x', maxHeight);
+
     if (!file) {
+      console.error('[API] No file provided');
       return NextResponse.json(
         { error: 'No image file provided' },
         { status: 400 }
@@ -98,6 +103,9 @@ export async function POST(request: NextRequest) {
     // Return as base64
     const base64 = processedBuffer.toString('base64');
 
+    console.log('[API] Processing complete! Final dimensions:', finalWidth, 'x', finalHeight);
+    console.log('[API] Base64 length:', base64.length);
+
     return NextResponse.json({
       success: true,
       image: base64,
@@ -105,9 +113,9 @@ export async function POST(request: NextRequest) {
       height: finalHeight,
     });
   } catch (error) {
-    console.error('Signature processing error:', error);
+    console.error('[API] Signature processing error:', error);
     return NextResponse.json(
-      { error: 'Failed to process signature image' },
+      { error: 'Failed to process signature image', details: String(error) },
       { status: 500 }
     );
   }
