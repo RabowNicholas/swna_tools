@@ -336,29 +336,9 @@ export default function EE1Form() {
           try {
             const pica = Pica();
 
-            // Target dimensions for EE1 signature (increased for better clarity)
+            // Target dimensions for EE1 signature
             const maxWidth = 450;
             const maxHeight = 150;
-
-            // Calculate new dimensions (maintain aspect ratio)
-            let width = img.width;
-            let height = img.height;
-
-            if (width > maxWidth || height > maxHeight) {
-              const aspectRatio = width / height;
-              if (width > maxWidth) {
-                width = maxWidth;
-                height = width / aspectRatio;
-              }
-              if (height > maxHeight) {
-                height = maxHeight;
-                width = height * aspectRatio;
-              }
-            }
-
-            // Round dimensions to integers
-            width = Math.round(width);
-            height = Math.round(height);
 
             // Step 1: Remove background automatically
             const bgRemovalCanvas = document.createElement('canvas');
@@ -399,28 +379,73 @@ export default function EE1Form() {
             // Put modified image data back
             bgCtx.putImageData(imageData, 0, 0);
 
-            // Step 2: Use cleaned image as source for Pica resize
-            const sourceCanvas = document.createElement('canvas');
-            sourceCanvas.width = img.width;
-            sourceCanvas.height = img.height;
-            const sourceCtx = sourceCanvas.getContext('2d');
+            // Step 2: Find bounding box of signature content
+            let minX = bgRemovalCanvas.width;
+            let maxX = 0;
+            let minY = bgRemovalCanvas.height;
+            let maxY = 0;
 
-            if (!sourceCtx) {
-              reject(new Error('Failed to get source canvas context'));
+            // Scan all pixels to find signature bounds
+            for (let y = 0; y < bgRemovalCanvas.height; y++) {
+              for (let x = 0; x < bgRemovalCanvas.width; x++) {
+                const alpha = data[(y * bgRemovalCanvas.width + x) * 4 + 3];
+                if (alpha > 128) { // Non-transparent pixel (signature content)
+                  minX = Math.min(minX, x);
+                  maxX = Math.max(maxX, x);
+                  minY = Math.min(minY, y);
+                  maxY = Math.max(maxY, y);
+                }
+              }
+            }
+
+            // Add small padding around signature
+            const padding = 10;
+            minX = Math.max(0, minX - padding);
+            maxX = Math.min(bgRemovalCanvas.width - 1, maxX + padding);
+            minY = Math.max(0, minY - padding);
+            maxY = Math.min(bgRemovalCanvas.height - 1, maxY + padding);
+
+            const contentWidth = maxX - minX + 1;
+            const contentHeight = maxY - minY + 1;
+
+            // Step 3: Crop to signature content
+            const croppedCanvas = document.createElement('canvas');
+            croppedCanvas.width = contentWidth;
+            croppedCanvas.height = contentHeight;
+            const croppedCtx = croppedCanvas.getContext('2d');
+
+            if (!croppedCtx) {
+              reject(new Error('Failed to get cropped canvas context'));
               return;
             }
 
-            // Draw background-removed image
-            sourceCtx.drawImage(bgRemovalCanvas, 0, 0);
+            // Draw only the signature content area
+            croppedCtx.drawImage(
+              bgRemovalCanvas,
+              minX, minY, contentWidth, contentHeight,
+              0, 0, contentWidth, contentHeight
+            );
 
-            // Create destination canvas
+            // Step 4: Calculate final dimensions to fit in target box
+            const aspectRatio = contentWidth / contentHeight;
+            let finalWidth = maxWidth;
+            let finalHeight = maxHeight;
+
+            if (aspectRatio > maxWidth / maxHeight) {
+              // Width-limited (signature is wider)
+              finalHeight = Math.round(maxWidth / aspectRatio);
+            } else {
+              // Height-limited (signature is taller)
+              finalWidth = Math.round(maxHeight * aspectRatio);
+            }
+
+            // Create destination canvas at calculated size
             const destCanvas = document.createElement('canvas');
-            destCanvas.width = width;
-            destCanvas.height = height;
+            destCanvas.width = finalWidth;
+            destCanvas.height = finalHeight;
 
-            // Resize with Pica using Lanczos3 filter (highest quality)
-            // Note: Pica automatically preserves alpha channel from source canvas
-            await pica.resize(sourceCanvas, destCanvas, {
+            // Step 5: Resize with Pica using Lanczos filter (high quality)
+            await pica.resize(croppedCanvas, destCanvas, {
               unsharpAmount: 160,      // Increased sharpening for crisp signatures
               unsharpRadius: 0.5,      // Tighter radius for fine details
               unsharpThreshold: 0,     // Sharpen all pixels
