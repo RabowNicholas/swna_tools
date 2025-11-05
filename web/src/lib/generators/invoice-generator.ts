@@ -110,7 +110,8 @@ export class InvoiceGenerator {
       const row = startRow + i;
       worksheet.getCell(`A${row}`).value = serviceName;
       worksheet.getCell(`B${row}`).value = amount;
-      worksheet.getCell(`E${row}`).value = amount;
+      // Don't set E column directly - let the formula calculate it
+      // worksheet.getCell(`E${row}`).value = amount;
       worksheet.getCell(`D${row}`).value = serviceDate;
     }
 
