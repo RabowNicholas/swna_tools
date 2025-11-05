@@ -10,22 +10,16 @@ import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
-import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Progress } from "@/components/ui/Progress";
-import { Badge } from "@/components/ui/Badge";
 import {
   FileDown,
   User,
+  Home,
   Stethoscope,
   AlertCircle,
   CheckCircle,
-  Calendar,
-  Heart,
-  Activity,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { cn } from "@/lib/utils";
 import {
   ClientSelector,
   parseClientName,
@@ -118,27 +112,18 @@ const getStateAbbreviation = (stateName: string): string => {
   return stateName;
 };
 
-// Zod schema for form validation
+// Zod schema for form validation (simplified to match Streamlit version)
 const desertPulmSchema = z.object({
   client_id: z.string().min(1, "Please select a client"),
-  client_name: z.string().min(1, "Client name is required"),
-  client_dob: z.string().min(1, "Client date of birth is required"),
+  patient_name: z.string().min(1, "Patient's full name is required"),
+  phone_number: z.string().optional(),
+  dob: z.string().min(1, "Date of birth is required"),
   case_id: z.string().min(1, "Case ID is required"),
-  referral_date: z.string().min(1, "Referral date is required"),
-  referring_physician: z.string().min(1, "Referring physician is required"),
-  referring_physician_phone: z.string().optional(),
-  referring_physician_fax: z.string().optional(),
-  pulmonologist_name: z.string().min(1, "Pulmonologist name is required"),
-  pulmonologist_phone: z.string().min(1, "Pulmonologist phone is required"),
-  pulmonologist_fax: z.string().optional(),
-  appointment_urgency: z.enum(["Routine", "Urgent", "ASAP"]),
-  reason_for_referral: z.string().min(1, "Reason for referral is required"),
-  current_symptoms: z.string().optional(),
-  relevant_history: z.string().optional(),
-  current_medications: z.string().optional(),
-  previous_testing: z.string().optional(),
-  insurance_info: z.string().optional(),
-  special_instructions: z.string().optional(),
+  address_main: z.string().min(1, "Street address is required"),
+  address_city: z.string().min(1, "City is required"),
+  address_state: z.string().min(1, "State is required"),
+  address_zip: z.string().min(1, "ZIP code is required"),
+  dx_code: z.string().min(1, "Diagnosis code is required"),
 });
 
 type DesertPulmFormData = z.infer<typeof desertPulmSchema>;
@@ -177,30 +162,24 @@ export default function DesertPulmForm() {
     }
   }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
 
   const form = useForm<DesertPulmFormData>({
     resolver: zodResolver(desertPulmSchema),
+    mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: {
       client_id: "",
-      client_name: "",
-      client_dob: "",
+      patient_name: "",
+      phone_number: "",
+      dob: "",
       case_id: "",
-      referral_date: new Date().toISOString().split("T")[0],
-      referring_physician: "",
-      referring_physician_phone: "",
-      referring_physician_fax: "",
-      pulmonologist_name: "",
-      pulmonologist_phone: "",
-      pulmonologist_fax: "",
-      appointment_urgency: "Routine",
-      reason_for_referral: "",
-      current_symptoms: "",
-      relevant_history: "",
-      current_medications: "",
-      previous_testing: "",
-      insurance_info: "",
-      special_instructions: "",
+      address_main: "",
+      address_city: "",
+      address_state: "",
+      address_zip: "",
+      dx_code: "",
     },
   });
 
@@ -215,18 +194,28 @@ export default function DesertPulmForm() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
-      // Parse client name using shared utility
-      const displayName = parseClientName(client.fields.Name || "");
-      form.setValue("client_name", displayName);
-      form.setValue("case_id", client.fields["Case ID"] || "");
+      const fields = client.fields;
+
+      // Parse name using shared utility
+      const displayName = parseClientName(fields.Name || "");
+      form.setValue("patient_name", displayName);
+      form.setValue("case_id", fields["Case ID"] || "");
+      form.setValue("phone_number", fields["Phone"] || "");
+      form.setValue("address_main", fields["Street Address"] || "");
+      form.setValue("address_city", fields["City"] || "");
+      form.setValue(
+        "address_state",
+        getStateAbbreviation(fields["State"] || "")
+      );
+      form.setValue("address_zip", fields["ZIP Code"] || "");
 
       // Handle DOB
-      const dob = client.fields["Date of Birth"];
+      const dob = fields["Date of Birth"];
       if (dob) {
         try {
           const date = new Date(dob);
           if (!isNaN(date.getTime())) {
-            form.setValue("client_dob", date.toISOString().split("T")[0]);
+            form.setValue("dob", date.toISOString().split("T")[0]);
           }
         } catch {
           // Ignore invalid dates
@@ -235,10 +224,33 @@ export default function DesertPulmForm() {
     }
   };
 
+  // Handle submit click with manual validation
+  const handleSubmitClick = async () => {
+    setAttemptedSubmit(true);
+
+    // Trigger form validation
+    const isFormValid = await form.trigger();
+
+    if (!isFormValid) {
+      // Find first error field and scroll to it
+      const firstErrorField = document.querySelector(
+        '[aria-invalid="true"]'
+      ) as HTMLElement;
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: "smooth", block: "center" });
+        firstErrorField.focus();
+      }
+      return;
+    }
+
+    // If all valid, submit
+    form.handleSubmit(onSubmit)();
+  };
+
   const onSubmit = async (data: DesertPulmFormData) => {
     setLoading(true);
     try {
-      const selectedClient = clients.find((c) => c.id === data.client_id) as any;
+      const selectedClient = clients.find((c) => c.id === data.client_id) as Client | undefined;
       if (!selectedClient) {
         throw new Error("Selected client not found");
       }
@@ -246,24 +258,15 @@ export default function DesertPulmForm() {
       const requestData = {
         client_record: selectedClient,
         form_data: {
-          client_name: data.client_name,
-          client_dob: data.client_dob,
+          patient_name: data.patient_name,
+          phone_number: data.phone_number,
+          dob: data.dob,
           case_id: data.case_id,
-          referral_date: data.referral_date,
-          referring_physician: data.referring_physician,
-          referring_physician_phone: data.referring_physician_phone,
-          referring_physician_fax: data.referring_physician_fax,
-          pulmonologist_name: data.pulmonologist_name,
-          pulmonologist_phone: data.pulmonologist_phone,
-          pulmonologist_fax: data.pulmonologist_fax,
-          appointment_urgency: data.appointment_urgency,
-          reason_for_referral: data.reason_for_referral,
-          current_symptoms: data.current_symptoms,
-          relevant_history: data.relevant_history,
-          current_medications: data.current_medications,
-          previous_testing: data.previous_testing,
-          insurance_info: data.insurance_info,
-          special_instructions: data.special_instructions,
+          address_main: data.address_main,
+          address_city: data.address_city,
+          address_state: data.address_state,
+          address_zip: data.address_zip,
+          dx_code: data.dx_code,
         },
       };
 
@@ -281,7 +284,7 @@ export default function DesertPulmForm() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `DesertPulm_Referral_${data.client_name.replace(
+        a.download = `Desert_Pulm_Referral_${data.patient_name.replace(
           /\s+/g,
           "_"
         )}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
@@ -315,25 +318,6 @@ export default function DesertPulmForm() {
     }
   };
 
-  // Calculate form completion
-  const watchedFields = form.watch();
-  const requiredFieldsComplete = [
-    watchedFields.client_id,
-    watchedFields.client_name,
-    watchedFields.client_dob,
-    watchedFields.case_id,
-    watchedFields.referral_date,
-    watchedFields.referring_physician,
-    watchedFields.pulmonologist_name,
-    watchedFields.pulmonologist_phone,
-    watchedFields.appointment_urgency,
-    watchedFields.reason_for_referral,
-  ].filter(Boolean).length;
-
-  const totalRequiredFields = 10;
-  const progressPercentage =
-    (requiredFieldsComplete / totalRequiredFields) * 100;
-
   if (clientsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -360,33 +344,31 @@ export default function DesertPulmForm() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header with Progress */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              🫁 Desert Pulmonary Referral Generator
-            </h1>
-            <p className="text-muted-foreground">
-              Generate medical referral documentation for Desert Pulmonary
-              specialists
-            </p>
-          </div>
-        </div>
-
+      {/* Header */}
+      <div className="space-y-4">
+        <h1 className="text-3xl font-bold text-foreground">
+          🫁 Desert Pulmonary Referral Form Generator
+        </h1>
+        <p className="text-muted-foreground">
+          Generate Referral Form for Desert Pulmonary Rehab & Diagnostics
+        </p>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
           clients={clients as any}
-          value={watchedFields.client_id}
+          value={form.watch("client_id")}
           onChange={(clientId) => {
             form.setValue("client_id", clientId);
             handleClientChange(clientId);
           }}
           onRefresh={() => refreshClients(true)}
-          error={form.formState.errors.client_id?.message}
+          error={
+            attemptedSubmit
+              ? form.formState.errors.client_id?.message
+              : undefined
+          }
           label="Choose which client you're preparing this referral for"
         />
 
@@ -398,142 +380,135 @@ export default function DesertPulmForm() {
               <CardTitle>Patient Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Basic information about the patient being referred
+              Enter the patient's information as it appears in their records
             </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="Patient Name"
+                  label="Patient's Full Name"
                   required
-                  error={form.formState.errors.client_name?.message}
-                  helperText="Full name of the patient"
-                  {...form.register("client_name")}
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.patient_name?.message
+                      : undefined
+                  }
+                  helperText="Patient's full legal name as it appears on their official documents"
+                  {...form.register("patient_name")}
                 />
 
-                <Input
-                  label="Patient Date of Birth"
-                  type="date"
-                  required
-                  error={form.formState.errors.client_dob?.message}
-                  helperText="Patient's date of birth"
-                  {...form.register("client_dob")}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Case ID"
                   required
-                  error={form.formState.errors.case_id?.message}
-                  helperText="Case identification number"
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.case_id?.message
+                      : undefined
+                  }
+                  helperText="The case identification number assigned to this patient"
                   {...form.register("case_id")}
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Input
+                  label="Patient's Phone Number"
+                  placeholder="555.123.4567"
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.phone_number?.message
+                      : undefined
+                  }
+                  helperText="Patient's phone number in format: XXX.XXX.XXXX"
+                  {...form.register("phone_number")}
+                />
 
                 <Input
-                  label="Referral Date"
+                  label="Date of Birth"
                   type="date"
                   required
-                  error={form.formState.errors.referral_date?.message}
-                  helperText="Date of this referral"
-                  {...form.register("referral_date")}
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Referring Physician Information */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <Stethoscope className="h-5 w-5 text-info" />
-              <CardTitle>Referring Physician Information</CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Information about the physician making the referral
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <Input
-                label="Referring Physician Name"
-                required
-                error={form.formState.errors.referring_physician?.message}
-                helperText="Name of the physician making the referral"
-                {...form.register("referring_physician")}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Referring Physician Phone"
                   error={
-                    form.formState.errors.referring_physician_phone?.message
+                    attemptedSubmit
+                      ? form.formState.errors.dob?.message
+                      : undefined
                   }
-                  helperText="Phone number of the referring physician"
-                  {...form.register("referring_physician_phone")}
-                />
-
-                <Input
-                  label="Referring Physician Fax"
-                  error={form.formState.errors.referring_physician_fax?.message}
-                  helperText="Fax number of the referring physician"
-                  {...form.register("referring_physician_fax")}
+                  helperText="Enter the patient's date of birth"
+                  {...form.register("dob")}
                 />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Pulmonologist Information */}
+        {/* Patient's Contact Information */}
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <Heart className="h-5 w-5 text-error" />
-              <CardTitle>Pulmonologist Information</CardTitle>
+              <Home className="h-5 w-5 text-primary" />
+              <CardTitle>Patient's Contact Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Information about the pulmonologist receiving the referral
+              Patient's address information
             </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <Input
-                label="Pulmonologist Name"
+                label="Patient's Street Address"
                 required
-                error={form.formState.errors.pulmonologist_name?.message}
-                helperText="Name of the pulmonologist"
-                {...form.register("pulmonologist_name")}
+                placeholder="123 Main Street"
+                error={
+                  attemptedSubmit
+                    ? form.formState.errors.address_main?.message
+                    : undefined
+                }
+                helperText="Patient's street address (include apartment/unit number if applicable)"
+                {...form.register("address_main")}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                  <Input
+                    label="Patient's City"
+                    required
+                    placeholder="Anytown"
+                    error={
+                      attemptedSubmit
+                        ? form.formState.errors.address_city?.message
+                        : undefined
+                    }
+                    {...form.register("address_city")}
+                  />
+                </div>
                 <Input
-                  label="Pulmonologist Phone"
+                  label="State"
                   required
-                  error={form.formState.errors.pulmonologist_phone?.message}
-                  helperText="Phone number of the pulmonologist"
-                  {...form.register("pulmonologist_phone")}
-                />
-
-                <Input
-                  label="Pulmonologist Fax"
-                  error={form.formState.errors.pulmonologist_fax?.message}
-                  helperText="Fax number of the pulmonologist"
-                  {...form.register("pulmonologist_fax")}
+                  placeholder="NY"
+                  maxLength={2}
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.address_state?.message
+                      : undefined
+                  }
+                  helperText="2-letter code"
+                  {...form.register("address_state")}
                 />
               </div>
 
-              <Select
-                label="Appointment Urgency"
+              <Input
+                label="Patient's ZIP Code"
                 required
-                error={form.formState.errors.appointment_urgency?.message}
-                {...form.register("appointment_urgency")}
-              >
-                <option value="Routine">Routine</option>
-                <option value="Urgent">Urgent</option>
-                <option value="ASAP">ASAP</option>
-              </Select>
+                placeholder="12345"
+                maxLength={5}
+                error={
+                  attemptedSubmit
+                    ? form.formState.errors.address_zip?.message
+                    : undefined
+                }
+                helperText="Patient's 5-digit ZIP code"
+                {...form.register("address_zip")}
+              />
             </div>
           </CardContent>
         </Card>
@@ -542,224 +517,79 @@ export default function DesertPulmForm() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <Activity className="h-5 w-5 text-warning" />
+              <Stethoscope className="h-5 w-5 text-info" />
               <CardTitle>Medical Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Clinical information and reason for referral
+              Diagnosis information from the final decision
             </p>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              <Textarea
-                label="Reason for Referral"
-                required
-                error={form.formState.errors.reason_for_referral?.message}
-                helperText="Primary reason for the pulmonary referral"
-                rows={3}
-                {...form.register("reason_for_referral")}
-              />
-
-              <Textarea
-                label="Current Symptoms (Optional)"
-                error={form.formState.errors.current_symptoms?.message}
-                helperText="Patient's current respiratory symptoms"
-                rows={3}
-                {...form.register("current_symptoms")}
-              />
-
-              <Textarea
-                label="Relevant Medical History (Optional)"
-                error={form.formState.errors.relevant_history?.message}
-                helperText="Relevant medical history, especially respiratory conditions"
-                rows={3}
-                {...form.register("relevant_history")}
-              />
-
-              <Textarea
-                label="Current Medications (Optional)"
-                error={form.formState.errors.current_medications?.message}
-                helperText="Current medications, especially respiratory medications"
-                rows={3}
-                {...form.register("current_medications")}
-              />
-
-              <Textarea
-                label="Previous Testing (Optional)"
-                error={form.formState.errors.previous_testing?.message}
-                helperText="Previous pulmonary function tests, imaging, or other relevant studies"
-                rows={3}
-                {...form.register("previous_testing")}
-              />
-            </div>
+            <Select
+              label="DX (Diagnosis)"
+              required
+              error={
+                attemptedSubmit
+                  ? form.formState.errors.dx_code?.message
+                  : undefined
+              }
+              helperText="Select the diagnosis from the final decision"
+              {...form.register("dx_code")}
+            >
+              <option value="">Select diagnosis...</option>
+              <option value="Silicosis (J62.8)">Silicosis (J62.8)</option>
+              <option value="Obstructive sleep apnea (G47.33)">
+                Obstructive sleep apnea (G47.33)
+              </option>
+              <option value="Hypoxemia (R06.02)">Hypoxemia (R06.02)</option>
+            </Select>
           </CardContent>
         </Card>
 
-        {/* Additional Information */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-info" />
-              <CardTitle>Additional Information</CardTitle>
+        {/* Submit Button */}
+        <div className="flex flex-col gap-4 items-center">
+          {attemptedSubmit && !form.formState.isValid && (
+            <div className="text-sm text-muted-foreground">
+              Please correct the errors above to continue
             </div>
-            <p className="text-sm text-muted-foreground">
-              Insurance and special instructions
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <Textarea
-                label="Insurance Information (Optional)"
-                error={form.formState.errors.insurance_info?.message}
-                helperText="Insurance coverage details and authorization information"
-                rows={3}
-                {...form.register("insurance_info")}
-              />
+          )}
 
-              <Textarea
-                label="Special Instructions (Optional)"
-                error={form.formState.errors.special_instructions?.message}
-                helperText="Any special instructions or considerations for the pulmonologist"
-                rows={3}
-                {...form.register("special_instructions")}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Action Buttons */}
-        <Card
-          variant="elevated"
-          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
-        >
-          <CardContent className="p-8">
-            <div className="text-center space-y-6">
-              {/* Progress indicator */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-center space-x-3">
-                  <div
-                    className={cn(
-                      "w-3 h-3 rounded-full transition-colors",
-                      progressPercentage === 100
-                        ? "bg-success animate-pulse"
-                        : "bg-muted-foreground/30"
-                    )}
-                  />
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Form{" "}
-                    {progressPercentage === 100 ? "Complete" : "In Progress"}
-                  </span>
-                </div>
-
-                {progressPercentage < 100 && (
-                  <div className="flex items-center justify-center text-sm text-muted-foreground max-w-md mx-auto">
-                    <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                    <span>
-                      Complete all required fields to generate your Desert
-                      Pulmonary referral
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Main action button */}
-              <div className="flex justify-center">
-                <Button
-                  type="submit"
-                  disabled={loading || progressPercentage < 100}
-                  variant={progressPercentage === 100 ? "primary" : "secondary"}
-                  hierarchy="primary"
-                  size="xl"
-                  loading={loading}
-                  className={cn(
-                    "min-w-[200px] transition-all duration-200",
-                    loading && "animate-pulse"
-                  )}
-                  icon={loading ? undefined : <FileDown className="h-5 w-5" />}
-                >
-                  {loading ? (
-                    <span className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                      <span>Generating Referral...</span>
-                    </span>
-                  ) : progressPercentage === 100 ? (
-                    "Generate Desert Pulmonary Referral"
-                  ) : (
-                    "Complete Form to Generate"
-                  )}
-                </Button>
-              </div>
-
-              {/* Additional context when ready */}
-              {progressPercentage === 100 && !loading && (
-                <div className="text-xs text-muted-foreground bg-success/10 border border-success/20 rounded-lg p-3 max-w-md mx-auto">
-                  ✓ Ready to generate your Desert Pulmonary medical referral
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+          <Button
+            type="button"
+            onClick={handleSubmitClick}
+            disabled={loading}
+            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50 min-w-[200px]"
+            size="xl"
+            loading={loading}
+            icon={<FileDown className="h-5 w-5" />}
+          >
+            {loading ? "Generating Referral..." : "Generate Desert Pulmonary Referral"}
+          </Button>
+        </div>
 
         {/* Success Message */}
         {formSubmitted && (
-          <>
-            <Card
-              variant="elevated"
-              className="bg-success/10 border-success/20"
-            >
-              <CardContent>
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <CheckCircle className="h-6 w-6 text-success" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      🎉 Desert Pulmonary referral generated successfully!
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Your medical referral documentation has been downloaded
-                      and is ready for submission to Desert Pulmonary.
-                    </p>
-                  </div>
+          <Card
+            variant="elevated"
+            className="bg-success/10 border-success/20"
+          >
+            <CardContent>
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="h-6 w-6 text-success" />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Portal Access */}
-            {submittedClient && (
-              <Card variant="elevated" className="bg-blue-50 border-blue-200">
-                <CardContent>
-                  <div className="flex items-start space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-bold">🌐</span>
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium text-blue-900 mb-2">
-                        Submit to DOL Portal
-                      </h3>
-                      <p className="text-blue-700 text-sm mb-4">
-                        Ready to submit your Desert Pulmonary referral to the
-                        Department of Labor portal? Click below to open the
-                        portal helper with this client's information pre-loaded.
-                      </p>
-                      <Button
-                        onClick={() => {
-                          const portalUrl = `/portal?clientId=${submittedClient.id}&formType=Desert Pulmonary`;
-                          window.open(portalUrl, "_blank");
-                        }}
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        size="sm"
-                      >
-                        🚀 Open DOL Portal Helper
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </>
+                <div className="ml-4">
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    Desert Pulmonary referral form generated successfully!
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your Desert Pulmonary referral form has been downloaded
+                    and is ready for submission.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </form>
     </div>
