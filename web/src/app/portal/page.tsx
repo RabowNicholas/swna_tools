@@ -2,15 +2,13 @@
 import "../globals.css";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
+import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { Client } from "@/lib/clientStorage";
+import { trackEvent } from "@/lib/analytics";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Progress } from "@/components/ui/Progress";
-import { Badge } from "@/components/ui/Badge";
 import {
-  CheckCircle,
-  User,
   Globe,
   Copy,
   ExternalLink,
@@ -18,6 +16,9 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import {
+  ClientSelector,
+} from "@/components/form/ClientSelector";
 
 interface PortalData {
   caseId: string;
@@ -126,38 +127,42 @@ function CopyField({
 function PortalPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { data: session } = useSession();
   const { clients, loading, error, refreshClients, getCacheInfo } =
     useClients();
+  const [selectedClientId, setSelectedClientId] = useState("");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const clientId = searchParams.get("clientId");
   const formType = searchParams.get("formType") || "form";
 
+  // Track page view
+  useEffect(() => {
+    if (session?.user) {
+      trackEvent.formViewed('portal', session.user.id);
+    }
+  }, [session]);
+
   // Handle client pre-selection from URL params and auto-open portal
   useEffect(() => {
-    if (clientId && clients.length > 0 && !selectedClient) {
+    if (clientId && clients.length > 0) {
       const preselectedClient = clients.find((c: Client) => c.id === clientId);
       if (preselectedClient) {
+        setSelectedClientId(clientId);
         setSelectedClient(preselectedClient);
-        setSearchTerm(""); // Clear search when client is preselected
       }
     }
-  }, [clientId, clients, selectedClient]);
+  }, [clientId, clients]);
 
-  // Close dropdown when clicking outside
+  // Update selected client when client ID changes
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (!target.closest(".relative")) {
-        setIsDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    if (selectedClientId) {
+      const client = clients.find((c: Client) => c.id === selectedClientId);
+      setSelectedClient(client || null);
+    } else {
+      setSelectedClient(null);
+    }
+  }, [selectedClientId, clients]);
 
   // Auto-open portal when page loads
   useEffect(() => {
@@ -224,7 +229,7 @@ function PortalPageContent() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header with Progress */}
+      {/* Header */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -235,123 +240,21 @@ function PortalPageContent() {
               Submit your {formType} to the Department of Labor portal with
               pre-filled client information
             </p>
-            {(() => {
-              const cacheInfo = getCacheInfo();
-              return cacheInfo.cached ? (
-                <p className="text-xs text-success mt-1">
-                  ✓ Clients loaded from cache ({cacheInfo.clientCount} clients)
-                </p>
-              ) : null;
-            })()}
-          </div>
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              onClick={() => router.back()}
-              icon={<ArrowLeft className="h-4 w-4" />}
-            >
-              Back
-            </Button>
           </div>
         </div>
-
       </div>
 
       {/* Client Selection */}
-      <Card variant="elevated">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <User className="h-5 w-5 text-primary" />
-            <CardTitle>Client Selection</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Choose which client you're preparing portal access for *
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={selectedClient?.fields.Name || searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setIsDropdownOpen(true);
-                    if (!e.target.value) {
-                      setSelectedClient(null);
-                    }
-                  }}
-                  onFocus={() => setIsDropdownOpen(true)}
-                  placeholder="Type to search clients..."
-                  className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-                />
-
-                {isDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-[#18181b] border border-border rounded-md shadow-lg max-h-60 overflow-auto">
-                    {clients
-                      .filter(
-                        (client) =>
-                          (client.fields.Name || "")
-                            .toLowerCase()
-                            .includes(searchTerm.toLowerCase()) ||
-                          (client.fields["Case ID"] || "")
-                            .toLowerCase()
-                            .includes(searchTerm.toLowerCase())
-                      )
-                      .map((client) => (
-                        <button
-                          key={client.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedClient(client);
-                            setSearchTerm("");
-                            setIsDropdownOpen(false);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-accent border-b border-border last:border-b-0 focus:outline-none focus:bg-accent"
-                        >
-                          <div className="font-medium text-foreground">
-                            {client.fields.Name || "Unnamed Client"}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Case ID: {client.fields["Case ID"] || "Not set"}
-                          </div>
-                        </button>
-                      ))}
-                    {clients.filter(
-                      (client) =>
-                        (client.fields.Name || "")
-                          .toLowerCase()
-                          .includes(searchTerm.toLowerCase()) ||
-                        (client.fields["Case ID"] || "")
-                          .toLowerCase()
-                          .includes(searchTerm.toLowerCase())
-                    ).length === 0 &&
-                      searchTerm && (
-                        <div className="px-3 py-2 text-muted-foreground text-sm">
-                          No clients found matching "{searchTerm}"
-                        </div>
-                      )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {selectedClient && (
-              <div className="mt-2 text-sm text-success flex items-center">
-                <CheckCircle className="h-4 w-4 mr-1" />
-                Selected: {selectedClient.fields.Name}
-              </div>
-            )}
-
-            {clients.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {clients.length} clients available
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <ClientSelector
+        clients={clients as any}
+        value={selectedClientId}
+        onChange={(clientId) => {
+          setSelectedClientId(clientId);
+        }}
+        onRefresh={() => refreshClients(true)}
+        error={undefined}
+        label="Choose which client you're preparing portal access for"
+      />
 
       {selectedClient && (
         <div className="space-y-8">

@@ -9,22 +9,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Progress } from "@/components/ui/Progress";
+import { Badge } from "@/components/ui/Badge";
 import {
   FileDown,
-  User,
-  FileText,
+  MapPin,
   AlertCircle,
   CheckCircle,
   Calendar,
-  Scale,
-  Stethoscope,
+  Home,
+  User,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
-import { PortalAccess } from "@/components/portal/PortalAccess";
 import {
   ClientSelector,
   parseClientName,
@@ -118,14 +117,17 @@ const getStateAbbreviation = (stateName: string): string => {
 };
 
 // Zod schema for form validation (simplified to match Streamlit version)
-const irNoticeSchema = z.object({
+const addressChangeSchema = z.object({
   client_id: z.string().min(1, "Please select a client"),
-  client_name: z.string().min(1, "Client's full name is required"),
+  claimant_name: z.string().min(1, "Claimant name is required"),
   case_id: z.string().min(1, "Case ID is required"),
-  appointment_date: z.string().min(1, "IR appointment date is required"),
+  street_address: z.string().min(1, "Street address is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zip_code: z.string().min(1, "ZIP code is required"),
 });
 
-type IRNoticeFormData = z.infer<typeof irNoticeSchema>;
+type AddressChangeFormData = z.infer<typeof addressChangeSchema>;
 
 interface Client {
   id: string;
@@ -144,7 +146,7 @@ interface Client {
   };
 }
 
-export default function IRNoticeForm() {
+export default function AddressChangeForm() {
   const { data: session } = useSession();
   const {
     clients,
@@ -157,23 +159,25 @@ export default function IRNoticeForm() {
   // Track form view
   useEffect(() => {
     if (session?.user) {
-      trackEvent.formViewed('ir-notice', session.user.id);
+      trackEvent.formViewed('address-change', session.user.id);
     }
   }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
 
-  const form = useForm<IRNoticeFormData>({
-    resolver: zodResolver(irNoticeSchema),
+  const form = useForm<AddressChangeFormData>({
+    resolver: zodResolver(addressChangeSchema),
     mode: "onSubmit",
     reValidateMode: "onChange",
     defaultValues: {
       client_id: "",
-      client_name: "",
+      claimant_name: "",
       case_id: "",
-      // Default to 75 days from today (matching Streamlit)
-      appointment_date: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      street_address: "",
+      city: "",
+      state: "",
+      zip_code: "",
     },
   });
 
@@ -184,14 +188,16 @@ export default function IRNoticeForm() {
     }
   }, [clientsError]);
 
-  // Handle client selection and auto-fill
+  // Handle client selection and auto-fill (simplified to match Streamlit)
   const handleClientChange = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId) as any;
+    const client = clients.find((c) => c.id === clientId);
     if (client) {
-      // Parse client name using shared utility
-      const displayName = parseClientName(client.fields.Name || "");
-      form.setValue("client_name", displayName);
-      form.setValue("case_id", client.fields["Case ID"] || "");
+      const fields = client.fields;
+
+      // Parse name using shared utility
+      const displayName = parseClientName(fields.Name || "");
+      form.setValue("claimant_name", displayName);
+      form.setValue("case_id", fields["Case ID"] || "");
     }
   };
 
@@ -218,10 +224,10 @@ export default function IRNoticeForm() {
     form.handleSubmit(onSubmit)();
   };
 
-  const onSubmit = async (data: IRNoticeFormData) => {
+  const onSubmit = async (data: AddressChangeFormData) => {
     setLoading(true);
     try {
-      const selectedClient = clients.find((c) => c.id === data.client_id) as any;
+      const selectedClient = clients.find((c) => c.id === data.client_id) as Client | undefined;
       if (!selectedClient) {
         throw new Error("Selected client not found");
       }
@@ -229,13 +235,16 @@ export default function IRNoticeForm() {
       const requestData = {
         client_record: selectedClient,
         form_data: {
-          client_name: data.client_name,
-          file_number: data.case_id,
-          appointment_date: data.appointment_date,
+          claimant_name: data.claimant_name,
+          case_id: data.case_id,
+          street_address: data.street_address,
+          city: data.city,
+          state: data.state,
+          zip_code: data.zip_code,
         },
       };
 
-      const response = await fetch("/api/generate/ir-notice", {
+      const response = await fetch("/api/generate/address-change", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -249,7 +258,7 @@ export default function IRNoticeForm() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `IR_Notice_${data.client_name.replace(
+        a.download = `AddressChange_${data.claimant_name.replace(
           /\s+/g,
           "_"
         )}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
@@ -260,7 +269,7 @@ export default function IRNoticeForm() {
 
         // Track PDF generation
         if (session?.user) {
-          trackEvent.pdfGenerated('ir-notice', session.user.id, data.client_id);
+          trackEvent.pdfGenerated('address-change', session.user.id, data.client_id);
         }
 
         setFormSubmitted(true);
@@ -268,15 +277,15 @@ export default function IRNoticeForm() {
       } else {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || "Failed to generate IR notice letter"
+          errorData.error || "Failed to generate address change letter"
         );
       }
     } catch (error) {
-      console.error("Error generating IR notice letter:", error);
+      console.error("Error generating address change letter:", error);
       alert(
         error instanceof Error
           ? error.message
-          : "Failed to generate IR notice letter"
+          : "Failed to generate address change letter"
       );
     } finally {
       setLoading(false);
@@ -312,10 +321,10 @@ export default function IRNoticeForm() {
       {/* Header */}
       <div className="space-y-4">
         <h1 className="text-3xl font-bold text-foreground">
-          🏥 La Plata IR Schedule Notice Generator
+          🏠 Address Change Letter Generator
         </h1>
         <p className="text-muted-foreground">
-          Generate Independent Review (IR) Schedule Notice for La Plata
+          Generate formal address change notification letter for DOL case
         </p>
       </div>
 
@@ -334,32 +343,33 @@ export default function IRNoticeForm() {
               ? form.formState.errors.client_id?.message
               : undefined
           }
-          label="Choose which client you're scheduling an IR notice for"
+          label="Choose which client you're preparing this address change letter for"
         />
 
-        {/* Client Information and Appointment in 2 columns - matching Streamlit layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left column - Personal Details */}
-          <Card variant="elevated">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <User className="h-5 w-5 text-info" />
-                <CardTitle>Personal Details</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
+        {/* Client Information */}
+        <Card variant="elevated">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <User className="h-5 w-5 text-success" />
+              <CardTitle>Client Information</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Client's information as it appears in their records
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="Client's Full Name"
+                  label="Claimant Name"
                   required
                   error={
                     attemptedSubmit
-                      ? form.formState.errors.client_name?.message
+                      ? form.formState.errors.claimant_name?.message
                       : undefined
                   }
-                  helperText="Client's full legal name as it appears on their official documents"
-                  disabled={!form.watch("client_id")}
-                  {...form.register("client_name")}
+                  helperText="Client's full name as it should appear in the letter"
+                  {...form.register("claimant_name")}
                 />
 
                 <Input
@@ -370,40 +380,85 @@ export default function IRNoticeForm() {
                       ? form.formState.errors.case_id?.message
                       : undefined
                   }
-                  helperText="The case identification number assigned to this client"
-                  disabled={!form.watch("client_id")}
+                  helperText="Case ID from Airtable client record"
                   {...form.register("case_id")}
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Right column - Appointment Information */}
-          <Card variant="elevated">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-success" />
-                <CardTitle>Appointment Information</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
+        {/* New Address Information */}
+        <Card variant="elevated">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <Home className="h-5 w-5 text-primary" />
+              <CardTitle>New Address Information</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              The new address to be updated in DOL records
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <Input
+                label="Street Address"
+                required
+                placeholder="123 Main Street"
+                error={
+                  attemptedSubmit
+                    ? form.formState.errors.street_address?.message
+                    : undefined
+                }
+                helperText="New street address for the client"
+                {...form.register("street_address")}
+              />
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-2">
+                  <Input
+                    label="City"
+                    required
+                    placeholder="Anytown"
+                    error={
+                      attemptedSubmit
+                        ? form.formState.errors.city?.message
+                        : undefined
+                    }
+                    {...form.register("city")}
+                  />
+                </div>
                 <Input
-                  label="IR Appointment Date"
-                  type="date"
+                  label="State"
                   required
+                  placeholder="ST"
+                  maxLength={2}
                   error={
                     attemptedSubmit
-                      ? form.formState.errors.appointment_date?.message
+                      ? form.formState.errors.state?.message
                       : undefined
                   }
-                  helperText="Select the date when the client's Independent Review is scheduled"
-                  {...form.register("appointment_date")}
+                  helperText="2-letter code"
+                  {...form.register("state")}
                 />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+
+              <Input
+                label="ZIP Code"
+                required
+                placeholder="12345"
+                maxLength={5}
+                error={
+                  attemptedSubmit
+                    ? form.formState.errors.zip_code?.message
+                    : undefined
+                }
+                helperText="5-digit ZIP code"
+                {...form.register("zip_code")}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Submit Button */}
         <div className="flex flex-col gap-4 items-center">
@@ -422,39 +477,33 @@ export default function IRNoticeForm() {
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}
           >
-            {loading ? "Generating Notice..." : "Generate Client's IR Notice"}
+            {loading ? "Generating Letter..." : "Generate Address Change Letter"}
           </Button>
         </div>
 
         {/* Success Message */}
-        {formSubmitted && (
-          <>
-            <Card
-              variant="elevated"
-              className="bg-success/10 border-success/20"
-            >
-              <CardContent>
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <CheckCircle className="h-6 w-6 text-success" />
-                  </div>
-                  <div className="ml-4">
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      IR schedule notice generated successfully!
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Your Independent Review schedule notice has been downloaded and is ready for submission.
-                    </p>
-                  </div>
+        {formSubmitted && submittedClient && (
+          <Card
+            variant="elevated"
+            className="bg-success/10 border-success/20"
+          >
+            <CardContent>
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="h-6 w-6 text-success" />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Portal Access */}
-            {submittedClient && (
-              <PortalAccess client={submittedClient} autoOpen={true} />
-            )}
-          </>
+                <div className="ml-4">
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    Address change letter generated successfully!
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Your formal address change notification letter has been
+                    downloaded and is ready for submission.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </form>
     </div>
