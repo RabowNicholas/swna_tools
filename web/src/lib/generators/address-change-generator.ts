@@ -24,6 +24,7 @@ export class AddressChangeGenerator extends BaseGenerator {
 
   async generate(
     clientRecord: ClientRecord,
+    doctor: string,
     formData: AddressChangeFormData
   ): Promise<GeneratorResult> {
     const claimantName = formData.claimant_name || '';

@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const generator = new AddressChangeGenerator();
     const result = await generator.generate(
       requestData.client_record,
+      '', // doctor parameter not used for address change
       requestData.form_data
     );
 
