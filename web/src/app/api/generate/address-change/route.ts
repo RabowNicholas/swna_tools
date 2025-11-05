@@ -12,11 +12,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing client_record or form_data' }, { status: 400 });
     }
 
-    // Generate PDF using TypeScript generator
+    // Generate PDF using TypeScript generator (matches Python implementation)
     const generator = new AddressChangeGenerator();
     const result = await generator.generate(
       requestData.client_record,
-      requestData.doctor || '',
       requestData.form_data
     );
 

@@ -116,31 +116,15 @@ const getStateAbbreviation = (stateName: string): string => {
   return stateName;
 };
 
-// Zod schema for form validation
+// Zod schema for form validation (simplified to match Streamlit version)
 const addressChangeSchema = z.object({
   client_id: z.string().min(1, "Please select a client"),
-  client_name: z.string().min(1, "Client name is required"),
+  claimant_name: z.string().min(1, "Claimant name is required"),
   case_id: z.string().min(1, "Case ID is required"),
-  dol_number: z.string().optional(),
-  change_date: z.string().min(1, "Address change date is required"),
-  // Previous Address
-  previous_address_street: z
-    .string()
-    .min(1, "Previous street address is required"),
-  previous_address_city: z.string().min(1, "Previous city is required"),
-  previous_address_state: z.string().min(1, "Previous state is required"),
-  previous_address_zip: z.string().min(1, "Previous ZIP code is required"),
-  // New Address
-  new_address_street: z.string().min(1, "New street address is required"),
-  new_address_city: z.string().min(1, "New city is required"),
-  new_address_state: z.string().min(1, "New state is required"),
-  new_address_zip: z.string().min(1, "New ZIP code is required"),
-  // Contact Information
-  phone_number: z.string().optional(),
-  email_address: z.string().optional(),
-  effective_date: z.string().min(1, "Effective date is required"),
-  reason_for_change: z.string().optional(),
-  additional_notes: z.string().optional(),
+  street_address: z.string().min(1, "Street address is required"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  zip_code: z.string().min(1, "ZIP code is required"),
 });
 
 type AddressChangeFormData = z.infer<typeof addressChangeSchema>;
@@ -185,23 +169,12 @@ export default function AddressChangeForm() {
     resolver: zodResolver(addressChangeSchema),
     defaultValues: {
       client_id: "",
-      client_name: "",
+      claimant_name: "",
       case_id: "",
-      dol_number: "",
-      change_date: new Date().toISOString().split("T")[0],
-      previous_address_street: "",
-      previous_address_city: "",
-      previous_address_state: "",
-      previous_address_zip: "",
-      new_address_street: "",
-      new_address_city: "",
-      new_address_state: "",
-      new_address_zip: "",
-      phone_number: "",
-      email_address: "",
-      effective_date: new Date().toISOString().split("T")[0],
-      reason_for_change: "",
-      additional_notes: "",
+      street_address: "",
+      city: "",
+      state: "",
+      zip_code: "",
     },
   });
 
@@ -212,7 +185,7 @@ export default function AddressChangeForm() {
     }
   }, [clientsError]);
 
-  // Handle client selection and auto-fill
+  // Handle client selection and auto-fill (simplified to match Streamlit)
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
@@ -220,21 +193,8 @@ export default function AddressChangeForm() {
 
       // Parse name using shared utility
       const displayName = parseClientName(fields.Name || "");
-      form.setValue("client_name", displayName);
+      form.setValue("claimant_name", displayName);
       form.setValue("case_id", fields["Case ID"] || "");
-
-      // Fill previous address from current client data
-      form.setValue("previous_address_street", fields["Street Address"] || "");
-      form.setValue("previous_address_city", fields["City"] || "");
-      form.setValue(
-        "previous_address_state",
-        getStateAbbreviation(fields["State"] || "")
-      );
-      form.setValue("previous_address_zip", fields["ZIP Code"] || "");
-
-      // Fill contact information
-      form.setValue("phone_number", fields["Phone"] || "");
-      form.setValue("email_address", fields["Email"] || "");
     }
   };
 
@@ -249,23 +209,12 @@ export default function AddressChangeForm() {
       const requestData = {
         client_record: selectedClient,
         form_data: {
-          client_name: data.client_name,
+          claimant_name: data.claimant_name,
           case_id: data.case_id,
-          dol_number: data.dol_number,
-          change_date: data.change_date,
-          previous_address_street: data.previous_address_street,
-          previous_address_city: data.previous_address_city,
-          previous_address_state: data.previous_address_state,
-          previous_address_zip: data.previous_address_zip,
-          new_address_street: data.new_address_street,
-          new_address_city: data.new_address_city,
-          new_address_state: data.new_address_state,
-          new_address_zip: data.new_address_zip,
-          phone_number: data.phone_number,
-          email_address: data.email_address,
-          effective_date: data.effective_date,
-          reason_for_change: data.reason_for_change,
-          additional_notes: data.additional_notes,
+          street_address: data.street_address,
+          city: data.city,
+          state: data.state,
+          zip_code: data.zip_code,
         },
       };
 
@@ -283,7 +232,7 @@ export default function AddressChangeForm() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `AddressChange_${data.client_name.replace(
+        a.download = `AddressChange_${data.claimant_name.replace(
           /\s+/g,
           "_"
         )}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
@@ -321,21 +270,15 @@ export default function AddressChangeForm() {
   const watchedFields = form.watch();
   const requiredFieldsComplete = [
     watchedFields.client_id,
-    watchedFields.client_name,
+    watchedFields.claimant_name,
     watchedFields.case_id,
-    watchedFields.change_date,
-    watchedFields.previous_address_street,
-    watchedFields.previous_address_city,
-    watchedFields.previous_address_state,
-    watchedFields.previous_address_zip,
-    watchedFields.new_address_street,
-    watchedFields.new_address_city,
-    watchedFields.new_address_state,
-    watchedFields.new_address_zip,
-    watchedFields.effective_date,
+    watchedFields.street_address,
+    watchedFields.city,
+    watchedFields.state,
+    watchedFields.zip_code,
   ].filter(Boolean).length;
 
-  const totalRequiredFields = 13;
+  const totalRequiredFields = 7;
   const progressPercentage =
     (requiredFieldsComplete / totalRequiredFields) * 100;
 
@@ -394,221 +337,92 @@ export default function AddressChangeForm() {
           label="Choose which client you're preparing this address change letter for"
         />
 
-        {/* Case Information */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-warning" />
-              <CardTitle>Case Information</CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Information about the case requiring address update
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Client Information and New Address in 2 columns - matching Streamlit layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Left column - Client Information */}
+          <Card variant="elevated">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <User className="h-5 w-5 text-info" />
+                <CardTitle>Client Information</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
                 <Input
-                  label="Client Name"
+                  label="Claimant Name"
                   required
-                  error={form.formState.errors.client_name?.message}
-                  helperText="Full name of the client"
-                  {...form.register("client_name")}
+                  error={form.formState.errors.claimant_name?.message}
+                  helperText="Client's full name as it should appear in the letter"
+                  disabled={!form.watch("client_id")}
+                  {...form.register("claimant_name")}
                 />
 
                 <Input
                   label="Case ID"
                   required
                   error={form.formState.errors.case_id?.message}
-                  helperText="DOL case identification number"
+                  helperText="Case ID from Airtable client record"
+                  disabled={!form.watch("client_id")}
                   {...form.register("case_id")}
                 />
               </div>
+            </CardContent>
+          </Card>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="DOL Number (Optional)"
-                  error={form.formState.errors.dol_number?.message}
-                  helperText="Department of Labor reference number, if available"
-                  {...form.register("dol_number")}
-                />
-
-                <Input
-                  label="Change Date"
-                  type="date"
-                  required
-                  error={form.formState.errors.change_date?.message}
-                  helperText="Date of this address change notification"
-                  {...form.register("change_date")}
-                />
+          {/* Right column - New Address Information */}
+          <Card variant="elevated">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Home className="h-5 w-5 text-success" />
+                <CardTitle>New Address Information</CardTitle>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <Input
+                  label="Street Address"
+                  required
+                  placeholder="123 Main Street"
+                  error={form.formState.errors.street_address?.message}
+                  helperText="New street address for the client"
+                  {...form.register("street_address")}
+                />
 
-        {/* Previous Address */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <Home className="h-5 w-5 text-error" />
-              <CardTitle>Previous Address</CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              The address currently on file with the Department of Labor
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <Input
-                label="Previous Street Address"
-                required
-                error={form.formState.errors.previous_address_street?.message}
-                helperText="Street address currently on file"
-                {...form.register("previous_address_street")}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <Input
+                      label="City"
+                      required
+                      placeholder="Anytown"
+                      error={form.formState.errors.city?.message}
+                      helperText="City for the new address"
+                      {...form.register("city")}
+                    />
+                  </div>
                   <Input
-                    label="Previous City"
+                    label="State"
                     required
-                    error={form.formState.errors.previous_address_city?.message}
-                    {...form.register("previous_address_city")}
+                    placeholder="ST"
+                    maxLength={2}
+                    error={form.formState.errors.state?.message}
+                    helperText="State abbreviation"
+                    {...form.register("state")}
+                  />
+                  <Input
+                    label="ZIP Code"
+                    required
+                    placeholder="12345"
+                    maxLength={5}
+                    error={form.formState.errors.zip_code?.message}
+                    helperText="5-digit ZIP code"
+                    {...form.register("zip_code")}
                   />
                 </div>
-                <Input
-                  label="State"
-                  maxLength={2}
-                  placeholder="NY"
-                  required
-                  error={form.formState.errors.previous_address_state?.message}
-                  helperText="2-letter code"
-                  {...form.register("previous_address_state")}
-                />
               </div>
-
-              <Input
-                label="Previous ZIP Code"
-                maxLength={5}
-                required
-                error={form.formState.errors.previous_address_zip?.message}
-                helperText="5-digit ZIP code"
-                {...form.register("previous_address_zip")}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* New Address */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <MapPin className="h-5 w-5 text-success" />
-              <CardTitle>New Address</CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              The new address to be updated in DOL records
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <Input
-                label="New Street Address"
-                required
-                error={form.formState.errors.new_address_street?.message}
-                helperText="New street address"
-                {...form.register("new_address_street")}
-              />
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-2">
-                  <Input
-                    label="New City"
-                    required
-                    error={form.formState.errors.new_address_city?.message}
-                    {...form.register("new_address_city")}
-                  />
-                </div>
-                <Input
-                  label="State"
-                  maxLength={2}
-                  placeholder="NY"
-                  required
-                  error={form.formState.errors.new_address_state?.message}
-                  helperText="2-letter code"
-                  {...form.register("new_address_state")}
-                />
-              </div>
-
-              <Input
-                label="New ZIP Code"
-                maxLength={5}
-                required
-                error={form.formState.errors.new_address_zip?.message}
-                helperText="5-digit ZIP code"
-                {...form.register("new_address_zip")}
-              />
-
-              <Input
-                label="Effective Date"
-                type="date"
-                required
-                error={form.formState.errors.effective_date?.message}
-                helperText="Date when the new address becomes effective"
-                {...form.register("effective_date")}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Contact Information */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-info" />
-              <CardTitle>Contact Information</CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Updated contact information (optional)
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Phone Number"
-                  error={form.formState.errors.phone_number?.message}
-                  helperText="Updated phone number"
-                  {...form.register("phone_number")}
-                />
-
-                <Input
-                  label="Email Address"
-                  type="email"
-                  error={form.formState.errors.email_address?.message}
-                  helperText="Updated email address"
-                  {...form.register("email_address")}
-                />
-              </div>
-
-              <Textarea
-                label="Reason for Address Change (Optional)"
-                error={form.formState.errors.reason_for_change?.message}
-                helperText="Brief explanation for the address change"
-                rows={3}
-                {...form.register("reason_for_change")}
-              />
-
-              <Textarea
-                label="Additional Notes (Optional)"
-                error={form.formState.errors.additional_notes?.message}
-                helperText="Any additional comments or special instructions"
-                rows={3}
-                {...form.register("additional_notes")}
-              />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Action Buttons */}
         <Card

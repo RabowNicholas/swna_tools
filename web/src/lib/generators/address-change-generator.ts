@@ -1,6 +1,6 @@
 /**
  * Address Change Generator
- * Converts Python address_change_generator.py to TypeScript
+ * Direct port from Python address_change_generator.py to TypeScript
  */
 
 import { BaseGenerator } from './base-generator';
@@ -24,7 +24,6 @@ export class AddressChangeGenerator extends BaseGenerator {
 
   async generate(
     clientRecord: ClientRecord,
-    doctor: string,
     formData: AddressChangeFormData
   ): Promise<GeneratorResult> {
     const claimantName = formData.claimant_name || '';
@@ -59,7 +58,7 @@ export class AddressChangeGenerator extends BaseGenerator {
       page.setFont(font);
       page.setFontSize(11);
 
-      // Fill in the template fields
+      // Fill in the template fields based on the address change template structure
       // Claimant name at top
       this.drawText(page, claimantName, { x: 116, y: 721, size: 11 });
 
@@ -69,7 +68,7 @@ export class AddressChangeGenerator extends BaseGenerator {
       // Current date below case ID
       this.drawText(page, formattedCurrentDate, { x: 72, y: 695, size: 11 });
 
-      // Address information
+      // Address information (assuming it goes in the middle section)
       // Street address
       this.drawText(page, streetAddress, { x: 112, y: 540, size: 11 });
 
@@ -77,7 +76,7 @@ export class AddressChangeGenerator extends BaseGenerator {
       const fullAddressLine2 = `${city}, ${state} ${zipCode}`;
       this.drawText(page, fullAddressLine2, { x: 112, y: 525, size: 11 });
 
-      // Replace "Mr. X" with the actual claimant first name in the letter text
+      // Replace "Mr. X" with the actual claimant name in the letter text
       const firstName = claimantName.split(' ')[0] || '';
       this.drawText(page, firstName, { x: 620, y: 453, size: 11 });
     }
