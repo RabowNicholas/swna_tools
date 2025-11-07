@@ -31,3 +31,12 @@ dist/
 # IDEs and editors
 .vscode/
 .idea/
+
+# Next.js build output
+.next/
+out/
+
+# Test output files
+*_test.pdf
+test_*.pdf
+Address_Change_*.pdf
