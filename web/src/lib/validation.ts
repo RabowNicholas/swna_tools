@@ -27,25 +27,10 @@ export function validateEmail(email: string | undefined): string | null {
 
 /**
  * Validate phone number
- * Accepts any format (flexible like Streamlit)
- * Just ensures it has enough digits
+ * No validation - accepts any format
  */
 export function validatePhone(phone: string | undefined): string | null {
-  if (!phone || phone.trim() === '') {
-    return null; // Phone is optional
-  }
-
-  // Extract digits only
-  const digits = phone.replace(/\D/g, '');
-
-  if (digits.length < 10) {
-    return 'Phone number must have at least 10 digits';
-  }
-
-  if (digits.length > 11) {
-    return 'Phone number has too many digits';
-  }
-
+  // Phone validation removed - accepts any format
   return null;
 }
 
