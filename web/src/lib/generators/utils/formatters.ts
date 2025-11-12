@@ -71,6 +71,20 @@ export function formatDateMMDDYY(date: Date = new Date()): string {
 }
 
 /**
+ * Formats date as "Month DD, YYYY" (e.g., "January 15, 2025")
+ */
+export function formatDateMMMDDYYYY(date: Date = new Date()): string {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const month = months[date.getMonth()];
+  const day = date.getDate();
+  const year = date.getFullYear();
+  return `${month} ${day}, ${year}`;
+}
+
+/**
  * Generates filename from client name
  * "First Last" -> "F.Last"
  */

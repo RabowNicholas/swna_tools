@@ -3,10 +3,10 @@
  * Converts Python ir_notice_la_plata_generator.py to TypeScript
  */
 
-import { BaseGenerator } from './base-generator';
-import { GeneratorResult } from './types';
-import { formatDateMMDDYY } from './utils/formatters';
-import { StandardFonts } from 'pdf-lib';
+import { BaseGenerator } from "./base-generator";
+import { GeneratorResult } from "./types";
+import { formatDateMMDDYY, formatDateMMMDDYYYY } from "./utils/formatters";
+import { StandardFonts } from "pdf-lib";
 
 export interface IRNoticeFormData {
   client_name: string;
@@ -16,7 +16,7 @@ export interface IRNoticeFormData {
 
 export class LaPlataNoticeGenerator extends BaseGenerator {
   constructor() {
-    super('ir_notice_la_plata.pdf');
+    super("ir_notice_la_plata.pdf");
   }
 
   async generate(
@@ -32,14 +32,18 @@ export class LaPlataNoticeGenerator extends BaseGenerator {
     page.setFont(font);
     page.setFontSize(11);
 
+    // Get current date for letter header
+    const currentDateFormatted = formatDateMMMDDYYYY();
+
     // Draw fields
     this.drawText(page, clientName, { x: 112, y: 711, size: 11 });
     this.drawText(page, fileNumber, { x: 98, y: 698, size: 11 });
-    this.drawText(page, appointmentDate, { x: 70, y: 526, size: 11 });
+    this.drawText(page, currentDateFormatted, { x: 69, y: 685, size: 11 }); // Current date line
+    this.drawText(page, appointmentDate, { x: 69, y: 533, size: 11 }); // Appointment date (after "La Plata Medical for")
 
     // Generate filename
     const currentDate = formatDateMMDDYY();
-    const nameForFilename = clientName.replace(/ /g, '_');
+    const nameForFilename = clientName.replace(/ /g, "_");
     const filename = `LaPlata_Notice_${nameForFilename}_${currentDate}.pdf`;
 
     // Save PDF
