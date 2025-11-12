@@ -129,7 +129,124 @@ export class EE3Generator extends BaseGenerator {
   }
 
   /**
-   * Draw a single employer section at specified base Y coordinate
+   * Draw a single employer section directly on a page
+   */
+  private drawEmployerSectionDirect(
+    page: PDFPage,
+    job: EE3EmploymentRecord,
+    baseY: number,
+    deltas: CoordinateDeltas,
+    totalEmployers: number,
+    pageNum: number
+  ): void {
+    // Parse dates
+    let startDateStr = '';
+    if (job.start_date) {
+      const startDate = new Date(job.start_date);
+      const month = String(startDate.getMonth() + 1).padStart(2, '0');
+      const day = String(startDate.getDate()).padStart(2, '0');
+      const year = String(startDate.getFullYear());
+      startDateStr = `${month}/${day}/${year}`;
+    }
+
+    let endDateStr = '';
+    if (job.end_date) {
+      const endDate = new Date(job.end_date);
+      const month = String(endDate.getMonth() + 1).padStart(2, '0');
+      const day = String(endDate.getDate()).padStart(2, '0');
+      const year = String(endDate.getFullYear());
+      endDateStr = `${month}/${day}/${year}`;
+    }
+
+    // Dates section
+    const datesY = baseY + deltas.dates;
+    if (startDateStr) {
+      const [month, day, year] = startDateStr.split('/');
+      page.drawText(month, { x: 200, y: datesY, size: 9 });
+      page.drawText(day, { x: 250, y: datesY, size: 9 });
+      page.drawText(year, { x: 300, y: datesY, size: 9 });
+    }
+
+    if (endDateStr) {
+      const [month, day, year] = endDateStr.split('/');
+      page.drawText(month, { x: 435, y: datesY, size: 9 });
+      page.drawText(day, { x: 485, y: datesY, size: 9 });
+      page.drawText(year, { x: 535, y: datesY, size: 9 });
+    }
+
+    // Facility information
+    const facilityY = baseY + deltas.facility;
+    page.drawText(job.facility_name, { x: 30, y: facilityY, size: 9 });
+    page.drawText(job.specific_location, { x: 265, y: facilityY, size: 9 });
+
+    // City/State
+    const cityState = `${job.city}, ${job.state}`;
+    page.drawText(cityState, { x: 435, y: facilityY, size: 9 });
+
+    // Contractor/sub-contractor
+    const contractorY = baseY + deltas.contractor;
+    page.drawText(job.contractor, { x: 30, y: contractorY, size: 9 });
+
+    // Position Title
+    const positionY = baseY + deltas.position;
+    page.drawText(job.position_title, { x: 30, y: positionY, size: 9 });
+
+    // Union Member checkbox
+    const unionMember = job.union_member || false;
+    if (deltas.union_checkbox !== undefined && unionMember) {
+      const unionCheckboxY = baseY + deltas.union_checkbox;
+      // X coordinate depends on page - page 1 uses 212, page 2+ uses 204
+      const unionX = pageNum === 0 ? 212 : 204;
+      page.drawText('X', { x: unionX, y: unionCheckboxY, size: 10 });
+    }
+
+    // Dosimeter Badge Worn checkbox
+    const dosimetryWorn = job.dosimetry_worn || false;
+    if (deltas.dosimetry_checkbox !== undefined && dosimetryWorn) {
+      const dosimetryCheckboxY = baseY + deltas.dosimetry_checkbox;
+      page.drawText('X', { x: 438, y: dosimetryCheckboxY, size: 10 });
+    }
+
+    // Facility Type Checkboxes - only if multiple employers and not on page 0
+    if (totalEmployers > 1 && pageNum > 0 && deltas.facility_checkbox !== undefined) {
+      const facilityCheckboxY = baseY + deltas.facility_checkbox;
+      // Department of Energy Facility checkbox - always mark
+      page.drawText('X', { x: 280, y: facilityCheckboxY, size: 10 });
+    }
+
+    // Description of Work Duties
+    const dutiesY = baseY + deltas.duties;
+    const duties = job.work_duties;
+    const dutiesLines = this.wrapText(duties);
+
+    // Only add work duties if they fit within the line limit
+    if (dutiesLines.length > 0) {
+      let yPosition = dutiesY;
+      for (const line of dutiesLines) {
+        page.drawText(line, { x: 20, y: yPosition, size: 9 });
+        yPosition -= 12; // Move down 12 points for next line
+      }
+    }
+
+    // Work conditions/exposures - only for page 2
+    if (deltas.exposures !== undefined) {
+      const exposuresY = baseY + deltas.exposures;
+      const exposuresText =
+        'Claimant stated they were exposed to radiation, silica dust, and other chemicals, solvents and contaminants during the course of their employment.';
+      const exposuresLines = this.wrapText(exposuresText);
+
+      if (exposuresLines.length > 0) {
+        let yPosition = exposuresY;
+        for (const line of exposuresLines) {
+          page.drawText(line, { x: 20, y: yPosition, size: 9 });
+          yPosition -= 12;
+        }
+      }
+    }
+  }
+
+  /**
+   * Draw a single employer section at specified base Y coordinate (deprecated - keeping for reference)
    */
   private drawEmployerSection(
     overlay: PDFPage,
@@ -324,124 +441,74 @@ export class EE3Generator extends BaseGenerator {
       { page: 1, baseY: 430, deltas: page2Employer3Deltas }, // Employer 3 - Page 2 bottom
     ];
 
-    // Create overlays for pages
-    const page1OverlayDoc = await PDFDocument.create();
-    const page1Overlay = page1OverlayDoc.addPage([612, 792]);
-    const font1 = await page1OverlayDoc.embedFont(StandardFonts.Helvetica);
-    page1Overlay.setFont(font1);
-    page1Overlay.setFontSize(9);
-
-    const page1MarksDoc = await PDFDocument.create();
-    const page1Marks = page1MarksDoc.addPage([612, 792]);
-    const marksFont1 = await page1MarksDoc.embedFont(StandardFonts.Helvetica);
-    page1Marks.setFont(marksFont1);
-    page1Marks.setFontSize(10);
-
-    // Employee Basic Information (Page 1)
-    page1Overlay.drawText(name, { x: 30, y: 640, size: 9 });
-    if (formerName) {
-      page1Overlay.drawText(formerName, { x: 250, y: 640, size: 9 });
-    }
-    page1Overlay.drawText(ssn, { x: 440, y: 640, size: 9 });
-
-    // Create page 2 overlays
-    const page2OverlayDoc = await PDFDocument.create();
-    const page2Overlay = page2OverlayDoc.addPage([612, 792]);
-    const font2 = await page2OverlayDoc.embedFont(StandardFonts.Helvetica);
-    page2Overlay.setFont(font2);
-    page2Overlay.setFontSize(9);
-
-    const page2MarksDoc = await PDFDocument.create();
-    const page2Marks = page2MarksDoc.addPage([612, 792]);
-    const marksFont2 = await page2MarksDoc.embedFont(StandardFonts.Helvetica);
-    page2Marks.setFont(marksFont2);
-    page2Marks.setFontSize(10);
-
-    // Add date to page 2
     const formattedCurrentDate = formatDateMMDDYYYY();
-    page2Overlay.drawText(formattedCurrentDate, { x: 340, y: 58, size: 9 });
 
-    // Draw each employer in their designated position
-    for (let i = 0; i < employmentHistory.length; i++) {
-      const job = employmentHistory[i];
-      if (i < employerPositions.length) {
-        const position = employerPositions[i];
-        if (position.page === 0) {
-          this.drawEmployerSection(
-            page1Overlay,
-            page1Marks,
-            job,
-            position.baseY,
-            position.deltas,
-            employmentHistory.length,
-            position.page
-          );
-        } else if (position.page === 1) {
-          this.drawEmployerSection(
-            page2Overlay,
-            page2Marks,
-            job,
-            position.baseY,
-            position.deltas,
-            employmentHistory.length,
-            position.page
-          );
-        }
-      }
-    }
-
-    // Merge overlays with template pages
+    // Instead of creating separate overlay documents and embedding them,
+    // we'll copy the template pages and draw directly on them
     const finalDoc = await PDFDocument.create();
 
+    // Copy all pages from base template
+    const copiedPages = await finalDoc.copyPages(basePdfDoc, basePdfDoc.getPageIndices());
+
     // Page 1
-    const page1OverlayBytes = await page1OverlayDoc.save();
-    const page1MarksBytes = await page1MarksDoc.save();
+    const page1 = copiedPages[0];
+    const font = await finalDoc.embedFont(StandardFonts.Helvetica);
+    page1.setFont(font);
 
-    const [page1Embedded] = await finalDoc.embedPdf(page1OverlayBytes);
-    const [page1MarksEmbedded] = await finalDoc.embedPdf(page1MarksBytes);
-    const [basePage1] = await finalDoc.copyPages(basePdfDoc, [0]);
+    // Copy all the drawing operations from page1Overlay to page1
+    page1.drawText(name, { x: 30, y: 640, size: 9 });
+    if (formerName) {
+      page1.drawText(formerName, { x: 250, y: 640, size: 9 });
+    }
+    page1.drawText(ssn, { x: 440, y: 640, size: 9 });
 
-    // Layer: overlay → template → marks
-    basePage1.drawPage(page1Embedded);
-    basePage1.drawPage(page1MarksEmbedded);
-    finalDoc.addPage(basePage1);
-
-    // Page 2
-    const page2OverlayBytes = await page2OverlayDoc.save();
-    const page2MarksBytes = await page2MarksDoc.save();
-
-    const [page2Embedded] = await finalDoc.embedPdf(page2OverlayBytes);
-    const [page2MarksEmbedded] = await finalDoc.embedPdf(page2MarksBytes);
-
-    if (basePdfDoc.getPageCount() > 1) {
-      const [basePage2] = await finalDoc.copyPages(basePdfDoc, [1]);
-      basePage2.drawPage(page2Embedded);
-      basePage2.drawPage(page2MarksEmbedded);
-      finalDoc.addPage(basePage2);
-    } else {
-      // Template only has 1 page - create blank page with overlays
-      const blankPage2 = finalDoc.addPage([612, 792]);
-      blankPage2.drawPage(page2Embedded);
-      blankPage2.drawPage(page2MarksEmbedded);
+    // Draw employer 1 if exists
+    if (employmentHistory.length > 0) {
+      const position = employerPositions[0];
+      this.drawEmployerSectionDirect(
+        page1,
+        employmentHistory[0],
+        position.baseY,
+        position.deltas,
+        employmentHistory.length,
+        position.page
+      );
     }
 
-    // Add page 3 if exists in template (declaration page)
+    finalDoc.addPage(page1);
+
+    // Page 2
+    let page2: PDFPage;
+    if (basePdfDoc.getPageCount() > 1) {
+      page2 = copiedPages[1];
+    } else {
+      page2 = finalDoc.addPage([612, 792]);
+    }
+
+    page2.setFont(font);
+    page2.drawText(formattedCurrentDate, { x: 340, y: 58, size: 9 });
+
+    // Draw employers 2 and 3 if they exist
+    for (let i = 1; i < employmentHistory.length && i < 3; i++) {
+      const position = employerPositions[i];
+      this.drawEmployerSectionDirect(
+        page2,
+        employmentHistory[i],
+        position.baseY,
+        position.deltas,
+        employmentHistory.length,
+        position.page
+      );
+    }
+
+    finalDoc.addPage(page2);
+
+    // Page 3 if exists
     if (basePdfDoc.getPageCount() > 2) {
-      const page3OverlayDoc = await PDFDocument.create();
-      const page3Overlay = page3OverlayDoc.addPage([612, 792]);
-      const font3 = await page3OverlayDoc.embedFont(StandardFonts.Helvetica);
-      page3Overlay.setFont(font3);
-      page3Overlay.setFontSize(9);
-
-      // Add current date to bottom of page 3
-      page3Overlay.drawText(formattedCurrentDate, { x: 500, y: 50, size: 9 });
-
-      const page3OverlayBytes = await page3OverlayDoc.save();
-      const [page3Embedded] = await finalDoc.embedPdf(page3OverlayBytes);
-      const [basePage3] = await finalDoc.copyPages(basePdfDoc, [2]);
-
-      basePage3.drawPage(page3Embedded);
-      finalDoc.addPage(basePage3);
+      const page3 = copiedPages[2];
+      page3.setFont(font);
+      page3.drawText(formattedCurrentDate, { x: 500, y: 50, size: 9 });
+      finalDoc.addPage(page3);
     }
 
     // Save PDF
