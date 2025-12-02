@@ -14,6 +14,7 @@ export const EMAIL_ADDRESSES = {
     nv: "ar.nv@givinghhc.com",
     tn: "ar.tn@givinghhc.com",
   },
+  laPlataCC: "cali.candelaria@lpmedx.com",
 } as const;
 
 // Client status tags
@@ -23,7 +24,7 @@ export const CLIENT_STATUS = {
 } as const;
 
 // Email templates
-const STANDARD_TEMPLATE = `Good morning,
+const STANDARD_TEMPLATE = `Hello,
 
 Our client has elected to have {doctor} perform their impairment evaluation. I have attached their causation and contact information here.
 
@@ -35,7 +36,7 @@ Address: {address}
 
 Thank you, and please let us know how we can further assist.`;
 
-const DR_LEWIS_TEMPLATE = `Good morning,
+const DR_LEWIS_TEMPLATE = `Hello,
 
 Our client has elected to have Dr. Lewis perform their impairment evaluation. I have attached their causation and contact information here.
 
@@ -134,6 +135,11 @@ export function getEmailRecipients(
 
   // CC recipients based on client status
   const cc: string[] = [];
+
+  // Add La Plata CC for all clients when La Plata is selected
+  if (doctor === "La Plata") {
+    cc.push(EMAIL_ADDRESSES.laPlataCC);
+  }
 
   // Add CC based on client status
   if (clientStatus === CLIENT_STATUS.AO) {
