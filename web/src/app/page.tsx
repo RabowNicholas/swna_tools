@@ -122,6 +122,13 @@ export default function Home() {
       description: "",
       href: "/clients",
     },
+    // Analytics
+    {
+      id: "pipeline",
+      name: "Claims Pipeline Dashboard",
+      description: "Management view - identify bottlenecks and prioritize follow-ups by responsibility",
+      href: "/pipeline",
+    },
     // Portal Access
     {
       id: "portal",
@@ -140,6 +147,7 @@ export default function Home() {
     ),
     medical: allTools.filter((tool) => ["desert-pulm"].includes(tool.id)),
     billing: allTools.filter((tool) => ["invoice"].includes(tool.id)),
+    analytics: allTools.filter((tool) => ["pipeline"].includes(tool.id)),
     clientManagement: allTools.filter((tool) =>
       ["clients", "portal"].includes(tool.id)
     ),
@@ -384,6 +392,33 @@ export default function Home() {
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {toolCategories.billing.map((tool) => (
+                <ToolCard key={tool.id} tool={tool} />
+              ))}
+            </StaggeredContainer>
+          </section>
+        </AnimatedContainer>
+
+        {/* Analytics Section */}
+        <AnimatedContainer animation="fadeIn" trigger="inView">
+          <section aria-labelledby="analytics-heading">
+            <div className="mb-6">
+              <h2
+                id="analytics-heading"
+                className="text-2xl font-bold text-foreground mb-2"
+              >
+                Analytics & Reporting
+              </h2>
+              <p className="text-muted-foreground">
+                Visualizations and insights into your claims pipeline
+              </p>
+            </div>
+
+            <StaggeredContainer
+              staggerDelay={80}
+              baseAnimation="slideInFromLeft"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {toolCategories.analytics.map((tool) => (
                 <ToolCard key={tool.id} tool={tool} />
               ))}
             </StaggeredContainer>
