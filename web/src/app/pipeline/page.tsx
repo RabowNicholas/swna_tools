@@ -166,7 +166,7 @@ export default function PipelinePage() {
                 />
                 <Bar
                   dataKey="count"
-                  onClick={(data) => setSelectedStage(data.stageData)}
+                  onClick={(data: any) => setSelectedStage(data.stageData)}
                   cursor="pointer"
                 >
                   {chartData.map((entry, index) => (
