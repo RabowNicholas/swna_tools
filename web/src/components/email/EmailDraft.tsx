@@ -172,13 +172,17 @@ export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
                   <label className="block text-sm font-medium text-foreground">
                     CC
                   </label>
-                  <div className="flex items-center space-x-3">
-                    <div className="flex-1 px-3 py-2 border border-border rounded-md bg-accent/50">
-                      <div className="text-sm font-mono text-foreground">
-                        {recipients.cc.join(', ')}
+                  <div className="space-y-2">
+                    {recipients.cc.map((email, index) => (
+                      <div key={index} className="flex items-center space-x-3">
+                        <div className="flex-1 px-3 py-2 border border-border rounded-md bg-accent/50">
+                          <div className="text-sm font-mono text-foreground">
+                            {email}
+                          </div>
+                        </div>
+                        <CopyButton value={email} label="Copy" />
                       </div>
-                    </div>
-                    <CopyButton value={recipients.cc.join(', ')} label="Copy" />
+                    ))}
                   </div>
                 </div>
 
