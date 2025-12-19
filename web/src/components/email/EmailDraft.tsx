@@ -2,14 +2,11 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Select } from '@/components/ui/Select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Mail, Copy, ExternalLink, CheckCircle } from 'lucide-react';
 import {
   detectClientStatus,
-  isGHHCClient,
   getEmailRecipients,
   formatEmailBody,
   getSubjectLine,
@@ -34,6 +31,9 @@ export interface EmailDraftProps {
     caseId: string;
     phone: string;
     address: string;
+    dob: string;
+    workHistoryDates?: string;
+    hhcLocation?: 'NV' | 'TN';
   };
 }
 
@@ -64,45 +64,19 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 }
 
 export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
-  const [dob, setDob] = useState('');
-  const [workHistoryDates, setWorkHistoryDates] = useState('');
-  const [hhcLocation, setHhcLocation] = useState<'NV' | 'TN' | ''>('');
-  const [showPreview, setShowPreview] = useState(false);
-  const [attemptedGenerate, setAttemptedGenerate] = useState(false);
-
   const clientStatus = detectClientStatus(client);
-  const isGHHC = isGHHCClient(clientStatus);
-  const isDrLewis = doctor === "Dr. Lewis";
 
-  // Validation
-  const errors: Record<string, string> = {};
-  if (attemptedGenerate) {
-    if (!dob) errors.dob = "Date of birth is required";
-    if (isDrLewis && !workHistoryDates) errors.workHistoryDates = "Work history dates are required for Dr. Lewis";
-    if (isGHHC && !hhcLocation) errors.hhcLocation = "HHC location is required for GHHC clients";
-  }
-
-  const isValid = !errors.dob && (!isDrLewis || !errors.workHistoryDates) && (!isGHHC || !errors.hhcLocation);
-
-  // Generate email preview
-  const handleGeneratePreview = () => {
-    setAttemptedGenerate(true);
-    if (isValid) {
-      setShowPreview(true);
-    }
-  };
-
-  // Email data
-  const recipients = getEmailRecipients(doctor, clientStatus, hhcLocation as 'NV' | 'TN' | undefined);
+  // Generate email data directly from props
+  const recipients = getEmailRecipients(doctor, clientStatus, formData.hhcLocation);
   const subject = getSubjectLine(formData.name);
   const body = formatEmailBody(
     doctor,
     formData.name,
     formData.phone,
-    dob,
+    formData.dob,
     formData.caseId,
     formData.address,
-    workHistoryDates
+    formData.workHistoryDates
   );
 
   const mailtoLink = createMailtoLink(recipients.to, recipients.cc, subject, body);
@@ -116,7 +90,7 @@ export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Mail className="h-5 w-5 text-primary" />
-              <CardTitle>Draft IR Request Email</CardTitle>
+              <CardTitle>Email Preview - Ready to Send</CardTitle>
             </div>
             {clientStatus && (
               <Badge variant={clientStatus === "AO Client" ? "default" : "secondary"}>
@@ -125,98 +99,47 @@ export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
             )}
           </div>
           <p className="text-sm text-muted-foreground mt-2">
-            Generate an IR request email to {doctor} with client information
-          </p>
-        </CardHeader>
-      </Card>
-
-      {/* Additional Information Form */}
-      <Card variant="elevated">
-        <CardHeader>
-          <CardTitle>Additional Information Required</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Complete these fields to generate the email
+            IR request email to {doctor} with client information
           </p>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            {/* Auto-populated client info (read-only display) */}
-            <div className="p-4 bg-muted/30 rounded-lg border border-border">
-              <h4 className="text-sm font-medium text-foreground mb-3">Client Information (from form)</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Name:</span>{' '}
-                  <span className="text-foreground font-mono">{formData.name}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Case ID:</span>{' '}
-                  <span className="text-foreground font-mono">{formData.caseId}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Phone:</span>{' '}
-                  <span className="text-foreground font-mono">{formData.phone}</span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-muted-foreground">Address:</span>{' '}
-                  <span className="text-foreground font-mono whitespace-pre-line">{formData.address}</span>
-                </div>
+          {/* Auto-populated client info (read-only display) */}
+          <div className="p-4 bg-muted/30 rounded-lg border border-border">
+            <h4 className="text-sm font-medium text-foreground mb-3">Client Information (from form)</h4>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">Name:</span>{' '}
+                <span className="text-foreground font-mono">{formData.name}</span>
               </div>
+              <div>
+                <span className="text-muted-foreground">Case ID:</span>{' '}
+                <span className="text-foreground font-mono">{formData.caseId}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Phone:</span>{' '}
+                <span className="text-foreground font-mono">{formData.phone}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">DOB:</span>{' '}
+                <span className="text-foreground font-mono">{formData.dob}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Address:</span>{' '}
+                <span className="text-foreground font-mono whitespace-pre-line">{formData.address}</span>
+              </div>
+              {formData.workHistoryDates && (
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">Work History:</span>{' '}
+                  <span className="text-foreground font-mono">{formData.workHistoryDates}</span>
+                </div>
+              )}
             </div>
-
-            {/* Additional fields */}
-            <Input
-              label="Date of Birth"
-              placeholder="MM/DD/YYYY"
-              required
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              error={errors.dob}
-              helperText="Client's date of birth for the email"
-            />
-
-            {isDrLewis && (
-              <Input
-                label="Verified Work History Dates"
-                placeholder="MM/YYYY-MM/YYYY"
-                required
-                value={workHistoryDates}
-                onChange={(e) => setWorkHistoryDates(e.target.value)}
-                error={errors.workHistoryDates}
-                helperText="Verified employment date ranges for Dr. Lewis evaluation"
-              />
-            )}
-
-            {isGHHC && (
-              <Select
-                label="GHHC Location"
-                required
-                value={hhcLocation}
-                onChange={(e) => setHhcLocation(e.target.value as 'NV' | 'TN' | '')}
-                error={errors.hhcLocation}
-                helperText="Select the GHHC location for proper email routing"
-              >
-                <option value="">Select location...</option>
-                <option value="NV">Nevada (NV)</option>
-                <option value="TN">Tennessee (TN)</option>
-              </Select>
-            )}
-
-            <Button
-              type="button"
-              onClick={handleGeneratePreview}
-              disabled={attemptedGenerate && !isValid}
-              className="w-full"
-              icon={<CheckCircle className="h-4 w-4" />}
-            >
-              Generate Email Preview
-            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Email Preview */}
-      {showPreview && isValid && (
-        <>
+      <>
           <Card variant="elevated" className="bg-success/5 border-success/20">
             <CardHeader>
               <div className="flex items-center space-x-2">
@@ -332,8 +255,7 @@ export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
               </div>
             </CardContent>
           </Card>
-        </>
-      )}
+      </>
     </div>
   );
 }

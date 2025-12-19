@@ -27,6 +27,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { detectClientStatus, isGHHCClient } from "@/lib/email-utils";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -120,6 +121,9 @@ const ee10Schema = z.object({
   client_id: z.string().min(1, "Please select a client"),
   name: z.string().min(1, "Client name is required"),
   case_id: z.string().min(1, "Case ID is required"),
+  dob: z.string()
+    .min(1, "Date of birth is required")
+    .regex(/^\d{2}\/\d{2}\/\d{4}$/, "Date must be in format: MM/DD/YYYY"),
   doctor: z.enum(["La Plata", "Dr. Lewis"], {
     message: "Please select a doctor",
   }),
@@ -141,6 +145,19 @@ const ee10Schema = z.object({
       /^\d{3}\.\d{3}\.\d{4}$/,
       "Phone number must be in format: 123.123.1234"
     ),
+  work_history_dates: z.string().optional(),
+  ghhc_location: z.enum(["NV", "TN", ""], {
+    message: "Please select a GHHC location",
+  }).optional(),
+}).refine((data) => {
+  // Work history required for Dr. Lewis
+  if (data.doctor === "Dr. Lewis" && !data.work_history_dates) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Work history dates are required for Dr. Lewis",
+  path: ["work_history_dates"],
 });
 
 type EE10FormData = z.infer<typeof ee10Schema>;
@@ -173,6 +190,7 @@ export default function EE10Form() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   const form = useForm<EE10FormData>({
     resolver: zodResolver(ee10Schema),
@@ -182,6 +200,7 @@ export default function EE10Form() {
       client_id: "",
       name: "",
       case_id: "",
+      dob: "",
       doctor: "La Plata",
       claim_type: "Initial Impairment Claim",
       address_main: "",
@@ -189,6 +208,8 @@ export default function EE10Form() {
       address_state: "",
       address_zip: "",
       phone: "",
+      work_history_dates: "",
+      ghhc_location: "",
     },
   });
 
@@ -203,12 +224,31 @@ export default function EE10Form() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId) as any;
     if (client) {
+      setSelectedClient(client);
+
       // Parse client name using shared utility
       const displayName = parseClientName(client.fields.Name || "");
       form.setValue("name", displayName);
 
       // Set other fields
       form.setValue("case_id", client.fields["Case ID"] || "");
+
+      // Format and set DOB
+      if (client.fields["Date of Birth"]) {
+        try {
+          const date = new Date(client.fields["Date of Birth"]);
+          if (!isNaN(date.getTime())) {
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const year = date.getFullYear();
+            form.setValue("dob", `${month}/${day}/${year}`);
+          }
+        } catch (error) {
+          console.error('Error formatting DOB:', error);
+          form.setValue("dob", "");
+        }
+      }
+
       form.setValue("address_main", client.fields["Street Address"] || "");
       form.setValue("address_city", client.fields["City"] || "");
       form.setValue(
@@ -438,6 +478,20 @@ export default function EE10Form() {
                 />
               </div>
 
+              {/* Date of Birth */}
+              <Input
+                label="Date of Birth"
+                required
+                placeholder="MM/DD/YYYY"
+                error={
+                  attemptedSubmit
+                    ? form.formState.errors.dob?.message
+                    : undefined
+                }
+                helperText="Client's date of birth for medical records"
+                {...form.register("dob")}
+              />
+
               {/* Address */}
               <Input
                 label="Street Address"
@@ -505,6 +559,41 @@ export default function EE10Form() {
                   {...form.register("phone")}
                 />
               </div>
+
+              {/* Conditional: Work History Dates for Dr. Lewis */}
+              {form.watch("doctor") === "Dr. Lewis" && (
+                <Input
+                  label="Verified Work History Dates"
+                  required
+                  placeholder="MM/YYYY-MM/YYYY"
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.work_history_dates?.message
+                      : undefined
+                  }
+                  helperText="Example: 01/2020-06/2023"
+                  {...form.register("work_history_dates")}
+                />
+              )}
+
+              {/* Conditional: GHHC Location for GHHC clients */}
+              {selectedClient && isGHHCClient(detectClientStatus(selectedClient)) && (
+                <Select
+                  label="GHHC Location"
+                  required
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.ghhc_location?.message
+                      : undefined
+                  }
+                  helperText="Select the GHHC office location for this client"
+                  {...form.register("ghhc_location")}
+                >
+                  <option value="">Select location</option>
+                  <option value="NV">Nevada (NV)</option>
+                  <option value="TN">Tennessee (TN)</option>
+                </Select>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -606,6 +695,9 @@ export default function EE10Form() {
                     )}, ${form.watch("address_state")} ${form.watch(
                       "address_zip"
                     )}`.trim(),
+                    dob: form.watch("dob"),
+                    workHistoryDates: form.watch("work_history_dates") || undefined,
+                    hhcLocation: form.watch("ghhc_location") as 'NV' | 'TN' | undefined,
                   }}
                 />
               </>

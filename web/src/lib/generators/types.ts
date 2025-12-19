@@ -14,6 +14,7 @@ export interface BaseFormData {
 }
 
 export interface EE10FormData extends BaseFormData {
+  dob?: string;
   address_main: string;
   address_city: string;
   address_state: string;
