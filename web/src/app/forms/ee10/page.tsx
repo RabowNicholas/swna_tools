@@ -18,6 +18,7 @@ import {
   Stethoscope,
   FileText,
   User,
+  Mail,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
@@ -191,6 +192,7 @@ export default function EE10Form() {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [mode, setMode] = useState<'generate' | 'skip'>('generate');
 
   const form = useForm<EE10FormData>({
     resolver: zodResolver(ee10Schema),
@@ -260,8 +262,61 @@ export default function EE10Form() {
     }
   };
 
+  // Handle mode change
+  const handleModeChange = (newMode: 'generate' | 'skip') => {
+    setMode(newMode);
+    setFormSubmitted(false);
+    setAttemptedSubmit(false);
+  };
+
+  // Handle skip mode submission
+  const handleSkipSubmit = async () => {
+    setAttemptedSubmit(true);
+
+    // Validate required fields
+    if (!form.watch("client_id")) {
+      alert("Please select a client");
+      return;
+    }
+    if (!form.watch("doctor")) {
+      alert("Please select a doctor");
+      return;
+    }
+
+    // Validate client data is populated (should be auto-filled from client selection)
+    const isFormValid = await form.trigger([
+      "name", "case_id", "dob", "address_main",
+      "address_city", "address_state", "address_zip", "phone"
+    ]);
+
+    if (!isFormValid) {
+      alert("Client information is incomplete. Please select a valid client.");
+      return;
+    }
+
+    const selectedClient = clients.find((c) => c.id === form.watch("client_id")) as any;
+    if (!selectedClient) {
+      alert("Selected client not found");
+      return;
+    }
+
+    // Track skip mode usage (similar to PDF generation tracking)
+    if (session?.user) {
+      trackEvent.formViewed('ee10-skip', session.user.id);
+    }
+
+    setFormSubmitted(true);
+    setSubmittedClient(selectedClient);
+  };
+
   // Handle submit click with manual validation
   const handleSubmitClick = async () => {
+    if (mode === 'skip') {
+      await handleSkipSubmit();
+      return;
+    }
+
+    // Existing generate mode logic
     setAttemptedSubmit(true);
 
     // Trigger form validation
@@ -391,6 +446,38 @@ export default function EE10Form() {
         </p>
       </div>
 
+      {/* Mode Toggle */}
+      <Card variant="elevated">
+        <CardContent className="py-6">
+          <div className="flex items-center justify-center gap-8">
+            <Button
+              type="button"
+              variant={mode === 'generate' ? 'primary' : 'outline'}
+              onClick={() => handleModeChange('generate')}
+              size="lg"
+              icon={<FileDown className="h-5 w-5" />}
+              className={cn(
+                mode === 'generate' && "bg-purple-600 hover:bg-purple-700 text-white"
+              )}
+            >
+              Generate New Form
+            </Button>
+            <Button
+              type="button"
+              variant={mode === 'skip' ? 'primary' : 'outline'}
+              onClick={() => handleModeChange('skip')}
+              size="lg"
+              icon={<Mail className="h-5 w-5" />}
+              className={cn(
+                mode === 'skip' && "bg-blue-600 hover:bg-blue-700 text-white"
+              )}
+            >
+              Skip to Email
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <form className="space-y-8">
         {/* Client Selection */}
         <ClientSelector
@@ -438,8 +525,41 @@ export default function EE10Form() {
           </CardContent>
         </Card>
 
-        {/* Client Information */}
-        <Card variant="elevated">
+        {/* Skip Mode: Info Card */}
+        {mode === 'skip' && (
+          <Card variant="elevated" className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-5 w-5 text-blue-600" />
+                <CardTitle>Skip Generation Mode</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                You already have a pre-completed EE-10 form. This mode will skip PDF generation and take you directly to:
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
+                  <span><strong>Portal Access:</strong> DOL portal login helper to upload your form manually</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
+                  <span><strong>Email Draft:</strong> Pre-filled email to send to the selected doctor</span>
+                </li>
+              </ul>
+              <p className="text-sm text-muted-foreground mt-4">
+                Make sure you have your completed EE-10 PDF ready in your downloads folder before proceeding.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Generate Mode: All existing form cards */}
+        {mode === 'generate' && (
+          <>
+            {/* Client Information */}
+            <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
               <User className="h-5 w-5 text-success" />
@@ -630,6 +750,8 @@ export default function EE10Form() {
             </Select>
           </CardContent>
         </Card>
+          </>
+        )}
 
         {/* Submit Button */}
         <div className="flex flex-col gap-4 items-center">
@@ -643,12 +765,20 @@ export default function EE10Form() {
             type="button"
             onClick={handleSubmitClick}
             disabled={loading}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50 min-w-[200px]"
+            className={cn(
+              mode === 'generate'
+                ? "bg-purple-600 hover:bg-purple-700"
+                : "bg-blue-600 hover:bg-blue-700",
+              "text-white shadow-lg min-w-[200px]"
+            )}
             size="xl"
             loading={loading}
-            icon={<FileDown className="h-5 w-5" />}
+            icon={mode === 'generate' ? <FileDown className="h-5 w-5" /> : <Mail className="h-5 w-5" />}
           >
-            {loading ? "Generating Form..." : "Generate EE-10 Form"}
+            {loading
+              ? (mode === 'generate' ? "Generating Form..." : "Processing...")
+              : (mode === 'generate' ? "Generate EE-10 Form" : "Continue to Portal & Email")
+            }
           </Button>
         </div>
 
@@ -666,11 +796,16 @@ export default function EE10Form() {
                   </div>
                   <div className="ml-4">
                     <h3 className="text-lg font-medium text-foreground mb-2">
-                      EE-10 form generated successfully!
+                      {mode === 'generate'
+                        ? "EE-10 form generated successfully!"
+                        : "Ready to proceed!"
+                      }
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Your EE-10 form has been downloaded and is ready for
-                      submission.
+                      {mode === 'generate'
+                        ? "Your EE-10 form has been downloaded and is ready for submission."
+                        : "Use the portal access below to upload your pre-completed form, then send the email notification."
+                      }
                     </p>
                   </div>
                 </div>
