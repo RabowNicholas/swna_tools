@@ -151,6 +151,7 @@ interface DiagnosisCategories {
 const ee1Schema = z.object({
   client_id: z.string().min(1, "Please select a client"),
   first_name: z.string().min(1, "First name is required"),
+  middle_initial: z.string().max(1, "Middle initial must be 1 character").optional(),
   last_name: z.string().min(1, "Last name is required"),
   ssn: z.string().regex(/^\d{9}$/, "SSN must be 9 digits"),
   dob: z.string().min(1, "Date of birth is required"),
@@ -256,6 +257,7 @@ export default function EE1Form() {
     defaultValues: {
       client_id: "",
       first_name: "",
+      middle_initial: "",
       last_name: "",
       ssn: "",
       dob: "",
@@ -287,8 +289,19 @@ export default function EE1Form() {
       const nameParts = fullName.split(" ");
       if (nameParts.length >= 2) {
         const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(" ");
+        let middleInitial = "";
+        let lastName = "";
+
+        // Check if second part is a middle initial (single letter or letter with period)
+        if (nameParts.length >= 3 && nameParts[1].replace(".", "").length === 1) {
+          middleInitial = nameParts[1].replace(".", "").toUpperCase();
+          lastName = nameParts.slice(2).join(" ");
+        } else {
+          lastName = nameParts.slice(1).join(" ");
+        }
+
         form.setValue("first_name", firstName);
+        form.setValue("middle_initial", middleInitial);
         form.setValue("last_name", lastName);
       }
 
@@ -529,6 +542,7 @@ export default function EE1Form() {
       // Check fields in order of appearance
       if (errors.client_id) firstErrorField = "client_id";
       else if (errors.first_name) firstErrorField = "first_name";
+      else if (errors.middle_initial) firstErrorField = "middle_initial";
       else if (errors.last_name) firstErrorField = "last_name";
       else if (errors.ssn) firstErrorField = "ssn";
       else if (errors.dob) firstErrorField = "dob";
@@ -598,6 +612,7 @@ export default function EE1Form() {
       // Create form data without signature file
       const formDataWithoutFile = {
         first_name: data.first_name,
+        middle_initial: data.middle_initial || "",
         last_name: data.last_name,
         ssn: `${data.ssn.slice(0, 3)}-${data.ssn.slice(3, 5)}-${data.ssn.slice(
           5
@@ -780,6 +795,15 @@ export default function EE1Form() {
                   error={form.formState.errors.first_name?.message}
                   helperText="Client's legal first name as it appears on their official documents"
                   {...form.register("first_name")}
+                />
+
+                <Input
+                  label="Client's Middle Initial"
+                  maxLength={1}
+                  placeholder="Q"
+                  error={form.formState.errors.middle_initial?.message}
+                  helperText="Optional - Enter middle initial only (single letter)"
+                  {...form.register("middle_initial")}
                 />
 
                 <Input
