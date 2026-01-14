@@ -227,8 +227,6 @@ export default function EN16Form() {
                   error={form.formState.errors.name?.message}
                   helperText="Client's full legal name as it appears on their official documents"
                   {...form.register("name")}
-                  readOnly
-                  className="bg-muted/30"
                 />
 
                 <Input
