@@ -96,6 +96,12 @@ export default function Home() {
       href: "/forms/address-change",
     },
     {
+      id: "dol-status-update",
+      name: "Status Update Letter",
+      description: "",
+      href: "/forms/dol-status-update",
+    },
+    {
       id: "ir-notice",
       name: "IR Notice La Plata",
       description: "",
@@ -143,7 +149,7 @@ export default function Home() {
       ["ee3", "ee1", "ee1a", "ee10", "en16"].includes(tool.id)
     ),
     dolLetters: allTools.filter((tool) =>
-      ["withdrawal", "address-change", "ir-notice"].includes(tool.id)
+      ["withdrawal", "address-change", "dol-status-update", "ir-notice"].includes(tool.id)
     ),
     medical: allTools.filter((tool) => ["desert-pulm"].includes(tool.id)),
     billing: allTools.filter((tool) => ["invoice"].includes(tool.id)),

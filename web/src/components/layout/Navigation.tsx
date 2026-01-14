@@ -2,18 +2,19 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { 
-  Menu, 
-  X, 
-  FileText, 
-  Users, 
-  DollarSign, 
-  Mail, 
+import {
+  Menu,
+  X,
+  FileText,
+  Users,
+  DollarSign,
+  Mail,
   Building,
   Home,
   Briefcase,
   Stethoscope,
-  CreditCard
+  CreditCard,
+  Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -57,6 +58,7 @@ const navigationCategories: NavigationCategory[] = [
     items: [
       { name: 'Withdrawal Letter', href: '/forms/withdrawal', icon: Mail, description: 'Case withdrawal documentation' },
       { name: 'Address Change Letter', href: '/forms/address-change', icon: Building, description: 'Address modification notification' },
+      { name: 'Status Update Letter', href: '/forms/dol-status-update', icon: Bell, description: 'Case status update notification' },
       { name: 'IR Notice La Plata', href: '/forms/ir-notice', icon: FileText, description: 'Independent review notice' },
     ]
   },
