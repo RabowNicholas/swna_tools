@@ -190,7 +190,7 @@ export default function DolStatusUpdateForm() {
                 </p>
               </div>
             </div>
-            <Badge variant="primary" size="lg">
+            <Badge variant="default" size="lg">
               DOL Letter
             </Badge>
           </div>
