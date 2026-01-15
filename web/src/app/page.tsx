@@ -84,6 +84,12 @@ export default function Home() {
     },
     // DOL Letters
     {
+      id: "dol-letter",
+      name: "Draft Custom Letter",
+      description: "",
+      href: "/forms/dol-letter",
+    },
+    {
       id: "withdrawal",
       name: "Withdrawal Letter",
       description: "",
@@ -149,7 +155,7 @@ export default function Home() {
       ["ee3", "ee1", "ee1a", "ee10", "en16"].includes(tool.id)
     ),
     dolLetters: allTools.filter((tool) =>
-      ["withdrawal", "address-change", "dol-status-update", "ir-notice"].includes(tool.id)
+      ["dol-letter", "withdrawal", "address-change", "dol-status-update", "ir-notice"].includes(tool.id)
     ),
     medical: allTools.filter((tool) => ["desert-pulm"].includes(tool.id)),
     billing: allTools.filter((tool) => ["invoice"].includes(tool.id)),

@@ -14,7 +14,8 @@ import {
   Briefcase,
   Stethoscope,
   CreditCard,
-  Bell
+  Bell,
+  FileEdit
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -56,6 +57,7 @@ const navigationCategories: NavigationCategory[] = [
     name: 'DOL Letters',
     icon: Mail,
     items: [
+      { name: 'Draft Custom Letter', href: '/forms/dol-letter', icon: FileEdit, description: 'Draft any letter to DOL' },
       { name: 'Withdrawal Letter', href: '/forms/withdrawal', icon: Mail, description: 'Case withdrawal documentation' },
       { name: 'Address Change Letter', href: '/forms/address-change', icon: Building, description: 'Address modification notification' },
       { name: 'Status Update Letter', href: '/forms/dol-status-update', icon: Bell, description: 'Case status update notification' },
