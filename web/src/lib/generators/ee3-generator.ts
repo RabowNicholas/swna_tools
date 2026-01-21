@@ -255,7 +255,6 @@ export class EE3Generator extends BaseGenerator {
   ): Promise<GeneratorResult> {
     const firstName = formData.first_name || "";
     const lastName = formData.last_name || "";
-    const name = lastName && firstName ? `${lastName}, ${firstName}` : "";
     const formerName = formData.former_name || "";
     const ssn = formData.ssn || "";
     let employmentHistory = formData.employment_history || [];
@@ -345,8 +344,9 @@ export class EE3Generator extends BaseGenerator {
     const font = await finalDoc.embedFont(StandardFonts.Helvetica);
     page1.setFont(font);
 
-    // Copy all the drawing operations from page1Overlay to page1
-    page1.drawText(name, { x: 30, y: 640, size: 9 });
+    // Header info - Employee Name (Field 1)
+    page1.drawText(lastName, { x: 30, y: 640, size: 9 });
+    page1.drawText(firstName, { x: 150, y: 640, size: 9 });
     if (formerName) {
       page1.drawText(formerName, { x: 250, y: 640, size: 9 });
     }
