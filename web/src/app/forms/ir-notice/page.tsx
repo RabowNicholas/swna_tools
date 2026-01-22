@@ -117,12 +117,19 @@ const getStateAbbreviation = (stateName: string): string => {
   return stateName;
 };
 
+// Provider options for the IR Notice
+const PROVIDER_OPTIONS = [
+  { value: "La Plata Medical", label: "La Plata Medical" },
+  { value: "Dr. Lewis", label: "Dr. Lewis" },
+];
+
 // Zod schema for form validation (simplified to match Streamlit version)
 const irNoticeSchema = z.object({
   client_id: z.string().min(1, "Please select a client"),
   client_name: z.string().min(1, "Client's full name is required"),
   case_id: z.string().min(1, "Case ID is required"),
   appointment_date: z.string().min(1, "IR appointment date is required"),
+  provider_name: z.string().min(1, "Please select a provider"),
 });
 
 type IRNoticeFormData = z.infer<typeof irNoticeSchema>;
@@ -174,6 +181,7 @@ export default function IRNoticeForm() {
       case_id: "",
       // Default to 75 days from today (matching Streamlit)
       appointment_date: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      provider_name: "La Plata Medical",
     },
   });
 
@@ -232,6 +240,7 @@ export default function IRNoticeForm() {
           client_name: data.client_name,
           file_number: data.case_id,
           appointment_date: data.appointment_date,
+          provider_name: data.provider_name,
         },
       };
 
@@ -312,10 +321,10 @@ export default function IRNoticeForm() {
       {/* Header */}
       <div className="space-y-4">
         <h1 className="text-3xl font-bold text-foreground">
-          🏥 La Plata IR Schedule Notice Generator
+          🏥 IR Schedule Notice Generator
         </h1>
         <p className="text-muted-foreground">
-          Generate Independent Review (IR) Schedule Notice for La Plata
+          Generate Independent Review (IR) Schedule Notice
         </p>
       </div>
 
@@ -388,6 +397,24 @@ export default function IRNoticeForm() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
+                <Select
+                  label="Medical Provider"
+                  required
+                  error={
+                    attemptedSubmit
+                      ? form.formState.errors.provider_name?.message
+                      : undefined
+                  }
+                  helperText="Select the medical provider for the IR appointment"
+                  {...form.register("provider_name")}
+                >
+                  {PROVIDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </Select>
+
                 <Input
                   label="IR Appointment Date"
                   type="date"

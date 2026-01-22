@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
     const clientName = requestData.form_data.client_name || '';
     const fileNumber = requestData.form_data.file_number || '';
     const appointmentDate = requestData.form_data.appointment_date || '';
+    const providerName = requestData.form_data.provider_name || 'La Plata Medical';
 
     if (!clientName || !fileNumber || !appointmentDate) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Generate PDF using TypeScript generator
     const generator = new LaPlataNoticeGenerator();
-    const result = await generator.generate(clientName, fileNumber, appointmentDate);
+    const result = await generator.generate(clientName, fileNumber, appointmentDate, providerName);
 
     // Return PDF as download
     return new NextResponse(result.pdfBytes as unknown as BodyInit, {

@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from generators.ee1_generator import EE1Generator
 from generators.ee3_generator import EE3Generator
+from generators.ir_notice_generator import IRNoticeGenerator
 from datetime import datetime, date
 
 
@@ -113,6 +114,44 @@ def test_ee3():
     print(f"EE-3 test PDF saved as: {filename}")
 
 
+def test_ir_notice():
+    generator = IRNoticeGenerator(template_path="web/public/templates/ir_notice_la_plata.pdf")
+
+    # Test data
+    client_name = "John Smith"
+    file_number = "12345"
+    appointment_date = "2026-03-15"
+    provider_name = "La Plata Medical"
+
+    filename, pdf_bytes = generator.generate(
+        client_name=client_name,
+        file_number=file_number,
+        appointment_date=appointment_date,
+        provider_name=provider_name,
+    )
+
+    # Save to test output
+    with open(filename, "wb") as f:
+        f.write(pdf_bytes.read())
+
+    print(f"IR Notice test PDF saved as: {filename}")
+
+    # Test with Dr. Lewis
+    generator2 = IRNoticeGenerator(template_path="web/public/templates/ir_notice_la_plata.pdf")
+
+    filename2, pdf_bytes2 = generator2.generate(
+        client_name="Jane Doe",
+        file_number="67890",
+        appointment_date="2026-04-20",
+        provider_name="Dr. Lewis",
+    )
+
+    with open(filename2, "wb") as f:
+        f.write(pdf_bytes2.read())
+
+    print(f"IR Notice (Dr. Lewis) test PDF saved as: {filename2}")
+
+
 def print_coordinate_guide():
     """Print helpful guide for PDF coordinate system"""
     print("\n" + "="*60)
@@ -148,10 +187,11 @@ if __name__ == "__main__":
     print("\nSelect test mode:")
     print("1. Test EE-1 form")
     print("2. Test EE-3 form")
-    print("3. Test all forms")
-    print("4. Show coordinate guide")
+    print("3. Test IR Notice form")
+    print("4. Test all forms")
+    print("5. Show coordinate guide")
 
-    choice = input("\nEnter choice (1-4): ").strip()
+    choice = input("\nEnter choice (1-5): ").strip()
 
     if choice == '1':
         print("\nRunning EE-1 test...")
@@ -168,14 +208,22 @@ if __name__ == "__main__":
         print("Test completed!")
 
     elif choice == '3':
+        print("\nRunning IR Notice test...")
+        print("-" * 30)
+        test_ir_notice()
+        print("-" * 30)
+        print("Test completed!")
+
+    elif choice == '4':
         print("\nRunning all tests...")
         print("-" * 30)
         test_ee1()
         test_ee3()
+        test_ir_notice()
         print("-" * 30)
         print("All tests completed!")
 
-    elif choice == '4':
+    elif choice == '5':
         print_coordinate_guide()
 
     else:
