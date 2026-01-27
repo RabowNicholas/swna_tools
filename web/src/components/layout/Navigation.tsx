@@ -61,7 +61,7 @@ const navigationCategories: NavigationCategory[] = [
       { name: 'Withdrawal Letter', href: '/forms/withdrawal', icon: Mail, description: 'Case withdrawal documentation' },
       { name: 'Address Change Letter', href: '/forms/address-change', icon: Building, description: 'Address modification notification' },
       { name: 'Status Update Letter', href: '/forms/dol-status-update', icon: Bell, description: 'Case status update notification' },
-      { name: 'IR Notice La Plata', href: '/forms/ir-notice', icon: FileText, description: 'Independent review notice' },
+      { name: 'IR Schedule Notice', href: '/forms/ir-notice', icon: FileText, description: 'Independent review notice' },
     ]
   },
   {

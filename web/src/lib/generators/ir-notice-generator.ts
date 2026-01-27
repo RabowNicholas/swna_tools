@@ -1,5 +1,5 @@
 /**
- * IR Notice (La Plata) Generator
+ * IR Schedule Notice Generator
  * Converts Python ir_notice_la_plata_generator.py to TypeScript
  */
 

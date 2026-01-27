@@ -109,7 +109,7 @@ export default function Home() {
     },
     {
       id: "ir-notice",
-      name: "IR Notice La Plata",
+      name: "IR Schedule Notice",
       description: "",
       href: "/forms/ir-notice",
     },

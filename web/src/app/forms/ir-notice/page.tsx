@@ -29,6 +29,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { IRNoticeEmailDraft } from "@/components/email/IRNoticeEmailDraft";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -170,6 +171,8 @@ export default function IRNoticeForm() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  const [submittedProvider, setSubmittedProvider] = useState<string>("");
+  const [submittedAppointmentDate, setSubmittedAppointmentDate] = useState<string>("");
 
   const form = useForm<IRNoticeFormData>({
     resolver: zodResolver(irNoticeSchema),
@@ -274,6 +277,8 @@ export default function IRNoticeForm() {
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
+        setSubmittedProvider(data.provider_name);
+        setSubmittedAppointmentDate(data.appointment_date);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -480,6 +485,15 @@ export default function IRNoticeForm() {
             {/* Portal Access */}
             {submittedClient && (
               <PortalAccess client={submittedClient} autoOpen={true} />
+            )}
+
+            {/* Email Draft Section */}
+            {submittedClient && submittedProvider && submittedAppointmentDate && (
+              <IRNoticeEmailDraft
+                client={submittedClient}
+                provider={submittedProvider as "La Plata Medical" | "Dr. Lewis"}
+                appointmentDate={submittedAppointmentDate}
+              />
             )}
           </>
         )}

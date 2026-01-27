@@ -87,7 +87,7 @@ const navigationItems = [
       },
       {
         id: 'ir-notice',
-        title: 'IR Notice La Plata',
+        title: 'IR Schedule Notice',
         href: '/forms/ir-notice',
         description: 'Independent review notice'
       }
@@ -166,7 +166,7 @@ function generateBreadcrumbs(pathname: string) {
     'ee10': 'EE-10 Form',
     'en16': 'EN-16 Form',
     'address-change': 'Address Change Letter',
-    'ir-notice': 'IR Notice La Plata',
+    'ir-notice': 'IR Schedule Notice',
     'clients': 'Client Manager',
   };
 
