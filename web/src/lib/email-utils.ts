@@ -269,11 +269,11 @@ export function getIRNoticeSubjectLine(clientName: string): string {
     if (nameParts.length >= 2) {
       const firstInitial = nameParts[0][0].toUpperCase();
       const lastName = nameParts[nameParts.length - 1];
-      return `IR Schedule Notice: ${firstInitial}. ${lastName}`;
+      return `IR Auth: ${firstInitial}. ${lastName}`;
     } else {
-      return `IR Schedule Notice: ${clientName}`;
+      return `IR Auth: ${clientName}`;
     }
   } catch (error) {
-    return `IR Schedule Notice: ${clientName}`;
+    return `IR Auth: ${clientName}`;
   }
 }

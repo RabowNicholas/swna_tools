@@ -26,6 +26,7 @@ interface Client {
 
 export interface IRNoticeEmailDraftProps {
   client: Client;
+  clientName: string;
   provider: "La Plata Medical" | "Dr. Lewis";
   appointmentDate: string;
 }
@@ -56,9 +57,8 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   );
 }
 
-export function IRNoticeEmailDraft({ client, provider, appointmentDate }: IRNoticeEmailDraftProps) {
+export function IRNoticeEmailDraft({ client, clientName, provider, appointmentDate }: IRNoticeEmailDraftProps) {
   const clientStatus = detectClientStatus(client);
-  const clientName = client.fields.Name || '';
 
   // Map provider name to doctor key for email recipients
   const doctorKey: "La Plata" | "Dr. Lewis" = provider === "La Plata Medical" ? "La Plata" : "Dr. Lewis";

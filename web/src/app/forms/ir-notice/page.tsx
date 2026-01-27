@@ -173,6 +173,7 @@ export default function IRNoticeForm() {
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
   const [submittedProvider, setSubmittedProvider] = useState<string>("");
   const [submittedAppointmentDate, setSubmittedAppointmentDate] = useState<string>("");
+  const [submittedClientName, setSubmittedClientName] = useState<string>("");
 
   const form = useForm<IRNoticeFormData>({
     resolver: zodResolver(irNoticeSchema),
@@ -279,6 +280,7 @@ export default function IRNoticeForm() {
         setSubmittedClient(selectedClient);
         setSubmittedProvider(data.provider_name);
         setSubmittedAppointmentDate(data.appointment_date);
+        setSubmittedClientName(data.client_name);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -488,9 +490,10 @@ export default function IRNoticeForm() {
             )}
 
             {/* Email Draft Section */}
-            {submittedClient && submittedProvider && submittedAppointmentDate && (
+            {submittedClient && submittedProvider && submittedAppointmentDate && submittedClientName && (
               <IRNoticeEmailDraft
                 client={submittedClient}
+                clientName={submittedClientName}
                 provider={submittedProvider as "La Plata Medical" | "Dr. Lewis"}
                 appointmentDate={submittedAppointmentDate}
               />
