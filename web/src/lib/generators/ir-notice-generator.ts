@@ -45,12 +45,16 @@ export class LaPlataNoticeGenerator extends BaseGenerator {
     // Get current date for letter header
     const currentDateFormatted = formatDateMMMDDYYYY();
 
-    // Draw fields
-    this.drawText(page, clientName, { x: 112, y: 711, size: 11 });
-    this.drawText(page, fileNumber, { x: 98, y: 698, size: 11 });
+    // Format appointment date (convert YYYY-MM-DD to "January 22, 2026" format)
+    const appointmentDateObj = new Date(appointmentDate + "T00:00:00");
+    const appointmentDateFormatted = formatDateMMMDDYYYY(appointmentDateObj);
+
+    // Draw fields - coordinates match Python generator
+    this.drawText(page, clientName, { x: 114, y: 711, size: 11 });
+    this.drawText(page, fileNumber, { x: 107, y: 698, size: 11 });
     this.drawText(page, currentDateFormatted, { x: 69, y: 685, size: 11 }); // Current date line
-    this.drawText(page, providerName, { x: 409, y: 546, size: 11 }); // Provider name (after "with")
-    this.drawText(page, appointmentDate + ".", { x: 69, y: 533, size: 11 }); // Appointment date with period (after "for")
+    this.drawText(page, providerName, { x: 387, y: 555, size: 11 }); // Provider name (after "with")
+    this.drawText(page, appointmentDateFormatted + ".", { x: 85, y: 525, size: 11 }); // Appointment date with period (after "for")
 
     // Generate filename
     const currentDate = formatDateMMDDYY();
