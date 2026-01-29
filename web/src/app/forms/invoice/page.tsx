@@ -159,15 +159,15 @@ export default function InvoiceForm() {
       form.setValue("address_state", client.fields["State"] || "");
       form.setValue("address_zip", client.fields["ZIP Code"] || "");
 
-      // Auto-populate invoice items from client's invoicing history (only on client change)
+      // Auto-populate invoice items from client's billing history (only on client change)
       if (shouldFetchItems) {
-        const invoicingField = client.fields["Invoicing"];
-        const invoicingIds = Array.isArray(invoicingField)
-          ? invoicingField
+        const billingField = client.fields["Billing"];
+        const billingIds = Array.isArray(billingField)
+          ? billingField
           : [];
         const newInvoiceItems: { name: string; date: string }[] = [];
 
-        for (const invoiceId of invoicingIds) {
+        for (const invoiceId of billingIds) {
           try {
             const response = await fetch(`/api/invoices/${invoiceId}`);
             if (response.ok) {

@@ -10,6 +10,7 @@ export interface Client {
     "ZIP Code"?: string;
     Phone?: string;
     "Date of Birth"?: string;
+    Billing?: string[];
     [key: string]: any;
   };
 }
@@ -104,6 +105,7 @@ export class ClientStorageService {
           "ZIP Code": client.fields["ZIP Code"],
           Phone: client.fields.Phone,
           "Date of Birth": client.fields["Date of Birth"],
+          Billing: client.fields.Billing,
         },
       }));
 
