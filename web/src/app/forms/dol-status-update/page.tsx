@@ -231,8 +231,6 @@ export default function DolStatusUpdateForm() {
                     error={form.formState.errors.claimant_name?.message}
                     helperText="Client's full name as it should appear in the letter"
                     {...form.register("claimant_name")}
-                    readOnly
-                    className="bg-muted/30"
                   />
 
                   <Input
