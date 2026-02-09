@@ -75,6 +75,16 @@ export function detectClientStatus(client: Client): string {
   try {
     const fields = client.fields;
 
+    // Check Associated Companies for AO Medical
+    const associatedCompanies = fields["Associated Companies"];
+    if (associatedCompanies && Array.isArray(associatedCompanies)) {
+      for (const company of associatedCompanies) {
+        if (company.toLowerCase().includes("ao")) {
+          return CLIENT_STATUS.AO;
+        }
+      }
+    }
+
     // Possible field names for status/tags
     const possibleStatusFields = [
       "Status",

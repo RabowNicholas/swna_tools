@@ -11,6 +11,7 @@ export interface Client {
     Phone?: string;
     "Date of Birth"?: string;
     Billing?: string[];
+    "Associated Companies"?: string[];
     [key: string]: any;
   };
 }
@@ -106,6 +107,7 @@ export class ClientStorageService {
           Phone: client.fields.Phone,
           "Date of Birth": client.fields["Date of Birth"],
           Billing: client.fields.Billing,
+          "Associated Companies": client.fields["Associated Companies"],
         },
       }));
 
