@@ -233,6 +233,17 @@ export default function EE1AForm() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
+      // Reset form to default values first (clears all fields including diagnoses array)
+      form.reset();
+
+      // Reset related state
+      setSignatureFile(null);
+      setSignaturePreview(null);
+      setDiagnosisErrors([]);
+
+      // Set client_id since reset cleared it
+      form.setValue("client_id", clientId);
+
       const fields = client.fields;
 
       // Parse name using shared utility

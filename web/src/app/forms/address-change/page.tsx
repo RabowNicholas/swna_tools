@@ -193,6 +193,12 @@ export default function AddressChangeForm() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
+      // Reset form to default values first (clears new address fields)
+      form.reset();
+
+      // Set client_id since reset cleared it
+      form.setValue("client_id", clientId);
+
       const fields = client.fields;
 
       // Parse name using shared utility

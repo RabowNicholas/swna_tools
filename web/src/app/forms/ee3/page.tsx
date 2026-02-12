@@ -249,6 +249,17 @@ export default function EE3Form() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
+      // Reset form to default values first (clears all fields including former_name, employment_history)
+      form.reset();
+
+      // Reset UI state for employment sections
+      setCollapsedEmployment(new Set());
+      setShowPreview({});
+      setEmploymentDateErrors({});
+
+      // Set client_id since reset cleared it
+      form.setValue("client_id", clientId);
+
       // Parse name using shared utility
       const rawName = client.fields.Name || "";
       const fullName = parseClientName(rawName);

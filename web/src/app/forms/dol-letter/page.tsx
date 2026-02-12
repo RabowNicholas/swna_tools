@@ -78,6 +78,12 @@ export default function DolLetterForm() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId) as any;
     if (client) {
+      // Reset form to default values first (clears letter_content, dates)
+      form.reset();
+
+      // Set client_id since reset cleared it
+      form.setValue("client_id", clientId);
+
       const displayName = parseClientName(client.fields.Name || "");
       form.setValue("claimant_name", displayName);
       form.setValue("case_id", client.fields["Case ID"] || "");

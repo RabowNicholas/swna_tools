@@ -226,7 +226,13 @@ export default function EE10Form() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId) as any;
     if (client) {
+      // Reset form to default values first (clears all fields including work_history_dates, ghhc_location)
+      form.reset();
+
       setSelectedClient(client);
+
+      // Set client_id since reset cleared it
+      form.setValue("client_id", clientId);
 
       // Parse client name using shared utility
       const displayName = parseClientName(client.fields.Name || "");

@@ -200,6 +200,12 @@ export default function IRNoticeForm() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId) as any;
     if (client) {
+      // Reset form to default values first (clears provider, appointment_date)
+      form.reset();
+
+      // Set client_id since reset cleared it
+      form.setValue("client_id", clientId);
+
       // Parse client name using shared utility
       const displayName = parseClientName(client.fields.Name || "");
       form.setValue("client_name", displayName);

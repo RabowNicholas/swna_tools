@@ -143,6 +143,13 @@ export default function InvoiceForm() {
       // Only fetch invoice items if this is a different client (like Streamlit logic)
       const shouldFetchItems = lastSelectedClient !== clientId;
       setLastSelectedClient(clientId);
+
+      // Reset form to default values first (clears invoice_items, dates, amounts)
+      form.reset();
+
+      // Set client_id since reset cleared it
+      form.setValue("client_id", clientId);
+
       // Parse client name using shared utility
       const displayName = parseClientName(client.fields.Name || "");
       form.setValue("client_name", displayName);

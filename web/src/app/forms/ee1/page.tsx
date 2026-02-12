@@ -281,6 +281,50 @@ export default function EE1Form() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId) as any;
     if (client) {
+      // Reset form to default values first (clears all fields)
+      form.reset();
+
+      // Reset diagnosis categories to defaults
+      setDiagnosisCategories({
+        cancer: {
+          selected: false,
+          diagnoses: [
+            { text: "", date: null },
+            { text: "", date: null },
+            { text: "", date: null },
+          ],
+        },
+        beryllium_sensitivity: { selected: false, date: null },
+        chronic_beryllium_disease: { selected: false, date: null },
+        chronic_silicosis: { selected: false, date: null },
+        other: {
+          selected: false,
+          diagnoses: [
+            { text: "", date: null },
+            { text: "", date: null },
+            { text: "", date: null },
+          ],
+        },
+      });
+
+      // Reset diagnosis errors
+      setDiagnosisErrors({
+        cancer: [],
+        beryllium_sensitivity: [],
+        chronic_beryllium_disease: [],
+        chronic_silicosis: [],
+        other: [],
+        general: [],
+      });
+
+      // Reset signature state
+      setSignatureFile(null);
+      setSignaturePreview(null);
+      setShowSignaturePreview(false);
+
+      // Set client_id since reset cleared it
+      form.setValue("client_id", clientId);
+
       const fields = client.fields;
 
       // Parse name using shared utility
