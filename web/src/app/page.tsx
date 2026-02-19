@@ -113,6 +113,13 @@ export default function Home() {
       description: "",
       href: "/forms/ir-notice",
     },
+    // Guides
+    {
+      id: "ir-process",
+      name: "IR Process Guide",
+      description: "Step-by-step IR testing coordination flowchart from FD letter to testing complete",
+      href: "/guides/ir-process",
+    },
     // Medical
     {
       id: "desert-pulm",
@@ -157,6 +164,7 @@ export default function Home() {
     dolLetters: allTools.filter((tool) =>
       ["dol-letter", "withdrawal", "address-change", "dol-status-update", "ir-notice"].includes(tool.id)
     ),
+    guides: allTools.filter((tool) => ["ir-process"].includes(tool.id)),
     medical: allTools.filter((tool) => ["desert-pulm"].includes(tool.id)),
     billing: allTools.filter((tool) => ["invoice"].includes(tool.id)),
     analytics: allTools.filter((tool) => ["pipeline"].includes(tool.id)),
@@ -377,6 +385,33 @@ export default function Home() {
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {toolCategories.medical.map((tool) => (
+                <ToolCard key={tool.id} tool={tool} />
+              ))}
+            </StaggeredContainer>
+          </section>
+        </AnimatedContainer>
+
+        {/* Guides Section */}
+        <AnimatedContainer animation="fadeIn" trigger="inView">
+          <section aria-labelledby="guides-heading">
+            <div className="mb-6">
+              <h2
+                id="guides-heading"
+                className="text-2xl font-bold text-foreground mb-2"
+              >
+                Guides
+              </h2>
+              <p className="text-muted-foreground">
+                Process reference guides and coordination flowcharts
+              </p>
+            </div>
+
+            <StaggeredContainer
+              staggerDelay={80}
+              baseAnimation="slideInFromLeft"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {toolCategories.guides.map((tool) => (
                 <ToolCard key={tool.id} tool={tool} />
               ))}
             </StaggeredContainer>

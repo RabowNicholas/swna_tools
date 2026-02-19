@@ -15,7 +15,8 @@ import {
   Stethoscope,
   CreditCard,
   Bell,
-  FileEdit
+  FileEdit,
+  BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -69,6 +70,13 @@ const navigationCategories: NavigationCategory[] = [
     icon: Stethoscope,
     items: [
       { name: 'Desert Pulmonary Referral', href: '/forms/desert-pulm', icon: FileText, description: 'Medical referral documentation' },
+    ]
+  },
+  {
+    name: 'Guides',
+    icon: BookOpen,
+    items: [
+      { name: 'IR Process Guide', href: '/guides/ir-process', icon: BookOpen, description: 'IR testing coordination flowchart' },
     ]
   },
   {
