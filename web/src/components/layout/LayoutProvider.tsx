@@ -90,6 +90,12 @@ const navigationItems = [
         title: 'IR Schedule Notice',
         href: '/forms/ir-notice',
         description: 'Independent review notice'
+      },
+      {
+        id: 'change-of-ar',
+        title: 'Change of AR',
+        href: '/forms/change-of-ar',
+        description: 'Change of authorized representative'
       }
     ]
   },
@@ -167,6 +173,7 @@ function generateBreadcrumbs(pathname: string) {
     'en16': 'EN-16 Form',
     'address-change': 'Address Change Letter',
     'ir-notice': 'IR Schedule Notice',
+    'change-of-ar': 'Change of AR Letter',
     'clients': 'Client Manager',
   };
 

@@ -113,6 +113,12 @@ export default function Home() {
       description: "",
       href: "/forms/ir-notice",
     },
+    {
+      id: "change-of-ar",
+      name: "Change of AR Letter",
+      description: "",
+      href: "/forms/change-of-ar",
+    },
     // Guides
     {
       id: "ir-process",
@@ -162,7 +168,7 @@ export default function Home() {
       ["ee3", "ee1", "ee1a", "ee10", "en16"].includes(tool.id)
     ),
     dolLetters: allTools.filter((tool) =>
-      ["dol-letter", "withdrawal", "address-change", "dol-status-update", "ir-notice"].includes(tool.id)
+      ["dol-letter", "withdrawal", "address-change", "dol-status-update", "ir-notice", "change-of-ar"].includes(tool.id)
     ),
     guides: allTools.filter((tool) => ["ir-process"].includes(tool.id)),
     medical: allTools.filter((tool) => ["desert-pulm"].includes(tool.id)),
