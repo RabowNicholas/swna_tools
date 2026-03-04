@@ -98,6 +98,7 @@ const employmentSchema = z
 const ee3Schema = z.object({
   client_id: z.string().min(1, "Please select a client"),
   first_name: z.string().min(1, "First name is required"),
+  middle_name: z.string().optional(),
   last_name: z.string().min(1, "Last name is required"),
   former_name: z.string().optional(),
   ssn: z.string().regex(/^\d{9}$/, "SSN must be 9 digits"),
@@ -175,6 +176,7 @@ export default function EE3Form() {
     defaultValues: {
       client_id: "",
       first_name: "",
+      middle_name: "",
       last_name: "",
       former_name: "",
       ssn: "",
@@ -261,13 +263,16 @@ export default function EE3Form() {
       form.setValue("client_id", clientId);
 
       // Parse name using shared utility
+      // parseClientName returns "First [Middle] Last" format
       const rawName = client.fields.Name || "";
       const fullName = parseClientName(rawName);
       const nameParts = fullName.split(" ");
       if (nameParts.length >= 2) {
         const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(" ");
+        const lastName = nameParts[nameParts.length - 1];
+        const middleName = nameParts.length > 2 ? nameParts[1][0] : "";
         form.setValue("first_name", firstName);
+        form.setValue("middle_name", middleName);
         form.setValue("last_name", lastName);
       }
 
@@ -401,6 +406,7 @@ export default function EE3Form() {
         client_record: selectedClient,
         form_data: {
           first_name: data.first_name,
+          middle_name: data.middle_name,
           last_name: data.last_name,
           former_name: data.former_name,
           ssn: `${data.ssn.slice(0, 3)}-${data.ssn.slice(
@@ -618,6 +624,13 @@ export default function EE3Form() {
                 required
                 error={form.formState.errors.first_name?.message}
                 {...form.register("first_name")}
+              />
+
+              <Input
+                label="Middle Initial"
+                maxLength={1}
+                helperText="If applicable"
+                {...form.register("middle_name")}
               />
 
               <Input

@@ -72,6 +72,7 @@ def test_ee3():
 
     form_data = {
         "first_name": "Robert",
+        "middle_name": "J",
         "last_name": "Williams",
         "former_name": "",
         "ssn": "456-78-9012",

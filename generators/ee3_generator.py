@@ -58,6 +58,7 @@ class EE3Generator:
 
     def generate(self, client_record: dict, form_data: dict) -> tuple[str, BytesIO]:
         first_name = form_data.get("first_name", "")
+        middle_name = form_data.get("middle_name", "")
         last_name = form_data.get("last_name", "")
         former_name = form_data.get("former_name", "")
         ssn = form_data.get("ssn", "")
@@ -78,6 +79,7 @@ class EE3Generator:
         # Generate PDF
         pdf_bytes = self.draw_pdf(
             first_name,
+            middle_name,
             last_name,
             former_name,
             ssn,
@@ -170,6 +172,7 @@ class EE3Generator:
     def draw_pdf(
         self,
         first_name: str,
+        middle_name: str,
         last_name: str,
         former_name: str,
         ssn: str,
@@ -233,6 +236,9 @@ class EE3Generator:
         # Header info - Employee Name (Field 1)
         page1_overlay.drawString(30, 640, last_name)
         page1_overlay.drawString(150, 640, first_name)
+        # TODO: adjust x coordinate for middle name field position
+        if middle_name:
+            page1_overlay.drawString(200, 640, middle_name)
         if former_name:
             page1_overlay.drawString(250, 640, former_name)
         page1_overlay.drawString(440, 640, ssn)

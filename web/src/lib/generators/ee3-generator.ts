@@ -44,6 +44,7 @@ export interface EE3EmployeeContact {
 
 export interface EE3FormData {
   first_name: string;
+  middle_name?: string;
   last_name: string;
   former_name?: string;
   ssn: string;
@@ -87,7 +88,7 @@ export class EE3Generator extends BaseGenerator {
   private wrapText(
     text: string,
     maxCharsPerLine: number = 140,
-    maxLines: number = 4
+    maxLines: number = 4,
   ): string[] {
     if (!text) return [""];
 
@@ -109,7 +110,7 @@ export class EE3Generator extends BaseGenerator {
         // Check if we've exceeded max lines
         if (lines.length >= maxLines) {
           console.warn(
-            `[EE3] Warning: Work duties text exceeds ${maxLines} lines. Text not added to PDF - please add manually after generation.`
+            `[EE3] Warning: Work duties text exceeds ${maxLines} lines. Text not added to PDF - please add manually after generation.`,
           );
           return [];
         }
@@ -124,7 +125,7 @@ export class EE3Generator extends BaseGenerator {
     // Final check for line count
     if (lines.length > maxLines) {
       console.warn(
-        `[EE3] Warning: Work duties text exceeds ${maxLines} lines. Text not added to PDF - please add manually after generation.`
+        `[EE3] Warning: Work duties text exceeds ${maxLines} lines. Text not added to PDF - please add manually after generation.`,
       );
       return [];
     }
@@ -141,7 +142,7 @@ export class EE3Generator extends BaseGenerator {
     baseY: number,
     deltas: CoordinateDeltas,
     totalEmployers: number,
-    pageNum: number
+    pageNum: number,
   ): void {
     // Parse dates
     let startDateStr = "";
@@ -247,13 +248,13 @@ export class EE3Generator extends BaseGenerator {
     }
   }
 
-
   async generate(
     clientRecord: ClientRecord,
     doctor: string,
-    formData: EE3FormData
+    formData: EE3FormData,
   ): Promise<GeneratorResult> {
     const firstName = formData.first_name || "";
+    const middleName = formData.middle_name || "";
     const lastName = formData.last_name || "";
     const formerName = formData.former_name || "";
     const ssn = formData.ssn || "";
@@ -262,7 +263,7 @@ export class EE3Generator extends BaseGenerator {
     // Check if we have more employers than supported
     if (employmentHistory.length > 3) {
       console.warn(
-        `[EE3] Warning: EE-3 form supports maximum 3 employers. Only first 3 will be included. Additional employers need to be added manually.`
+        `[EE3] Warning: EE-3 form supports maximum 3 employers. Only first 3 will be included. Additional employers need to be added manually.`,
       );
       employmentHistory = employmentHistory.slice(0, 3);
     }
@@ -336,7 +337,7 @@ export class EE3Generator extends BaseGenerator {
     // Copy all pages from base template
     const copiedPages = await finalDoc.copyPages(
       basePdfDoc,
-      basePdfDoc.getPageIndices()
+      basePdfDoc.getPageIndices(),
     );
 
     // Page 1
@@ -347,6 +348,10 @@ export class EE3Generator extends BaseGenerator {
     // Header info - Employee Name (Field 1)
     page1.drawText(lastName, { x: 30, y: 640, size: 9 });
     page1.drawText(firstName, { x: 150, y: 640, size: 9 });
+    // TODO: adjust x coordinate for middle name field position
+    if (middleName) {
+      page1.drawText(middleName, { x: 215, y: 640, size: 9 });
+    }
     if (formerName) {
       page1.drawText(formerName, { x: 250, y: 640, size: 9 });
     }
@@ -361,7 +366,7 @@ export class EE3Generator extends BaseGenerator {
         position.baseY,
         position.deltas,
         employmentHistory.length,
-        position.page
+        position.page,
       );
     }
 
@@ -387,7 +392,7 @@ export class EE3Generator extends BaseGenerator {
         position.baseY,
         position.deltas,
         employmentHistory.length,
-        position.page
+        position.page,
       );
     }
 
