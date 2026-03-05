@@ -48,7 +48,7 @@ export class ChangeOfARGenerator extends BaseGenerator {
   async generate(
     clientRecord: ClientRecord,
     doctor: string,
-    formData: ChangeOfARFormData
+    formData: ChangeOfARFormData,
   ): Promise<GeneratorResult> {
     const claimantName = formData.claimant_name || "";
     const letterDate = formData.letter_date;
@@ -73,10 +73,10 @@ export class ChangeOfARGenerator extends BaseGenerator {
     firstPage.setFontSize(11);
 
     // Draw text fields
-    this.drawText(firstPage, claimantName, { x: 80, y: 692, size: 11 });
-    this.drawText(firstPage, formattedDate, { x: 72, y: 679, size: 11 });
-    this.drawText(firstPage, prevRepName, { x: 340, y: 635, size: 11 });
-    this.drawText(firstPage, phone, { x: 310, y: 595, size: 11 });
+    this.drawText(firstPage, claimantName, { x: 103, y: 721, size: 11 });
+    this.drawText(firstPage, formattedDate, { x: 98, y: 707, size: 11 });
+    this.drawText(firstPage, prevRepName, { x: 272, y: 603, size: 11 });
+    this.drawText(firstPage, phone, { x: 250, y: 550, size: 11 });
 
     // Embed signature image if present
     if (signatureFile?.data) {
