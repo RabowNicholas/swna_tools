@@ -154,14 +154,12 @@ export class EE3Generator extends BaseGenerator {
       startDateStr = `${month}/${day}/${year}`;
     }
 
-    let endDateStr = "";
-    if (job.end_date) {
-      const endDate = new Date(job.end_date);
-      const month = String(endDate.getMonth() + 1).padStart(2, "0");
-      const day = String(endDate.getDate()).padStart(2, "0");
-      const year = String(endDate.getFullYear());
-      endDateStr = `${month}/${day}/${year}`;
-    }
+    const endDateSource = job.end_date ? new Date(job.end_date) : new Date();
+    const endDateStr = [
+      String(endDateSource.getMonth() + 1).padStart(2, "0"),
+      String(endDateSource.getDate()).padStart(2, "0"),
+      String(endDateSource.getFullYear()),
+    ].join("/");
 
     // Dates section
     const datesY = baseY + deltas.dates;
