@@ -70,6 +70,22 @@ interface Client {
 }
 
 /**
+ * Resolve "GHHC Client" tag to GHHC_NV or GHHC_TN by checking the State field
+ */
+function resolveGHHCFromState(fields: Client['fields']): string {
+  const state = fields["State"];
+  if (state && typeof state === 'string') {
+    if (state === 'NV' || state.toLowerCase().includes('nevada')) {
+      return CLIENT_STATUS.GHHC_NV;
+    }
+    if (state === 'TN' || state.toLowerCase().includes('tennessee')) {
+      return CLIENT_STATUS.GHHC_TN;
+    }
+  }
+  return CLIENT_STATUS.GHHC_NV; // fallback if state is unrecognized
+}
+
+/**
  * Detect client status from Airtable record
  */
 export function detectClientStatus(client: Client): string {
@@ -103,20 +119,23 @@ export function detectClientStatus(client: Client): string {
         // Handle array format
         if (Array.isArray(fieldValue)) {
           for (const tag of fieldValue) {
-            if (tag === CLIENT_STATUS.AO || tag === CLIENT_STATUS.GHHC_NV || tag === CLIENT_STATUS.GHHC_TN) {
-              return tag;
-            }
+            if (tag === CLIENT_STATUS.AO) return CLIENT_STATUS.AO;
+            if (tag === CLIENT_STATUS.GHHC_NV) return CLIENT_STATUS.GHHC_NV;
+            if (tag === CLIENT_STATUS.GHHC_TN) return CLIENT_STATUS.GHHC_TN;
+            if (tag === "GHHC Client") return resolveGHHCFromState(fields);
           }
         }
         // Handle string format
         else if (typeof fieldValue === "string") {
-          if (fieldValue === CLIENT_STATUS.AO || fieldValue === CLIENT_STATUS.GHHC_NV || fieldValue === CLIENT_STATUS.GHHC_TN) {
-            return fieldValue;
-          }
+          if (fieldValue === CLIENT_STATUS.AO) return CLIENT_STATUS.AO;
+          if (fieldValue === CLIENT_STATUS.GHHC_NV) return CLIENT_STATUS.GHHC_NV;
+          if (fieldValue === CLIENT_STATUS.GHHC_TN) return CLIENT_STATUS.GHHC_TN;
+          if (fieldValue === "GHHC Client") return resolveGHHCFromState(fields);
           // Check if status is contained within the string
           if (fieldValue.includes(CLIENT_STATUS.AO)) return CLIENT_STATUS.AO;
           if (fieldValue.includes(CLIENT_STATUS.GHHC_NV)) return CLIENT_STATUS.GHHC_NV;
           if (fieldValue.includes(CLIENT_STATUS.GHHC_TN)) return CLIENT_STATUS.GHHC_TN;
+          if (fieldValue.includes("GHHC Client")) return resolveGHHCFromState(fields);
         }
       }
     }
