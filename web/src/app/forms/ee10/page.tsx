@@ -242,14 +242,12 @@ export default function EE10Form() {
       form.setValue("case_id", client.fields["Case ID"] || "");
 
       // Format and set DOB
+      // Parse ISO date string directly to avoid UTC timezone off-by-one
       if (client.fields["Date of Birth"]) {
         try {
-          const date = new Date(client.fields["Date of Birth"]);
-          if (!isNaN(date.getTime())) {
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const year = date.getFullYear();
-            form.setValue("dob", `${month}/${day}/${year}`);
+          const parts = (client.fields["Date of Birth"] as string).split('-');
+          if (parts.length === 3) {
+            form.setValue("dob", `${parts[1]}/${parts[2]}/${parts[0]}`);
           }
         } catch (error) {
           console.error('Error formatting DOB:', error);

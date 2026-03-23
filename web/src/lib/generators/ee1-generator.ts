@@ -217,16 +217,22 @@ export class EE1Generator extends BaseGenerator {
     }
 
     // Signature handling (on signature overlay - behind form)
-    // Note: Image is pre-processed on client-side (resized to 300x100, flattened, PNG format)
+    // Detect PNG vs JPEG from magic bytes and embed accordingly
     if (signatureFile?.data) {
       try {
         const imageBuffer = Buffer.from(signatureFile.data, 'base64');
 
-        // Directly embed the pre-processed PNG (already resized and flattened on client)
-        const pngImage = await signatureOverlayDoc.embedPng(imageBuffer);
-        const dims = pngImage.scale(1);
+        let image;
+        if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) {
+          // PNG magic bytes: 89 50 4E 47
+          image = await signatureOverlayDoc.embedPng(imageBuffer);
+        } else {
+          // JPEG magic bytes: FF D8 FF
+          image = await signatureOverlayDoc.embedJpg(imageBuffer);
+        }
+        const dims = image.scaleToFit(300, 100);
 
-        sigPage.drawImage(pngImage, {
+        sigPage.drawImage(image, {
           x: 103,
           y: 33,
           width: dims.width,
