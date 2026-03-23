@@ -20,7 +20,8 @@ export const EMAIL_ADDRESSES = {
 // Client status tags
 export const CLIENT_STATUS = {
   AO: "AO Client",
-  GHHC: "GHHC Client",
+  GHHC_NV: "GHHC NV",
+  GHHC_TN: "GHHC TN",
 } as const;
 
 // Email templates
@@ -102,19 +103,20 @@ export function detectClientStatus(client: Client): string {
         // Handle array format
         if (Array.isArray(fieldValue)) {
           for (const tag of fieldValue) {
-            if (tag === CLIENT_STATUS.AO || tag === CLIENT_STATUS.GHHC) {
+            if (tag === CLIENT_STATUS.AO || tag === CLIENT_STATUS.GHHC_NV || tag === CLIENT_STATUS.GHHC_TN) {
               return tag;
             }
           }
         }
         // Handle string format
         else if (typeof fieldValue === "string") {
-          if (fieldValue === CLIENT_STATUS.AO || fieldValue === CLIENT_STATUS.GHHC) {
+          if (fieldValue === CLIENT_STATUS.AO || fieldValue === CLIENT_STATUS.GHHC_NV || fieldValue === CLIENT_STATUS.GHHC_TN) {
             return fieldValue;
           }
           // Check if status is contained within the string
           if (fieldValue.includes(CLIENT_STATUS.AO)) return CLIENT_STATUS.AO;
-          if (fieldValue.includes(CLIENT_STATUS.GHHC)) return CLIENT_STATUS.GHHC;
+          if (fieldValue.includes(CLIENT_STATUS.GHHC_NV)) return CLIENT_STATUS.GHHC_NV;
+          if (fieldValue.includes(CLIENT_STATUS.GHHC_TN)) return CLIENT_STATUS.GHHC_TN;
         }
       }
     }
@@ -129,7 +131,7 @@ export function detectClientStatus(client: Client): string {
  * Check if client is GHHC client
  */
 export function isGHHCClient(clientStatus: string): boolean {
-  return clientStatus === CLIENT_STATUS.GHHC;
+  return clientStatus === CLIENT_STATUS.GHHC_NV || clientStatus === CLIENT_STATUS.GHHC_TN;
 }
 
 /**
@@ -144,8 +146,7 @@ export function isAOClient(clientStatus: string): boolean {
  */
 export function getEmailRecipients(
   doctor: "La Plata" | "Dr. Lewis",
-  clientStatus: string,
-  hhcLocation?: "NV" | "TN"
+  clientStatus: string
 ): { to: string[]; cc: string[] } {
   // TO recipient is always the selected doctor
   const to = [EMAIL_ADDRESSES.doctors[doctor]];
@@ -161,12 +162,10 @@ export function getEmailRecipients(
   // Add CC based on client status
   if (clientStatus === CLIENT_STATUS.AO) {
     cc.push(EMAIL_ADDRESSES.ao);
-  } else if (clientStatus === CLIENT_STATUS.GHHC && hhcLocation) {
-    if (hhcLocation === "NV") {
-      cc.push(EMAIL_ADDRESSES.hhc.nv);
-    } else if (hhcLocation === "TN") {
-      cc.push(EMAIL_ADDRESSES.hhc.tn);
-    }
+  } else if (clientStatus === CLIENT_STATUS.GHHC_NV) {
+    cc.push(EMAIL_ADDRESSES.hhc.nv);
+  } else if (clientStatus === CLIENT_STATUS.GHHC_TN) {
+    cc.push(EMAIL_ADDRESSES.hhc.tn);
   }
 
   return { to, cc };

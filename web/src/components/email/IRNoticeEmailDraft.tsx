@@ -63,17 +63,6 @@ export function IRNoticeEmailDraft({ client, clientName, provider, appointmentDa
   // Map provider name to doctor key for email recipients
   const doctorKey: "La Plata" | "Dr. Lewis" = provider === "La Plata Medical" ? "La Plata" : "Dr. Lewis";
 
-  // Determine HHC location based on client state
-  const clientState = client.fields.State;
-  let hhcLocation: 'NV' | 'TN' | undefined;
-  if (clientStatus === 'GHHC Client' && clientState) {
-    if (clientState.includes('NV') || clientState.toLowerCase().includes('nevada')) {
-      hhcLocation = 'NV';
-    } else if (clientState.includes('TN') || clientState.toLowerCase().includes('tennessee')) {
-      hhcLocation = 'TN';
-    }
-  }
-
   // Format the appointment date for display
   const formattedDate = new Date(appointmentDate).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -82,7 +71,7 @@ export function IRNoticeEmailDraft({ client, clientName, provider, appointmentDa
   });
 
   // Generate email data
-  const recipients = getEmailRecipients(doctorKey, clientStatus, hhcLocation);
+  const recipients = getEmailRecipients(doctorKey, clientStatus);
   const subject = getIRNoticeSubjectLine(clientName);
   const body = formatIRNoticeEmailBody(clientName, provider, formattedDate);
 

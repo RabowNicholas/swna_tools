@@ -147,9 +147,6 @@ const ee10Schema = z.object({
       "Phone number must be in format: 123.123.1234"
     ),
   work_history_dates: z.string().optional(),
-  ghhc_location: z.enum(["NV", "TN", ""], {
-    message: "Please select a GHHC location",
-  }).optional(),
 }).refine((data) => {
   // Work history required for Dr. Lewis
   if (data.doctor === "Dr. Lewis" && !data.work_history_dates) {
@@ -211,7 +208,6 @@ export default function EE10Form() {
       address_zip: "",
       phone: "",
       work_history_dates: "",
-      ghhc_location: "",
     },
   });
 
@@ -226,7 +222,7 @@ export default function EE10Form() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId) as any;
     if (client) {
-      // Reset form to default values first (clears all fields including work_history_dates, ghhc_location)
+      // Reset form to default values first (clears all fields including work_history_dates)
       form.reset();
 
       setSelectedClient(client);
@@ -700,24 +696,7 @@ export default function EE10Form() {
                 />
               )}
 
-              {/* Conditional: GHHC Location for GHHC clients */}
-              {selectedClient && isGHHCClient(detectClientStatus(selectedClient)) && (
-                <Select
-                  label="GHHC Location"
-                  required
-                  error={
-                    attemptedSubmit
-                      ? form.formState.errors.ghhc_location?.message
-                      : undefined
-                  }
-                  helperText="Select the GHHC office location for this client"
-                  {...form.register("ghhc_location")}
-                >
-                  <option value="">Select location</option>
-                  <option value="NV">Nevada (NV)</option>
-                  <option value="TN">Tennessee (TN)</option>
-                </Select>
-              )}
+
             </div>
           </CardContent>
         </Card>
@@ -836,7 +815,6 @@ export default function EE10Form() {
                     )}`.trim(),
                     dob: form.watch("dob"),
                     workHistoryDates: form.watch("work_history_dates") || undefined,
-                    hhcLocation: form.watch("ghhc_location") as 'NV' | 'TN' | undefined,
                   }}
                 />
               </>

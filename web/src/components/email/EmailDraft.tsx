@@ -33,7 +33,6 @@ export interface EmailDraftProps {
     address: string;
     dob: string;
     workHistoryDates?: string;
-    hhcLocation?: 'NV' | 'TN';
   };
 }
 
@@ -67,7 +66,7 @@ export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
   const clientStatus = detectClientStatus(client);
 
   // Generate email data directly from props
-  const recipients = getEmailRecipients(doctor, clientStatus, formData.hhcLocation);
+  const recipients = getEmailRecipients(doctor, clientStatus);
   const subject = getSubjectLine(formData.name);
   const body = formatEmailBody(
     doctor,
