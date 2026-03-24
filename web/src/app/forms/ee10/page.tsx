@@ -178,6 +178,9 @@ export default function EE10Form() {
     refreshClients,
   } = useClients();
   const [loading, setLoading] = useState(false);
+  const [irRecord, setIrRecord] = useState<{ id: string } | null>(null);
+  const [irError, setIrError] = useState<string | null>(null);
+  const [irLoading, setIrLoading] = useState(false);
 
   // Track form view
   useEffect(() => {
@@ -267,6 +270,9 @@ export default function EE10Form() {
     setMode(newMode);
     setFormSubmitted(false);
     setAttemptedSubmit(false);
+    setIrRecord(null);
+    setIrError(null);
+    setIrLoading(false);
   };
 
   // Handle skip mode submission
@@ -396,6 +402,27 @@ export default function EE10Form() {
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
+
+        // Create IR record in Airtable
+        setIrLoading(true);
+        try {
+          const irRes = await fetch("/api/ir/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ clientId: data.client_id, doctor: data.doctor }),
+          });
+          if (irRes.ok) {
+            const { record } = await irRes.json();
+            setIrRecord(record);
+          } else {
+            const err = await irRes.json();
+            setIrError(err.error || "Failed to create IR record");
+          }
+        } catch (e) {
+          setIrError(e instanceof Error ? e.message : "Failed to create IR record");
+        } finally {
+          setIrLoading(false);
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to generate EE-10");
@@ -790,6 +817,26 @@ export default function EE10Form() {
                         : "Use the portal access below to upload your pre-completed form, then send the email notification."
                       }
                     </p>
+                    {mode === 'generate' && (
+                      <div className="mt-3">
+                        {irLoading && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-2">
+                            <LoadingSpinner size="sm" />
+                            Creating IR record in Airtable...
+                          </p>
+                        )}
+                        {irRecord && (
+                          <p className="text-sm text-success font-medium">
+                            IR record created — {form.watch("name")} / {form.watch("doctor")}
+                          </p>
+                        )}
+                        {irError && (
+                          <p className="text-sm text-amber-600 dark:text-amber-400">
+                            IR record creation failed — please create it manually in Airtable. ({irError})
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

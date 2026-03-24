@@ -151,6 +151,44 @@ export class AirtableService {
       throw error;
     }
   }
+
+  async createIRRecord(fields: {
+    clientId: string;
+    doctor: string;
+    notes?: string;
+  }): Promise<AirtableRecord> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const body = {
+        fields: {
+          'Client': [fields.clientId],
+          'IR Doc': fields.doctor,
+          'IR Status': 'EE-10 Submitted',
+          'IR Date': today,
+          'Testing Coordinated': false,
+          'OVN Sent': false,
+          'Notes': fields.notes ?? '',
+        },
+      };
+
+      const response = await fetch(`${this.baseUrl}/IRs`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('Airtable IR create error:', errorBody);
+        throw new Error(`Airtable API error: ${response.status} ${response.statusText} - ${errorBody}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating IR record in Airtable:', error);
+      throw error;
+    }
+  }
 }
 
 export const airtableService = new AirtableService();
