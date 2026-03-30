@@ -24,6 +24,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import { EmailDraft } from "@/components/email/EmailDraft";
+import { CoordinationChecklist } from "@/components/email/CoordinationChecklist";
 import {
   ClientSelector,
   parseClientName,
@@ -862,7 +863,14 @@ export default function EE10Form() {
                     )}`.trim(),
                     dob: form.watch("dob"),
                     workHistoryDates: form.watch("work_history_dates") || undefined,
+                    clientState: form.watch("address_state"),
                   }}
+                />
+
+                <CoordinationChecklist
+                  doctor={form.watch("doctor")}
+                  clientStatus={detectClientStatus(submittedClient)}
+                  clientState={form.watch("address_state")}
                 />
               </>
             )}

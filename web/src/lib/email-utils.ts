@@ -15,6 +15,7 @@ export const EMAIL_ADDRESSES = {
     tn: "ar.tn@givinghhc.com",
   },
   laPlataCC: "cali.candelaria@lpmedx.com",
+  laPlataZeke: "zkalcich@lpmedx.com",
 } as const;
 
 // Client status tags
@@ -23,6 +24,11 @@ export const CLIENT_STATUS = {
   GHHC_NV: "GHHC NV",
   GHHC_TN: "GHHC TN",
 } as const;
+
+// Helper: mobile testing applies when La Plata, not AO, and client is in NV
+function requiresMobileTesting(doctor: string, clientStatus: string, clientState?: string): boolean {
+  return doctor === "La Plata" && clientStatus !== CLIENT_STATUS.AO && clientState === "NV";
+}
 
 // Email templates
 const STANDARD_TEMPLATE = `Hello,
@@ -47,6 +53,50 @@ DOB: {dob}
 Case ID: {case_id}
 Address: {address}
 Verified WH Dates: {work_history_dates}
+
+Thank you, and please let us know how we can further assist.`;
+
+const MOBILE_TESTING_TEMPLATE = `Hello,
+
+Our client has elected to have {doctor} perform their impairment evaluation. I have attached their causation and contact information here.
+
+Name: {name}
+Phone: {phone}
+DOB: {dob}
+Case ID: {case_id}
+Address: {address}
+
+**We would also like to request mobile testing for our client. Please coordinate with your mobile testing team to schedule the 6MWT and PFT at the client's location.**
+
+Thank you, and please let us know how we can further assist.`;
+
+const GHHC_NV_TEMPLATE = `Hello,
+
+Our client has elected to have {doctor} perform their impairment evaluation. I have attached their causation and contact information here.
+
+Name: {name}
+Phone: {phone}
+DOB: {dob}
+Case ID: {case_id}
+Address: {address}
+
+**We would also like to request mobile testing for our client. Please coordinate with your mobile testing team to schedule the 6MWT and PFT at the client's location.**
+
+[GHHC Team], please also assist with coordinating testing and send us a recent OV note and ADL sheet for this client when available.
+
+Thank you, and please let us know how we can further assist.`;
+
+const GHHC_TN_TEMPLATE = `Hello,
+
+Our client has elected to have {doctor} perform their impairment evaluation. I have attached their causation and contact information here.
+
+Name: {name}
+Phone: {phone}
+DOB: {dob}
+Case ID: {case_id}
+Address: {address}
+
+[GHHC Team], please assist with coordinating the 6MWT and PFT for our client, and send us a recent OV note and ADL sheet when available.
 
 Thank you, and please let us know how we can further assist.`;
 
@@ -165,7 +215,8 @@ export function isAOClient(clientStatus: string): boolean {
  */
 export function getEmailRecipients(
   doctor: "La Plata" | "Dr. Lewis",
-  clientStatus: string
+  clientStatus: string,
+  clientState?: string
 ): { to: string[]; cc: string[] } {
   // TO recipient is always the selected doctor
   const to = [EMAIL_ADDRESSES.doctors[doctor]];
@@ -187,6 +238,11 @@ export function getEmailRecipients(
     cc.push(EMAIL_ADDRESSES.hhc.tn);
   }
 
+  // Add Zeke at La Plata for mobile testing cases (not AO, in NV)
+  if (requiresMobileTesting(doctor, clientStatus, clientState)) {
+    cc.push(EMAIL_ADDRESSES.laPlataZeke);
+  }
+
   return { to, cc };
 }
 
@@ -200,9 +256,22 @@ export function formatEmailBody(
   dob: string,
   caseId: string,
   address: string,
-  workHistoryDates?: string
+  workHistoryDates?: string,
+  clientStatus?: string,
+  clientState?: string
 ): string {
-  const template = doctor === "Dr. Lewis" ? DR_LEWIS_TEMPLATE : STANDARD_TEMPLATE;
+  let template: string;
+  if (doctor === "Dr. Lewis") {
+    template = DR_LEWIS_TEMPLATE;
+  } else if (clientStatus === CLIENT_STATUS.GHHC_NV) {
+    template = GHHC_NV_TEMPLATE;
+  } else if (clientStatus === CLIENT_STATUS.GHHC_TN) {
+    template = GHHC_TN_TEMPLATE;
+  } else if (requiresMobileTesting(doctor, clientStatus ?? "", clientState)) {
+    template = MOBILE_TESTING_TEMPLATE;
+  } else {
+    template = STANDARD_TEMPLATE;
+  }
 
   let formattedBody = template
     .replace("{doctor}", doctor)
@@ -286,6 +355,66 @@ export function formatIRNoticeEmailBody(
     .replace("{client_name}", clientName)
     .replace("{provider}", providerName)
     .replace("{appointment_date}", appointmentDate);
+}
+
+/**
+ * Get testing and OVN coordination steps based on doctor, client status, and state
+ */
+export function getCoordinationSteps(
+  doctor: "La Plata" | "Dr. Lewis",
+  clientStatus: string,
+  clientState?: string
+): { testing: string[]; ovn: string[] } {
+  if (doctor === "Dr. Lewis") {
+    return {
+      testing: ["Dr. Lewis handles all testing — no action needed"],
+      ovn: ["OVN not required for Dr. Lewis"],
+    };
+  }
+
+  // La Plata: AO paths
+  if (clientStatus === CLIENT_STATUS.AO) {
+    if (clientState === "NV") {
+      return {
+        testing: ["Send Desert Pulm referral form + general availability to Roxy at AO"],
+        ovn: ["AO will provide OV note and ADL"],
+      };
+    } else {
+      return {
+        testing: ["Work with client directly — help them coordinate 6MWT and PFT"],
+        ovn: ["AO will provide OV note and ADL"],
+      };
+    }
+  }
+
+  // La Plata: GHHC NV
+  if (clientStatus === CLIENT_STATUS.GHHC_NV) {
+    return {
+      testing: ["Mobile testing + GHHC coordination requested in La Plata email (Zeke CC'd)"],
+      ovn: ["OV note and ADL requested in La Plata email"],
+    };
+  }
+
+  // La Plata: GHHC TN (non-NV GHHC)
+  if (clientStatus === CLIENT_STATUS.GHHC_TN) {
+    return {
+      testing: ["GHHC coordination requested in La Plata email"],
+      ovn: ["OV note and ADL requested in La Plata email"],
+    };
+  }
+
+  // La Plata: No HHC
+  if (clientState === "NV") {
+    return {
+      testing: ["Mobile testing requested in La Plata email (Zeke CC'd)"],
+      ovn: ["Client must obtain their own OV note (portal, in person, or fax to 702-825-0145)"],
+    };
+  }
+
+  return {
+    testing: ["Work with client directly — help them coordinate 6MWT and PFT"],
+    ovn: ["Client must obtain their own OV note (portal, in person, or fax to 702-825-0145)"],
+  };
 }
 
 /**

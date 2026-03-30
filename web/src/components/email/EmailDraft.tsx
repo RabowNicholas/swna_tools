@@ -33,6 +33,7 @@ export interface EmailDraftProps {
     address: string;
     dob: string;
     workHistoryDates?: string;
+    clientState?: string;
   };
 }
 
@@ -66,7 +67,7 @@ export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
   const clientStatus = detectClientStatus(client);
 
   // Generate email data directly from props
-  const recipients = getEmailRecipients(doctor, clientStatus);
+  const recipients = getEmailRecipients(doctor, clientStatus, formData.clientState);
   const subject = getSubjectLine(formData.name);
   const body = formatEmailBody(
     doctor,
@@ -75,7 +76,9 @@ export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
     formData.dob,
     formData.caseId,
     formData.address,
-    formData.workHistoryDates
+    formData.workHistoryDates,
+    clientStatus,
+    formData.clientState
   );
 
   const mailtoLink = createMailtoLink(recipients.to, recipients.cc, subject, body);
