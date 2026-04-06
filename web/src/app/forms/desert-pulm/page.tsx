@@ -548,6 +548,7 @@ export default function DesertPulmForm() {
                 Obstructive sleep apnea (G47.33)
               </option>
               <option value="Hypoxemia (R06.02)">Hypoxemia (R06.02)</option>
+              <option value="Asthma (J45.909)">Asthma (J45.909)</option>
             </Select>
           </CardContent>
         </Card>
