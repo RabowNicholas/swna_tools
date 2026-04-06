@@ -165,7 +165,7 @@ export class AirtableService {
           'IR Doc': fields.doctor,
           'IR Status': 'EE-10 Submitted',
           'IR Date': today,
-          'Testing Coordinated': false,
+          'Testing Completed': false,
           'OVN Sent': false,
           'Notes': fields.notes ?? '',
         },
