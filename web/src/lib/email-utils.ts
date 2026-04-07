@@ -25,9 +25,13 @@ export const CLIENT_STATUS = {
   GHHC_TN: "GHHC TN",
 } as const;
 
-// Helper: mobile testing applies when La Plata, not AO, and client is in NV
+// Helper: mobile testing applies when La Plata, not AO, not GHHC, and client is in NV
 function requiresMobileTesting(doctor: string, clientStatus: string, clientState?: string): boolean {
-  return doctor === "La Plata" && clientStatus !== CLIENT_STATUS.AO && clientState === "NV";
+  return doctor === "La Plata"
+    && clientStatus !== CLIENT_STATUS.AO
+    && clientStatus !== CLIENT_STATUS.GHHC_NV
+    && clientStatus !== CLIENT_STATUS.GHHC_TN
+    && clientState === "NV";
 }
 
 // Email templates
@@ -70,6 +74,20 @@ Address: {address}
 
 Thank you, and please let us know how we can further assist.`;
 
+const AO_TEMPLATE = `Hello,
+
+Our client has elected to have {doctor} perform their impairment evaluation. I have attached their causation and contact information here.
+
+Name: {name}
+Phone: {phone}
+DOB: {dob}
+Case ID: {case_id}
+Address: {address}
+
+[AO Team], please assist with obtaining a recent office visit note for this client when available.
+
+Thank you, and please let us know how we can further assist.`;
+
 const GHHC_NV_TEMPLATE = `Hello,
 
 Our client has elected to have {doctor} perform their impairment evaluation. I have attached their causation and contact information here.
@@ -80,9 +98,7 @@ DOB: {dob}
 Case ID: {case_id}
 Address: {address}
 
-**We would also like to request mobile testing for our client. Please coordinate with your mobile testing team to schedule the 6MWT and PFT at the client's location.**
-
-[GHHC Team], please also assist with coordinating testing and send us a recent OV note and ADL sheet for this client when available.
+[GHHC Team], please assist with coordinating the 6MWT and PFT for our client, and send us a recent OV note and ADL sheet when available.
 
 Thank you, and please let us know how we can further assist.`;
 
@@ -263,6 +279,8 @@ export function formatEmailBody(
   let template: string;
   if (doctor === "Dr. Lewis") {
     template = DR_LEWIS_TEMPLATE;
+  } else if (clientStatus === CLIENT_STATUS.AO) {
+    template = AO_TEMPLATE;
   } else if (clientStatus === CLIENT_STATUS.GHHC_NV) {
     template = GHHC_NV_TEMPLATE;
   } else if (clientStatus === CLIENT_STATUS.GHHC_TN) {
