@@ -288,6 +288,38 @@ export default function InvoiceForm() {
       });
 
       if (response.ok) {
+        // Update client tags BEFORE downloading — if this fails, no invoice download
+        const currentStatus: string[] = Array.isArray(selectedClient.fields.Status)
+          ? selectedClient.fields.Status as string[]
+          : selectedClient.fields.Status
+            ? [String(selectedClient.fields.Status)]
+            : [];
+
+        const newTags = ["Needs Invoicing", "Payment Outstanding"];
+        const filteredExisting = currentStatus.filter(tag => !newTags.includes(tag));
+        const updatedStatus = [...newTags, ...filteredExisting];
+
+        // Build audit log entry
+        const now = new Date();
+        const logDate = `${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}.${String(now.getFullYear()).slice(-2)}`;
+        const userEmail = session?.user?.email || "unknown";
+        const logEntry = `Needs Invoicing and Payment Outstanding tags added by SWNA Tools app. Triggered by [${userEmail}] ${logDate}. TOOLS APP`;
+        const currentLog = typeof selectedClient.fields.Log === "string" ? selectedClient.fields.Log : "";
+        const updatedLog = currentLog ? `${logEntry}\n\n${currentLog}` : `${logEntry}\n`;
+
+        const tagResponse = await fetch("/api/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recordId: selectedClient.id,
+            fields: { Status: updatedStatus, Log: updatedLog },
+          }),
+        });
+
+        if (!tagResponse.ok) {
+          throw new Error("Failed to update client status tags in Airtable. Invoice was NOT downloaded. Please let Nick know.");
+        }
+
         // Download the Excel file
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);

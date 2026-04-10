@@ -1,7 +1,7 @@
 interface AirtableRecord {
   id: string;
   fields: {
-    [key: string]: string | number | boolean | undefined;
+    [key: string]: string | number | boolean | string[] | undefined;
   };
 }
 
@@ -80,7 +80,7 @@ export class AirtableService {
     }
   }
 
-  async updateClient(recordId: string, fields: Record<string, string | number | boolean>): Promise<AirtableRecord> {
+  async updateClient(recordId: string, fields: Record<string, string | number | boolean | string[]>): Promise<AirtableRecord> {
     try {
       console.log('Updating client with fields:', fields);
       const response = await fetch(`${this.baseUrl}/Clients/${recordId}`, {
