@@ -158,12 +158,15 @@ export function detectClientStatus(client: Client): string {
   try {
     const fields = client.fields;
 
-    // Check Associated Companies for AO Medical
+    // Check Associated Companies for AO Medical or GHHC
     const associatedCompanies = fields["Associated Companies"];
     if (associatedCompanies && Array.isArray(associatedCompanies)) {
       for (const company of associatedCompanies) {
         if (company.toLowerCase().includes("ao")) {
           return CLIENT_STATUS.AO;
+        }
+        if (company.toLowerCase().includes("ghhc") || company.toLowerCase().includes("giving")) {
+          return resolveGHHCFromState(fields);
         }
       }
     }
