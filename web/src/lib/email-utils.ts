@@ -84,7 +84,7 @@ DOB: {dob}
 Case ID: {case_id}
 Address: {address}
 
-[AO Team], please assist with obtaining a recent office visit note for this client when available.
+AO, could you assist with obtaining a recent office visit note for the client?
 
 Thank you, and please let us know how we can further assist.`;
 
@@ -98,7 +98,7 @@ DOB: {dob}
 Case ID: {case_id}
 Address: {address}
 
-[GHHC Team], please assist with coordinating the 6MWT and PFT for our client, and send us a recent OV note and ADL sheet when available.
+Giving, could you assist with coordinating the 6MWT and PFT for the client and send us a recent office visit note?
 
 Thank you, and please let us know how we can further assist.`;
 
@@ -112,7 +112,7 @@ DOB: {dob}
 Case ID: {case_id}
 Address: {address}
 
-[GHHC Team], please assist with coordinating the 6MWT and PFT for our client, and send us a recent OV note and ADL sheet when available.
+Giving, could you assist with coordinating the 6MWT and PFT for the client and send us a recent office visit note?
 
 Thank you, and please let us know how we can further assist.`;
 
