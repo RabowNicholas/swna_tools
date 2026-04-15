@@ -438,6 +438,36 @@ export function getCoordinationSteps(
   };
 }
 
+// Desert Pulmonary referral email
+const DP_REFERRAL_TEMPLATE = `I have attached the referral form for {name} to receive their impairment testing through Desert Pulmonary. Let me know if you have any questions.
+
+Thank you,`;
+
+/**
+ * Format Desert Pulmonary referral email body
+ */
+export function formatDPReferralEmailBody(patientName: string): string {
+  return DP_REFERRAL_TEMPLATE.replace("{name}", patientName);
+}
+
+/**
+ * Generate subject line for Desert Pulmonary referral
+ */
+export function getDPReferralSubjectLine(clientName: string): string {
+  try {
+    const nameParts = clientName.trim().split(" ");
+    if (nameParts.length >= 2) {
+      const firstInitial = nameParts[0][0].toUpperCase();
+      const lastName = nameParts[nameParts.length - 1];
+      return `DP Referral: ${firstInitial}. ${lastName}`;
+    } else {
+      return `DP Referral: ${clientName}`;
+    }
+  } catch {
+    return `DP Referral: ${clientName}`;
+  }
+}
+
 /**
  * Generate subject line for IR Notice
  */

@@ -24,6 +24,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { DPReferralEmailDraft } from "@/components/email/DPReferralEmailDraft";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -576,27 +577,33 @@ export default function DesertPulmForm() {
 
         {/* Success Message */}
         {formSubmitted && (
-          <Card
-            variant="elevated"
-            className="bg-success/10 border-success/20"
-          >
-            <CardContent>
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="h-6 w-6 text-success" />
+          <>
+            <Card
+              variant="elevated"
+              className="bg-success/10 border-success/20"
+            >
+              <CardContent>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <CheckCircle className="h-6 w-6 text-success" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      Desert Pulmonary referral form generated successfully!
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your Desert Pulmonary referral form has been downloaded
+                      and is ready for submission.
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-foreground mb-2">
-                    Desert Pulmonary referral form generated successfully!
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your Desert Pulmonary referral form has been downloaded
-                    and is ready for submission.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {submittedClient && (
+              <DPReferralEmailDraft patientName={form.watch("patient_name")} />
+            )}
+          </>
         )}
       </form>
     </div>
