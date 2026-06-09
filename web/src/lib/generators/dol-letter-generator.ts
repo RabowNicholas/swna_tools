@@ -6,7 +6,9 @@
 import { BaseGenerator } from "./base-generator";
 import { ClientRecord, GeneratorResult } from "./types";
 import { formatDateMMDDYY } from "./utils/formatters";
-import { StandardFonts } from "pdf-lib";
+import { StandardFonts, rgb } from "pdf-lib";
+import { readFile } from "fs/promises";
+import path from "path";
 
 export interface DolLetterFormData {
   claimant_name: string;
@@ -157,13 +159,62 @@ export class DolLetterGenerator extends BaseGenerator {
         currentY -= lineHeight;
       }
 
-      // Check if we're running out of space (rough estimate)
-      if (currentY < 100) {
+      // Stop early enough to leave room for the signature block drawn below.
+      if (currentY < 180) {
         console.warn(
           "[DOL Letter] Content may exceed single page. Consider reducing letter length."
         );
         break;
       }
+    }
+
+    // --- Signature block: pinned directly beneath the letter body ---
+    // The template has a static signature block baked in at the page bottom.
+    // White it out and redraw the signature dynamically below the body so it
+    // doesn't float at the bottom on short letters.
+    firstPage.drawRectangle({
+      x: 55,
+      y: 40,
+      width: 350,
+      height: 125,
+      color: rgb(1, 1, 1),
+    });
+
+    // Embed the handwritten signature image
+    const sigBytes = await readFile(
+      path.join(process.cwd(), "public", "templates", "swna_signature.png")
+    );
+    const sigImg = await pdfDoc.embedPng(sigBytes);
+    const sigDims = sigImg.scaleToFit(120, 45);
+
+    const sigLines = [
+      "Tyler J. Bailey",
+      "President, Southwest Nuclear Advocates",
+      "Cell: 808-772-8329",
+      "Fax: 702-825-0145",
+    ];
+
+    // Top of the signature image: one blank line below the last body line.
+    // Clamp upward if the body ran long so the block doesn't run off the page.
+    const blockHeight =
+      sigDims.height + lineHeight + sigLines.length * lineHeight;
+    const minBottom = 50;
+    let blockTop = currentY - lineHeight;
+    if (blockTop - blockHeight < minBottom) {
+      blockTop = minBottom + blockHeight;
+    }
+
+    firstPage.drawImage(sigImg, {
+      x: startX,
+      y: blockTop - sigDims.height,
+      width: sigDims.width,
+      height: sigDims.height,
+    });
+
+    let sigTextY = blockTop - sigDims.height - lineHeight;
+    for (const line of sigLines) {
+      this.drawText(firstPage, line, { x: startX, y: sigTextY, size: 11 });
+      sigTextY -= lineHeight;
     }
 
     // Save PDF to bytes

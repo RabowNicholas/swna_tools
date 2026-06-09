@@ -93,10 +93,13 @@ export class ChangeOfARGenerator extends BaseGenerator {
           image = await pdfDoc.embedJpg(imageBuffer);
         }
 
-        const dims = image.scaleToFit(200, 60);
+        // Sit the signature on the signature line beneath "Sincerely,".
+        // The gap between "Sincerely," (~y:527) and the line (~y:497) is small,
+        // so keep the image short to avoid overlapping the closing.
+        const dims = image.scaleToFit(180, 30);
         firstPage.drawImage(image, {
           x: 72,
-          y: 140,
+          y: 492,
           width: dims.width,
           height: dims.height,
         });
@@ -104,7 +107,7 @@ export class ChangeOfARGenerator extends BaseGenerator {
         console.error("[ChangeOfAR] Signature embedding failed:", error);
         this.drawText(firstPage, "[Signature not available]", {
           x: 72,
-          y: 155,
+          y: 505,
           size: 10,
         });
       }
