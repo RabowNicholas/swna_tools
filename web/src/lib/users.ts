@@ -112,6 +112,14 @@ export const users: User[] = [
       "$2b$10$RmdseTmZ0mztRGNXHJhIUO09TMOtTy8KFt53dHfrM/L250SRmVVRy",
     role: "user",
   },
+  {
+    id: "13",
+    email: "abbyswna@outlook.com",
+    name: "Abby",
+    hashedPassword:
+      "$2b$10$Ic5T27yWbCCh1C8QLSM3C.fa3zANiyK7RJEmB/9p5nOtoDiCcaCsy",
+    role: "user",
+  },
 ];
 
 /**
