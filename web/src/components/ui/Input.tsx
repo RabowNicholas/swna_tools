@@ -105,6 +105,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               helperText && `${inputId}-helper`
             )}
             {...props}
+            onWheel={(e) => {
+              // Prevent scroll from changing number input values
+              if (props.type === 'number') {
+                e.currentTarget.blur();
+              }
+              props.onWheel?.(e);
+            }}
           />
         </div>
         
