@@ -26,13 +26,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (letter_content.length > 5000) {
-      return NextResponse.json(
-        { error: 'Letter content must be less than 5000 characters' },
-        { status: 400 }
-      );
-    }
-
     // Generate PDF using TypeScript generator
     const generator = new DolLetterGenerator();
     const result = await generator.generate(
