@@ -128,59 +128,73 @@ export class DolLetterGenerator extends BaseGenerator {
     // Get Times-Roman font
     const font = await pdfDoc.embedFont(StandardFonts.TimesRoman);
 
-    // Process all pages
-    const pages = pdfDoc.getPages();
-    const firstPage = pages[0];
+    // Page geometry (US Letter, matches the template)
+    const pageWidth = 612;
+    const pageHeight = 792;
+    const startX = 72;
+    const lineHeight = 14;
+    const fontSize = 11;
 
+    // Body starts lower on page 1 (below the Claimant/File #/DOL address header)
+    // and higher on continuation pages, which carry no header.
+    const firstPageStartY = 580;
+    const continuationStartY = 720;
+    // Lowest Y a body line may occupy before we roll onto a new page.
+    const bodyBottomMargin = 72;
+
+    const firstPage = pdfDoc.getPages()[0];
     firstPage.setFont(font);
-    firstPage.setFontSize(11);
+    firstPage.setFontSize(fontSize);
+
+    // The template has a static signature block baked into the bottom of
+    // page 1. White it out unconditionally so it never shows through — the
+    // real signature is drawn dynamically after the body below.
+    const whiteOutBakedSignature = (page: typeof firstPage) => {
+      page.drawRectangle({
+        x: 55,
+        y: 40,
+        width: 350,
+        height: 125,
+        color: rgb(1, 1, 1),
+      });
+    };
+    whiteOutBakedSignature(firstPage);
 
     // Fill in the header fields (same coordinates as dol-status-update)
-    // Claimant name
-    this.drawText(firstPage, claimantName, { x: 119, y: 715, size: 11 });
+    this.drawText(firstPage, claimantName, { x: 119, y: 715, size: fontSize });
+    this.drawText(firstPage, caseId, { x: 108, y: 702, size: fontSize });
+    this.drawText(firstPage, formattedDate, { x: 72, y: 689, size: fontSize });
 
-    // Case ID
-    this.drawText(firstPage, caseId, { x: 108, y: 702, size: 11 });
+    // Helper to append a fresh blank continuation page.
+    const addContinuationPage = () => {
+      const page = pdfDoc.addPage([pageWidth, pageHeight]);
+      page.setFont(font);
+      page.setFontSize(fontSize);
+      return page;
+    };
 
-    // Date
-    this.drawText(firstPage, formattedDate, { x: 72, y: 689, size: 11 });
-
-    // Draw letter content with wrapping
-    const lineHeight = 14;
-    let currentY = 580; // Starting Y for letter content (adjust after testing)
-    const startX = 72;
+    // Draw the body, flowing onto as many pages as the content needs.
+    let currentPage = firstPage;
+    let currentY = firstPageStartY;
 
     for (const line of wrappedLines) {
-      if (line === "") {
-        // Blank line for paragraph spacing
-        currentY -= lineHeight;
-      } else {
-        this.drawText(firstPage, line, { x: startX, y: currentY, size: 11 });
-        currentY -= lineHeight;
+      if (currentY < bodyBottomMargin) {
+        currentPage = addContinuationPage();
+        currentY = continuationStartY;
       }
 
-      // Stop early enough to leave room for the signature block drawn below.
-      if (currentY < 180) {
-        console.warn(
-          "[DOL Letter] Content may exceed single page. Consider reducing letter length."
-        );
-        break;
+      if (line !== "") {
+        this.drawText(currentPage, line, {
+          x: startX,
+          y: currentY,
+          size: fontSize,
+        });
       }
+      // Advance for both text and blank (paragraph-spacing) lines.
+      currentY -= lineHeight;
     }
 
     // --- Signature block: pinned directly beneath the letter body ---
-    // The template has a static signature block baked in at the page bottom.
-    // White it out and redraw the signature dynamically below the body so it
-    // doesn't float at the bottom on short letters.
-    firstPage.drawRectangle({
-      x: 55,
-      y: 40,
-      width: 350,
-      height: 125,
-      color: rgb(1, 1, 1),
-    });
-
-    // Embed the handwritten signature image
     const sigBytes = await readFile(
       path.join(process.cwd(), "public", "templates", "swna_signature.png")
     );
@@ -194,17 +208,20 @@ export class DolLetterGenerator extends BaseGenerator {
       "Fax: 702-825-0145",
     ];
 
-    // Top of the signature image: one blank line below the last body line.
-    // Clamp upward if the body ran long so the block doesn't run off the page.
+    // Height of the whole block: signature image + one blank line + text lines.
     const blockHeight =
       sigDims.height + lineHeight + sigLines.length * lineHeight;
     const minBottom = 50;
+
+    // Place the block one blank line below the last body line. If it would run
+    // off the bottom of the current page, move it to a fresh page instead.
     let blockTop = currentY - lineHeight;
     if (blockTop - blockHeight < minBottom) {
-      blockTop = minBottom + blockHeight;
+      currentPage = addContinuationPage();
+      blockTop = continuationStartY;
     }
 
-    firstPage.drawImage(sigImg, {
+    currentPage.drawImage(sigImg, {
       x: startX,
       y: blockTop - sigDims.height,
       width: sigDims.width,
@@ -213,7 +230,11 @@ export class DolLetterGenerator extends BaseGenerator {
 
     let sigTextY = blockTop - sigDims.height - lineHeight;
     for (const line of sigLines) {
-      this.drawText(firstPage, line, { x: startX, y: sigTextY, size: 11 });
+      this.drawText(currentPage, line, {
+        x: startX,
+        y: sigTextY,
+        size: fontSize,
+      });
       sigTextY -= lineHeight;
     }
 

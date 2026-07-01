@@ -28,8 +28,7 @@ const dolLetterSchema = z.object({
   letter_date: z.string().min(1, "Letter date is required"),
   letter_content: z
     .string()
-    .min(10, "Letter content must be at least 10 characters")
-    .max(5000, "Letter content must be less than 5000 characters"),
+    .min(10, "Letter content must be at least 10 characters"),
 });
 
 type DolLetterFormData = z.infer<typeof dolLetterSchema>;
@@ -288,9 +287,7 @@ export default function DolLetterForm() {
                   label="Letter Body"
                   required
                   error={form.formState.errors.letter_content?.message}
-                  helperText="Type your letter content. Text will automatically wrap in the PDF. The closing sentence will be added automatically."
-                  maxLength={5000}
-                  showCharCount
+                  helperText="Type your letter content. Text wraps automatically and flows onto as many pages as needed. The closing sentence will be added automatically."
                   className="min-h-[300px]"
                   {...form.register("letter_content")}
                 />
