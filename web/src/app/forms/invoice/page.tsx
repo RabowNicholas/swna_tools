@@ -294,7 +294,12 @@ export default function InvoiceForm() {
         const now = new Date();
         const logDate = `${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}.${String(now.getFullYear()).slice(-2)}`;
         const userEmail = session?.user?.email || "unknown";
-        const logEntry = `Needs Invoicing and Payment Outstanding tags added by SWNA Tools app. Triggered by [${userEmail}] ${logDate}. TOOLS APP`;
+
+        // Claim Complete tag keyed off the invoice's part type
+        const claimCompleteTag =
+          data.part_type === "Part B" ? "Part B Paid" : "Complete Paid";
+
+        const logEntry = `Needs Invoicing and Payment Outstanding tags added, ${claimCompleteTag} added to Claim Complete, by SWNA Tools app. Triggered by [${userEmail}] ${logDate}. TOOLS APP`;
 
         const tagResponse = await fetch("/api/clients", {
           method: "POST",
@@ -304,6 +309,7 @@ export default function InvoiceForm() {
             prepend: {
               Log: logEntry,
               Status: ["Needs Invoicing", "Payment Outstanding"],
+              ClaimComplete: [claimCompleteTag],
             },
           }),
         });

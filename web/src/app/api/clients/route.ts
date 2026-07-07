@@ -65,6 +65,23 @@ export async function POST(request: NextRequest) {
         ];
       }
 
+      if (
+        Array.isArray(prepend.ClaimComplete) &&
+        prepend.ClaimComplete.length > 0
+      ) {
+        const newTags: string[] = prepend.ClaimComplete;
+        const rawClaimComplete = current.fields['Claim Complete'];
+        const currentClaimComplete: string[] = Array.isArray(rawClaimComplete)
+          ? (rawClaimComplete as string[])
+          : rawClaimComplete
+            ? [String(rawClaimComplete)]
+            : [];
+        mergedFields['Claim Complete'] = [
+          ...newTags,
+          ...currentClaimComplete.filter((t) => !newTags.includes(t)),
+        ];
+      }
+
       const updatedClient = await airtableService.updateClient(
         recordId,
         mergedFields
