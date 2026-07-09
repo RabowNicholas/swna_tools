@@ -173,7 +173,7 @@ export default function RDWaiverForm() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `RD_accept_waiver_${data.claimant_name.replace(
+        a.download = `RD_waiver_${data.claimant_name.replace(
           /\s+/g,
           "_"
         )}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;

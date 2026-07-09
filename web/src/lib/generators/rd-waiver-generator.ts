@@ -57,14 +57,14 @@ export class RDWaiverGenerator extends BaseGenerator {
     const bodyNameY = option === '1' ? 482 : 247;
     const bodyDateY = option === '1' ? 317 : 178;
 
-    // filename format from Python: RD_accept_waiver_F.Last_MM.DD.YY.pdf
+    // filename format: RD_waiver_F.Last_MM.DD.YY.pdf
     const shortDate = formatDateMMDDYY();
-    let filename = 'RDAccept.pdf';
+    let filename = 'RDWaiver.pdf';
     const parts = claimant.trim().split(/\s+/);
     if (parts.length >= 2) {
       const first = parts[0];
       const last = parts[parts.length - 1];
-      filename = `RD_accept_waiver_${first[0]}.${last}_${shortDate}.pdf`;
+      filename = `RD_waiver_${first[0]}.${last}_${shortDate}.pdf`;
     }
 
     // Load template and generate PDF
