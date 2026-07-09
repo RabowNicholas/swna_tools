@@ -109,7 +109,7 @@ export default function Home() {
     },
     {
       id: "rd-waiver",
-      name: "RD Accept Waiver",
+      name: "RD Waiver",
       description: "",
       href: "/forms/rd-waiver",
     },

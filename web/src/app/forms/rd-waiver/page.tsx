@@ -192,7 +192,7 @@ export default function RDWaiverForm() {
       } else {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || "Failed to generate RD accept waiver"
+          errorData.error || "Failed to generate RD waiver"
         );
       }
     } catch (error) {
@@ -200,7 +200,7 @@ export default function RDWaiverForm() {
       alert(
         error instanceof Error
           ? error.message
-          : "Failed to generate RD accept waiver"
+          : "Failed to generate RD waiver"
       );
     } finally {
       setLoading(false);
@@ -236,7 +236,7 @@ export default function RDWaiverForm() {
       {/* Header */}
       <div className="space-y-4">
         <h1 className="text-3xl font-bold text-foreground">
-          📝 RD Accept Waiver Generator
+          📝 RD Waiver Generator
         </h1>
         <p className="text-muted-foreground">
           Generate the Waiver for Recommended Decision (RD) Acceptance for a DOL
@@ -428,7 +428,7 @@ export default function RDWaiverForm() {
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}
           >
-            {loading ? "Generating Waiver..." : "Generate RD Accept Waiver"}
+            {loading ? "Generating Waiver..." : "Generate RD Waiver"}
           </Button>
         </div>
 
@@ -446,7 +446,7 @@ export default function RDWaiverForm() {
                   </div>
                   <div className="ml-4">
                     <h3 className="text-lg font-medium text-foreground mb-2">
-                      RD accept waiver generated successfully!
+                      RD waiver generated successfully!
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       Your completed RD acceptance waiver has been downloaded
