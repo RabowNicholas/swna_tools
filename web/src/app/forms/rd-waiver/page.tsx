@@ -31,6 +31,7 @@ const rdWaiverSchema = z.object({
   employee_name: z.string().min(1, "Employee name is required"),
   case_id: z.string().min(1, "Case ID is required"),
   rd_decision_date: z.string().min(1, "RD decision date is required"),
+  option: z.enum(["1", "2"]),
 });
 
 type RDWaiverFormData = z.infer<typeof rdWaiverSchema>;
@@ -75,6 +76,7 @@ export default function RDWaiverForm() {
       employee_name: "",
       case_id: "",
       rd_decision_date: "", // left blank on purpose — user enters it
+      option: "2", // default to Option 2 (waive all rights)
     },
   });
 
@@ -89,11 +91,15 @@ export default function RDWaiverForm() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
+      // Preserve the chosen waiver option across the reset below
+      const currentOption = form.getValues("option");
+
       // Reset form to default values first (clears RD decision date)
       form.reset();
 
       // Set client_id since reset cleared it
       form.setValue("client_id", clientId);
+      form.setValue("option", currentOption);
 
       const fields = client.fields;
 
@@ -149,6 +155,7 @@ export default function RDWaiverForm() {
           employee_name: data.employee_name,
           case_id: data.case_id,
           rd_decision_date: rdDecisionDate,
+          option: data.option,
         },
       };
 
@@ -336,6 +343,70 @@ export default function RDWaiverForm() {
                   {...form.register("rd_decision_date")}
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Waiver Option Selection */}
+        <Card variant="elevated">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <CardTitle>Waiver Option</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Select which option to sign. Only one option is signed on the
+              generated waiver.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {(
+                [
+                  {
+                    value: "2",
+                    title: "Option 2 — Waive all rights",
+                    desc: "Waive your right to object to ALL findings and conclusions in the Recommended Decision.",
+                  },
+                  {
+                    value: "1",
+                    title: "Option 1 — Waive acceptance only",
+                    desc: "Waive objection to the accepted portion of your claim, but reserve your right to object to the recommended denial of benefits.",
+                  },
+                ] as const
+              ).map((opt) => {
+                const selected = form.watch("option") === opt.value;
+                return (
+                  <label
+                    key={opt.value}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                      selected
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      value={opt.value}
+                      checked={selected}
+                      onChange={() =>
+                        form.setValue("option", opt.value, {
+                          shouldValidate: true,
+                        })
+                      }
+                      className="mt-1 h-4 w-4 accent-primary"
+                    />
+                    <div>
+                      <div className="font-medium text-foreground">
+                        {opt.title}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {opt.desc}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

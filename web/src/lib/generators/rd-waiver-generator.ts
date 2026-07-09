@@ -12,12 +12,14 @@ import { BaseGenerator } from './base-generator';
 import { ClientRecord, GeneratorResult } from './types';
 import { formatDateMMDDYY, formatDateMMDDYYYY } from './utils/formatters';
 import { StandardFonts } from 'pdf-lib';
+import path from 'path';
 
 export interface RDWaiverFormData {
   claimant_name: string;
   employee_name: string;
   case_id: string;
   rd_decision_date: string; // MM/DD/YYYY
+  option?: '1' | '2'; // which waiver option to sign; defaults to '2'
 }
 
 export class RDWaiverGenerator extends BaseGenerator {
@@ -35,6 +37,25 @@ export class RDWaiverGenerator extends BaseGenerator {
     const caseId = formData.case_id || '';
     const rdDecisionDate = formData.rd_decision_date || '';
     const currentDate = formatDateMMDDYYYY();
+    const option = formData.option === '1' ? '1' : '2';
+
+    // Each option has its own template (signature is a baked-in image that
+    // must sit on the chosen option's signature line) and its own body
+    // coordinates. Coordinates verified against generated test PDFs.
+    if (option === '1') {
+      this.templatePath = path.join(
+        process.cwd(),
+        'public',
+        'templates',
+        'rd_accept_waiver_option_1.pdf'
+      );
+    }
+    // Option 2 keeps the constructor default (rd_accept_waiver.pdf).
+
+    // "I, ____" name line and signature/date line differ per option because
+    // the two option blocks are different heights.
+    const bodyNameY = option === '1' ? 482 : 247;
+    const bodyDateY = option === '1' ? 317 : 178;
 
     // filename format from Python: RD_accept_waiver_F.Last_MM.DD.YY.pdf
     const shortDate = formatDateMMDDYY();
@@ -54,13 +75,14 @@ export class RDWaiverGenerator extends BaseGenerator {
     page.setFont(font);
     page.setFontSize(11);
 
-    // Coordinates ported verbatim from the final Python generator.
+    // Header block coordinates are identical for both options.
     this.drawText(page, caseId, { x: 410, y: 675, size: 11 });
     this.drawText(page, employee, { x: 378, y: 662, size: 11 });
     this.drawText(page, claimant, { x: 374, y: 647, size: 11 });
     this.drawText(page, rdDecisionDate, { x: 410, y: 634, size: 11 });
-    this.drawText(page, claimant, { x: 83, y: 247, size: 11 });
-    this.drawText(page, currentDate, { x: 315, y: 178, size: 11 });
+    // Body name + date land on the selected option's block.
+    this.drawText(page, claimant, { x: 83, y: bodyNameY, size: 11 });
+    this.drawText(page, currentDate, { x: 315, y: bodyDateY, size: 11 });
 
     const pdfBytes = await pdfDoc.save();
 
