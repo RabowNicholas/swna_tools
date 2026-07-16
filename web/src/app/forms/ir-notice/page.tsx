@@ -183,8 +183,8 @@ export default function IRNoticeForm() {
       client_id: "",
       client_name: "",
       case_id: "",
-      // Default to 75 days from today (matching Streamlit)
-      appointment_date: new Date(Date.now() + 75 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      // Default to 60 days (~2 months) from today
+      appointment_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       provider_name: "La Plata Medical",
     },
   });
