@@ -9,6 +9,19 @@ import { PDFDocument, PDFPage, StandardFonts } from 'pdf-lib';
 import { BaseGenerator } from './base-generator';
 import { ClientRecord, GeneratorResult } from './types';
 import { formatDateMMDDYY, formatDateMMDDYYYY, parsePhoneNumber } from './utils/formatters';
+import { drawSignatureOnLine, SignatureLine } from './utils/signature';
+
+/**
+ * The "Employee Signature" rule on page 1, measured off EE-1.pdf.
+ * There is clear space up to y=64 before the declaration paragraph, so the
+ * ink is capped well under that.
+ */
+const EE1_SIGNATURE_LINE: SignatureLine = {
+  x0: 107.5,
+  x1: 338.9,
+  y: 40.8,
+  maxHeight: 22,
+};
 
 export interface EE1DiagnosisItem {
   text: string;
@@ -216,31 +229,24 @@ export class EE1Generator extends BaseGenerator {
       }
     }
 
-    // Signature handling (on signature overlay - behind form)
-    // Detect PNG vs JPEG from magic bytes and embed accordingly
+    // Signature handling (on signature overlay)
+    // Trimmed to the ink and fitted to the signature rule, so uploads of any
+    // shape land in the same place
     if (signatureFile?.data) {
       try {
-        const imageBuffer = Buffer.from(signatureFile.data, 'base64');
-
-        let image;
-        if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) {
-          // PNG magic bytes: 89 50 4E 47
-          image = await signatureOverlayDoc.embedPng(imageBuffer);
-        } else {
-          // JPEG magic bytes: FF D8 FF
-          image = await signatureOverlayDoc.embedJpg(imageBuffer);
-        }
-        const dims = image.scaleToFit(300, 100);
-
-        sigPage.drawImage(image, {
-          x: 103,
-          y: 33,
-          width: dims.width,
-          height: dims.height,
-        });
+        await drawSignatureOnLine(
+          signatureOverlayDoc,
+          sigPage,
+          signatureFile.data,
+          EE1_SIGNATURE_LINE
+        );
       } catch (error) {
         console.error('[EE1] Signature processing failed:', error);
-        sigPage.drawText('[Signature processing failed]', { x: 100, y: 155, size: 10 });
+        sigPage.drawText('[Signature processing failed]', {
+          x: EE1_SIGNATURE_LINE.x0,
+          y: EE1_SIGNATURE_LINE.y + 3,
+          size: 8,
+        });
       }
     }
 
@@ -255,9 +261,6 @@ export class EE1Generator extends BaseGenerator {
     // Embed signature and marks as pages
     const sigBytes = await signatureOverlayDoc.save();
     const marksBytes = await marksOverlayDoc.save();
-
-    const sigPdf = await PDFDocument.load(sigBytes);
-    const marksPdf = await marksBytes;
 
     // Start with base template page
     const outputDoc = await PDFDocument.create();
