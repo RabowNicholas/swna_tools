@@ -7,6 +7,18 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { BaseGenerator } from "./base-generator";
 import { ClientRecord, GeneratorResult } from "./types";
 import { formatDateMMDDYY } from "./utils/formatters";
+import { drawSignatureOnLine, SignatureLine } from "./utils/signature";
+
+/**
+ * The signature rule beneath "Sincerely,", measured off the template.
+ * "Sincerely," sits at y=521, so the ink is capped under that.
+ */
+const CHANGE_OF_AR_SIGNATURE_LINE: SignatureLine = {
+  x0: 72.0,
+  x1: 213.1,
+  y: 494.9,
+  maxHeight: 22,
+};
 
 export interface ChangeOfARFormData {
   claimant_name: string;
@@ -79,36 +91,22 @@ export class ChangeOfARGenerator extends BaseGenerator {
     this.drawText(firstPage, phone, { x: 250, y: 550, size: 11 });
 
     // Embed signature image if present
+    // Trimmed to the ink and fitted to the signature line beneath "Sincerely,",
+    // so uploads of any shape land in the same place
     if (signatureFile?.data) {
       try {
-        const imageBuffer = Buffer.from(signatureFile.data, "base64");
-
-        // Detect image type from magic bytes
-        let image;
-        if (imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50) {
-          // PNG magic bytes: 89 50 4E 47
-          image = await pdfDoc.embedPng(imageBuffer);
-        } else {
-          // JPEG magic bytes: FF D8 FF
-          image = await pdfDoc.embedJpg(imageBuffer);
-        }
-
-        // Sit the signature on the signature line beneath "Sincerely,".
-        // The gap between "Sincerely," (~y:527) and the line (~y:497) is small,
-        // so keep the image short to avoid overlapping the closing.
-        const dims = image.scaleToFit(180, 30);
-        firstPage.drawImage(image, {
-          x: 72,
-          y: 492,
-          width: dims.width,
-          height: dims.height,
-        });
+        await drawSignatureOnLine(
+          pdfDoc,
+          firstPage,
+          signatureFile.data,
+          CHANGE_OF_AR_SIGNATURE_LINE,
+        );
       } catch (error) {
         console.error("[ChangeOfAR] Signature embedding failed:", error);
         this.drawText(firstPage, "[Signature not available]", {
-          x: 72,
-          y: 505,
-          size: 10,
+          x: CHANGE_OF_AR_SIGNATURE_LINE.x0,
+          y: CHANGE_OF_AR_SIGNATURE_LINE.y + 3,
+          size: 8,
         });
       }
     }

@@ -7,7 +7,19 @@
 import { BaseGenerator } from './base-generator';
 import { ClientRecord, GeneratorResult } from './types';
 import { formatDateMMDDYY, formatDateMMDDYYYY, parsePhoneNumber } from './utils/formatters';
+import { drawSignatureOnLine, SignatureLine } from './utils/signature';
 import { StandardFonts } from 'pdf-lib';
+
+/**
+ * The "Employee Signature" rule, measured off EE-1a.pdf.
+ * The declaration paragraph starts at y=201, so the ink is capped under that.
+ */
+const EE1A_SIGNATURE_LINE: SignatureLine = {
+  x0: 107.5,
+  x1: 338.9,
+  y: 174.2,
+  maxHeight: 22,
+};
 
 export interface EE1ADiagnosis {
   diagnosis_text?: string;
@@ -123,28 +135,17 @@ export class EE1AGenerator extends BaseGenerator {
     }
 
     // Signature handling
-    // Note: Image is pre-processed on client-side (resized to 200x60, flattened, PNG format)
+    // Trimmed to the ink and fitted to the signature rule, so uploads of any
+    // shape land in the same place
     if (signatureFile?.data) {
       try {
-        // Decode base64 image (already processed on client)
-        const imageBuffer = Buffer.from(signatureFile.data, 'base64');
-
-        // Directly embed the pre-processed PNG (already resized and flattened on client)
-        const pngImage = await pdfDoc.embedPng(imageBuffer);
-        const dims = pngImage.scale(1);
-
-        page.drawImage(pngImage, {
-          x: 108,
-          y: 165,
-          width: dims.width,
-          height: dims.height,
-        });
+        await drawSignatureOnLine(pdfDoc, page, signatureFile.data, EE1A_SIGNATURE_LINE);
       } catch (error) {
         console.error('[EE1A] Signature processing failed:', error);
         this.drawText(page, '[Signature processing failed]', {
-          x: 85,
-          y: 185,
-          size: 10,
+          x: EE1A_SIGNATURE_LINE.x0,
+          y: EE1A_SIGNATURE_LINE.y + 3,
+          size: 8,
         });
       }
     }
