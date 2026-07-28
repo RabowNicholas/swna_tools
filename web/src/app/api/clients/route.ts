@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
 
     if (prepend) {
       const current = await airtableService.getClient(recordId);
-      const mergedFields: Record<string, string | string[]> = {};
+      // Any plain `fields` sent alongside `prepend` go in the same PATCH, so a
+      // caller updating a record and logging it can't end up with one applied
+      // and not the other.
+      const mergedFields: Record<string, string | string[]> = { ...(fields ?? {}) };
 
       if (typeof prepend.Log === 'string' && prepend.Log.length > 0) {
         const currentLog =
