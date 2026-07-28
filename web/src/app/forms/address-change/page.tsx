@@ -25,98 +25,12 @@ import {
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
+import { toAirtableStateName } from "@/lib/states";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
-
-// State name to abbreviation mapping
-const STATE_NAME_TO_ABBR: Record<string, string> = {
-  Alabama: "AL",
-  Alaska: "AK",
-  Arizona: "AZ",
-  Arkansas: "AR",
-  California: "CA",
-  Colorado: "CO",
-  Connecticut: "CT",
-  Delaware: "DE",
-  Florida: "FL",
-  Georgia: "GA",
-  Hawaii: "HI",
-  Idaho: "ID",
-  Illinois: "IL",
-  Indiana: "IN",
-  Iowa: "IA",
-  Kansas: "KS",
-  Kentucky: "KY",
-  Louisiana: "LA",
-  Maine: "ME",
-  Maryland: "MD",
-  Massachusetts: "MA",
-  Michigan: "MI",
-  Minnesota: "MN",
-  Mississippi: "MS",
-  Missouri: "MO",
-  Montana: "MT",
-  Nebraska: "NE",
-  Nevada: "NV",
-  "New Hampshire": "NH",
-  "New Jersey": "NJ",
-  "New Mexico": "NM",
-  "New York": "NY",
-  "North Carolina": "NC",
-  "North Dakota": "ND",
-  Ohio: "OH",
-  Oklahoma: "OK",
-  Oregon: "OR",
-  Pennsylvania: "PA",
-  "Rhode Island": "RI",
-  "South Carolina": "SC",
-  "South Dakota": "SD",
-  Tennessee: "TN",
-  Texas: "TX",
-  Utah: "UT",
-  Vermont: "VT",
-  Virginia: "VA",
-  Washington: "WA",
-  "West Virginia": "WV",
-  Wisconsin: "WI",
-  Wyoming: "WY",
-  "District of Columbia": "DC",
-  "Puerto Rico": "PR",
-  "Virgin Islands": "VI",
-  "American Samoa": "AS",
-  Guam: "GU",
-  "Northern Mariana Islands": "MP",
-};
-
-// Helper function to get state abbreviation
-const getStateAbbreviation = (stateName: string): string => {
-  if (!stateName) {
-    return "";
-  }
-
-  // Check exact match first
-  if (stateName in STATE_NAME_TO_ABBR) {
-    return STATE_NAME_TO_ABBR[stateName];
-  }
-
-  // Check case-insensitive match
-  for (const [fullName, abbr] of Object.entries(STATE_NAME_TO_ABBR)) {
-    if (stateName.toLowerCase() === fullName.toLowerCase()) {
-      return abbr;
-    }
-  }
-
-  // If it's already an abbreviation (2 letters), return as-is
-  if (stateName.length === 2 && /^[A-Za-z]+$/.test(stateName)) {
-    return stateName.toUpperCase();
-  }
-
-  // Return original string if no match found
-  return stateName;
-};
 
 // Zod schema for form validation (simplified to match Streamlit version)
 const addressChangeSchema = z.object({
@@ -320,6 +234,16 @@ export default function AddressChangeForm() {
     const reference = referenceNumber.trim();
     if (!submittedClient || !submittedAddress || !reference) return;
 
+    // Resolve the select value before sending: a state Airtable doesn't offer
+    // would fail the whole update, so catch it here rather than at Airtable.
+    const stateName = toAirtableStateName(submittedAddress.state);
+    if (!stateName) {
+      setAirtableError(
+        `"${submittedAddress.state}" isn't a state Airtable recognizes. Use a 2-letter code such as NM. Nothing was updated.`
+      );
+      return;
+    }
+
     setUpdatingAirtable(true);
     setAirtableError(null);
     try {
@@ -339,7 +263,7 @@ export default function AddressChangeForm() {
           fields: {
             "Street Address": submittedAddress.street_address,
             City: submittedAddress.city,
-            State: submittedAddress.state,
+            State: stateName,
             "ZIP Code": submittedAddress.zip_code,
           },
           prepend: {
@@ -351,7 +275,9 @@ export default function AddressChangeForm() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.error || "Failed to update client in Airtable"
+          errorData.details ||
+            errorData.error ||
+            "Failed to update client in Airtable"
         );
       }
 

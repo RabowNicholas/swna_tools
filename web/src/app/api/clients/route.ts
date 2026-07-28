@@ -103,8 +103,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.error('Error updating client:', error);
+    // Pass Airtable's own message through — a bare "Failed to update client"
+    // gives no clue which field it rejected.
     return NextResponse.json(
-      { error: 'Failed to update client' },
+      {
+        error: 'Failed to update client',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
