@@ -53,6 +53,12 @@ export default function Home() {
   const allTools: Tool[] = [
     // Forms
     {
+      id: "claims-assembly",
+      name: "Claims Assembly",
+      description: "",
+      href: "/forms/claims-assembly",
+    },
+    {
       id: "ee3",
       name: "EE-3 Form",
       description: "",
@@ -177,7 +183,7 @@ export default function Home() {
 
   const toolCategories = {
     forms: allTools.filter((tool) =>
-      ["ee3", "ee1", "ee1a", "ee10", "en16"].includes(tool.id)
+      ["claims-assembly", "ee3", "ee1", "ee1a", "ee10", "en16"].includes(tool.id)
     ),
     dolLetters: allTools.filter((tool) =>
       ["dol-letter", "withdrawal", "address-change", "phone-change", "rd-waiver", "dol-status-update", "ir-notice", "change-of-ar"].includes(tool.id)
