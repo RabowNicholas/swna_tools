@@ -51,13 +51,14 @@ export default function Home() {
   };
 
   const allTools: Tool[] = [
-    // Forms
+    // Claims Assembly
     {
       id: "claims-assembly",
       name: "Claims Assembly",
       description: "",
       href: "/forms/claims-assembly",
     },
+    // Forms
     {
       id: "ee3",
       name: "EE-3 Form",
@@ -182,8 +183,11 @@ export default function Home() {
   ];
 
   const toolCategories = {
+    claimsAssembly: allTools.filter((tool) =>
+      ["claims-assembly"].includes(tool.id)
+    ),
     forms: allTools.filter((tool) =>
-      ["claims-assembly", "ee3", "ee1", "ee1a", "ee10", "en16"].includes(tool.id)
+      ["ee3", "ee1", "ee1a", "ee10", "en16"].includes(tool.id)
     ),
     dolLetters: allTools.filter((tool) =>
       ["dol-letter", "withdrawal", "address-change", "phone-change", "rd-waiver", "dol-status-update", "ir-notice", "change-of-ar"].includes(tool.id)
@@ -336,6 +340,30 @@ export default function Home() {
             </div>
           </section>
         )}
+
+        {/* Claims Assembly Section */}
+        <AnimatedContainer animation="fadeIn" trigger="inView">
+          <section aria-labelledby="claims-assembly-heading">
+            <VStack size="lg" className="mb-6">
+              <TextHierarchy.SectionTitle id="claims-assembly-heading">
+                Claims Assembly
+              </TextHierarchy.SectionTitle>
+              <Typography.Body className="text-muted-foreground">
+                Build and assemble a complete claim package
+              </Typography.Body>
+            </VStack>
+
+            <StaggeredContainer
+              staggerDelay={80}
+              baseAnimation="slideInFromBottom"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+            >
+              {toolCategories.claimsAssembly.map((tool) => (
+                <ToolCard key={tool.id} tool={tool} />
+              ))}
+            </StaggeredContainer>
+          </section>
+        </AnimatedContainer>
 
         {/* Forms Section */}
         <AnimatedContainer animation="fadeIn" trigger="inView">
