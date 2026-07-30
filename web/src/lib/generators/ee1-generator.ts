@@ -8,7 +8,7 @@
 import { PDFDocument, PDFPage, StandardFonts } from 'pdf-lib';
 import { BaseGenerator } from './base-generator';
 import { ClientRecord, GeneratorResult } from './types';
-import { formatDateMMDDYY, formatDateMMDDYYYY, parsePhoneNumber } from './utils/formatters';
+import { dateOnlyParts, formatDateMMDDYY, formatDateMMDDYYYY, parsePhoneNumber } from './utils/formatters';
 import { drawSignatureOnLine, SignatureLine } from './utils/signature';
 
 /**
@@ -69,17 +69,10 @@ export class EE1Generator extends BaseGenerator {
    * Example: "01       15       2024"
    */
   private formatDateSpaced(dateStr: string): string {
-    if (!dateStr) return '';
+    const parts = dateOnlyParts(dateStr);
+    if (!parts) return '';
 
-    try {
-      const date = new Date(dateStr);
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const year = String(date.getFullYear());
-      return `${month}       ${day}       ${year}`;
-    } catch {
-      return '';
-    }
+    return `${parts.month}       ${parts.day}       ${parts.year}`;
   }
 
   async generate(

@@ -7,7 +7,11 @@
 import { PDFDocument, PDFPage, StandardFonts } from "pdf-lib";
 import { BaseGenerator } from "./base-generator";
 import { ClientRecord, GeneratorResult } from "./types";
-import { formatDateMMDDYY, formatDateMMDDYYYY } from "./utils/formatters";
+import {
+  dateOnlyParts,
+  formatDateMMDDYY,
+  formatDateMMDDYYYY,
+} from "./utils/formatters";
 
 export interface EE3EmploymentRecord {
   start_date: string; // ISO date
@@ -145,21 +149,21 @@ export class EE3Generator extends BaseGenerator {
     pageNum: number,
   ): void {
     // Parse dates
-    let startDateStr = "";
-    if (job.start_date) {
-      const startDate = new Date(job.start_date);
-      const month = String(startDate.getMonth() + 1).padStart(2, "0");
-      const day = String(startDate.getDate()).padStart(2, "0");
-      const year = String(startDate.getFullYear());
-      startDateStr = `${month}/${day}/${year}`;
-    }
+    const start = dateOnlyParts(job.start_date || "");
+    const startDateStr = start
+      ? `${start.month}/${start.day}/${start.year}`
+      : "";
 
-    const endDateSource = job.end_date ? new Date(job.end_date) : new Date();
-    const endDateStr = [
-      String(endDateSource.getMonth() + 1).padStart(2, "0"),
-      String(endDateSource.getDate()).padStart(2, "0"),
-      String(endDateSource.getFullYear()),
-    ].join("/");
+    // A job with no end date is a current position, so it runs through today
+    const today = new Date();
+    const end = job.end_date
+      ? dateOnlyParts(job.end_date)
+      : {
+          month: String(today.getMonth() + 1).padStart(2, "0"),
+          day: String(today.getDate()).padStart(2, "0"),
+          year: String(today.getFullYear()),
+        };
+    const endDateStr = end ? `${end.month}/${end.day}/${end.year}` : "";
 
     // Dates section
     const datesY = baseY + deltas.dates;

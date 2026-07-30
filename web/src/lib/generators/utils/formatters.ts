@@ -51,6 +51,31 @@ export function parsePhoneNumber(phone: string): {
 }
 
 /**
+ * The month, day and year a form's date field actually names.
+ *
+ * A date input gives "YYYY-MM-DD", which Date parses as midnight UTC, as does
+ * the ISO string one of those serializes to. Reading either back with local
+ * accessors lands on the previous day anywhere west of Greenwich — a date of
+ * diagnosis a day early on a government form — so read them in UTC.
+ *
+ * Returns null for an empty or unparseable value.
+ */
+export function dateOnlyParts(
+  value: string
+): { month: string; day: string; year: string } | null {
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (isNaN(date.getTime())) return null;
+
+  return {
+    month: String(date.getUTCMonth() + 1).padStart(2, '0'),
+    day: String(date.getUTCDate()).padStart(2, '0'),
+    year: String(date.getUTCFullYear()),
+  };
+}
+
+/**
  * Formats date as MM/DD/YYYY
  */
 export function formatDateMMDDYYYY(date: Date = new Date()): string {
