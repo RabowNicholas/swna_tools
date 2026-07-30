@@ -44,8 +44,14 @@ export const CONDITIONS: Condition[] = [
 export const getCondition = (id: string): Condition | undefined =>
   CONDITIONS.find((c) => c.id === id);
 
-/** Where a slot's PDF comes from. */
-export type SlotSource = 'template' | 'upload';
+/**
+ * Where a slot's PDF comes from: a bundled blank, a form this app fills out,
+ * or a file the assembler supplies.
+ */
+export type SlotSource = 'template' | 'generated' | 'upload';
+
+/** The generators a claim can drive, keyed to /api/generate/<id>. */
+export type SlotGenerator = 'ee1' | 'ee3';
 
 export interface DocumentSlot {
   id: string;
@@ -56,6 +62,8 @@ export interface DocumentSlot {
   hint?: string;
   /** Only set for template slots */
   templatePath?: string;
+  /** Only set for generated slots */
+  generator?: SlotGenerator;
 }
 
 export const COVER_SHEET_PATH = '/templates/claim_form_cover_sheet.pdf';
@@ -98,9 +106,10 @@ export function requiredDocuments(
     {
       id: 'ee1',
       label: 'EE-1',
-      source: 'upload',
+      source: 'generated',
+      generator: 'ee1',
       required: true,
-      hint: 'Generate on the EE-1 page, then select the signed copy here.',
+      hint: 'Built from the claim details below, with the signature if one was supplied.',
     },
   ];
 
@@ -108,9 +117,10 @@ export function requiredDocuments(
     slots.push({
       id: 'ee3',
       label: 'EE-3',
-      source: 'upload',
+      source: 'generated',
+      generator: 'ee3',
       required: true,
-      hint: 'Only for clients who have never had a claim submitted, by us or a previous AR.',
+      hint: 'Built from the employment history below. Only for clients who have never had a claim submitted, by us or a previous AR.',
     });
   }
 
@@ -139,16 +149,14 @@ function medicalEvidence(category: ConditionCategory): DocumentSlot[] {
     hint: 'Confirm a doctor signed it before assembling.',
   };
 
-  // CS and PN are diagnosed off the B-read, and need nothing beyond it.
+  // CS and PN are diagnosed off the B-read, which is always attached to the
+  // diagnosis letter — one document, so one slot.
   if (category === 'chronic_silicosis' || category === 'pneumoconiosis') {
     return [
-      dxLetter,
       {
-        id: 'b_read',
-        label: 'B-Read',
-        source: 'upload',
-        required: true,
-        hint: 'Check the DOB and SSN on the B-read. No other medical records are needed for this condition.',
+        ...dxLetter,
+        label: 'Diagnosis Letter (B-Read attached)',
+        hint: 'Confirm a doctor signed it, and check the DOB and SSN on the attached B-read. No other medical records are needed for this condition.',
       },
     ];
   }

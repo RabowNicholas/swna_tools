@@ -5,177 +5,29 @@ import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Progress } from "@/components/ui/Progress";
-import { Badge } from "@/components/ui/Badge";
-import {
-  FileDown,
-  Heart,
-  Upload,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  CheckCircle,
-  Info,
-  User,
-} from "lucide-react";
+import { FileDown, AlertCircle, CheckCircle, User } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import Image from "next/image";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import {
+  DiagnosisCategoriesSection,
+  emptyDiagnosisCategories,
+  emptyDiagnosisErrors,
+  hasAnyValidDiagnosis,
+  validateDiagnoses,
+  type DiagnosisCategories,
+  type DiagnosisErrors,
+} from "@/components/form/DiagnosisCategories";
+import { SignatureUpload } from "@/components/form/SignatureUpload";
+import { ee1Schema, type EE1FormValues } from "@/lib/schemas/ee1";
+import { formatSSN, generateEE1 } from "@/lib/claims/generate";
+import { getStateAbbreviation } from "@/lib/states";
 import { trackEvent } from "@/lib/analytics";
-
-// State name to abbreviation mapping
-const STATE_NAME_TO_ABBR: Record<string, string> = {
-  Alabama: "AL",
-  Alaska: "AK",
-  Arizona: "AZ",
-  Arkansas: "AR",
-  California: "CA",
-  Colorado: "CO",
-  Connecticut: "CT",
-  Delaware: "DE",
-  Florida: "FL",
-  Georgia: "GA",
-  Hawaii: "HI",
-  Idaho: "ID",
-  Illinois: "IL",
-  Indiana: "IN",
-  Iowa: "IA",
-  Kansas: "KS",
-  Kentucky: "KY",
-  Louisiana: "LA",
-  Maine: "ME",
-  Maryland: "MD",
-  Massachusetts: "MA",
-  Michigan: "MI",
-  Minnesota: "MN",
-  Mississippi: "MS",
-  Missouri: "MO",
-  Montana: "MT",
-  Nebraska: "NE",
-  Nevada: "NV",
-  "New Hampshire": "NH",
-  "New Jersey": "NJ",
-  "New Mexico": "NM",
-  "New York": "NY",
-  "North Carolina": "NC",
-  "North Dakota": "ND",
-  Ohio: "OH",
-  Oklahoma: "OK",
-  Oregon: "OR",
-  Pennsylvania: "PA",
-  "Rhode Island": "RI",
-  "South Carolina": "SC",
-  "South Dakota": "SD",
-  Tennessee: "TN",
-  Texas: "TX",
-  Utah: "UT",
-  Vermont: "VT",
-  Virginia: "VA",
-  Washington: "WA",
-  "West Virginia": "WV",
-  Wisconsin: "WI",
-  Wyoming: "WY",
-  "District of Columbia": "DC",
-  "Puerto Rico": "PR",
-  "Virgin Islands": "VI",
-  "American Samoa": "AS",
-  Guam: "GU",
-  "Northern Mariana Islands": "MP",
-};
-
-// Helper function to get state abbreviation
-const getStateAbbreviation = (stateName: string): string => {
-  if (!stateName) {
-    return "";
-  }
-
-  // Check exact match first
-  if (stateName in STATE_NAME_TO_ABBR) {
-    return STATE_NAME_TO_ABBR[stateName];
-  }
-
-  // Check case-insensitive match
-  for (const [fullName, abbr] of Object.entries(STATE_NAME_TO_ABBR)) {
-    if (stateName.toLowerCase() === fullName.toLowerCase()) {
-      return abbr;
-    }
-  }
-
-  // If it's already an abbreviation (2 letters), return as-is
-  if (stateName.length === 2 && /^[A-Za-z]+$/.test(stateName)) {
-    return stateName.toUpperCase();
-  }
-
-  // Return original string if no match found
-  return stateName;
-};
-
-// Diagnosis structure matching the generator
-interface DiagnosisEntry {
-  text: string;
-  date: Date | null;
-}
-
-interface DiagnosisCategories {
-  cancer: {
-    selected: boolean;
-    diagnoses: [DiagnosisEntry, DiagnosisEntry, DiagnosisEntry];
-  };
-  beryllium_sensitivity: {
-    selected: boolean;
-    date: Date | null;
-  };
-  chronic_beryllium_disease: {
-    selected: boolean;
-    date: Date | null;
-  };
-  chronic_silicosis: {
-    selected: boolean;
-    date: Date | null;
-  };
-  other: {
-    selected: boolean;
-    diagnoses: [DiagnosisEntry, DiagnosisEntry, DiagnosisEntry];
-  };
-}
-
-// Zod schema for form validation
-const ee1Schema = z.object({
-  client_id: z.string().min(1, "Please select a client"),
-  first_name: z.string().min(1, "First name is required"),
-  middle_initial: z.string().max(1, "Middle initial must be 1 character").optional(),
-  last_name: z.string().min(1, "Last name is required"),
-  ssn: z.string().regex(/^\d{9}$/, "SSN must be 9 digits"),
-  dob: z.string().min(1, "Date of birth is required"),
-  sex: z
-    .enum(["Male", "Female"])
-    .refine((val) => val, { message: "Sex is required" }),
-  address_main: z.string().min(1, "Street address is required"),
-  address_city: z.string().min(1, "City is required"),
-  address_state: z
-    .string()
-    .min(2, "State is required")
-    .max(2, "State must be 2 characters"),
-  address_zip: z
-    .string()
-    .regex(/^\d{5}(-\d{4})?$/, "ZIP code must be 5 or 9 digits"),
-  phone: z
-    .string()
-    .regex(
-      /^\d{3}\.\d{3}\.\d{4}$/,
-      "Phone number must be in format: 123.123.1234"
-    ),
-});
-
-type EE1FormData = z.infer<typeof ee1Schema>;
 
 interface Client {
   id: string;
@@ -212,45 +64,14 @@ export default function EE1Form() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
-  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
-  const [showSignaturePreview, setShowSignaturePreview] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
-  const [diagnosisErrors, setDiagnosisErrors] = useState<
-    Record<string, string[]>
-  >({
-    cancer: [],
-    beryllium_sensitivity: [],
-    chronic_beryllium_disease: [],
-    chronic_silicosis: [],
-    other: [],
-    general: [],
-  });
-
-  // Initialize diagnosis categories
+  const [diagnosisErrors, setDiagnosisErrors] = useState<DiagnosisErrors>(
+    emptyDiagnosisErrors()
+  );
   const [diagnosisCategories, setDiagnosisCategories] =
-    useState<DiagnosisCategories>({
-      cancer: {
-        selected: false,
-        diagnoses: [
-          { text: "", date: null },
-          { text: "", date: null },
-          { text: "", date: null },
-        ],
-      },
-      beryllium_sensitivity: { selected: false, date: null },
-      chronic_beryllium_disease: { selected: false, date: null },
-      chronic_silicosis: { selected: false, date: null },
-      other: {
-        selected: false,
-        diagnoses: [
-          { text: "", date: null },
-          { text: "", date: null },
-          { text: "", date: null },
-        ],
-      },
-    });
+    useState<DiagnosisCategories>(emptyDiagnosisCategories());
 
-  const form = useForm<EE1FormData>({
+  const form = useForm<EE1FormValues>({
     resolver: zodResolver(ee1Schema),
     mode: "onSubmit",
     reValidateMode: "onChange",
@@ -284,43 +105,12 @@ export default function EE1Form() {
       // Reset form to default values first (clears all fields)
       form.reset();
 
-      // Reset diagnosis categories to defaults
-      setDiagnosisCategories({
-        cancer: {
-          selected: false,
-          diagnoses: [
-            { text: "", date: null },
-            { text: "", date: null },
-            { text: "", date: null },
-          ],
-        },
-        beryllium_sensitivity: { selected: false, date: null },
-        chronic_beryllium_disease: { selected: false, date: null },
-        chronic_silicosis: { selected: false, date: null },
-        other: {
-          selected: false,
-          diagnoses: [
-            { text: "", date: null },
-            { text: "", date: null },
-            { text: "", date: null },
-          ],
-        },
-      });
-
-      // Reset diagnosis errors
-      setDiagnosisErrors({
-        cancer: [],
-        beryllium_sensitivity: [],
-        chronic_beryllium_disease: [],
-        chronic_silicosis: [],
-        other: [],
-        general: [],
-      });
+      // Reset diagnosis state
+      setDiagnosisCategories(emptyDiagnosisCategories());
+      setDiagnosisErrors(emptyDiagnosisErrors());
 
       // Reset signature state
       setSignatureFile(null);
-      setSignaturePreview(null);
-      setShowSignaturePreview(false);
 
       // Set client_id since reset cleared it
       form.setValue("client_id", clientId);
@@ -382,195 +172,13 @@ export default function EE1Form() {
     }
   };
 
-  // Handle signature file upload (no processing - use original file)
-  const handleSignatureUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const validTypes = ["image/png", "image/jpeg", "image/jpg"];
-      if (!validTypes.includes(file.type)) {
-        alert("Please upload a PNG or JPEG image file.");
-        return;
-      }
-
-      try {
-        // Use original file without any processing
-        setSignatureFile(file);
-
-        // Create preview
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          setSignaturePreview(e.target?.result as string);
-        };
-        reader.readAsDataURL(file);
-      } catch (error) {
-        console.error('Error loading signature image:', error);
-        alert('Failed to load signature image. Please try a different image.');
-      }
-    }
-  };
-
-  // Update diagnosis category
-  const updateDiagnosisCategory = (
-    category: keyof DiagnosisCategories,
-    updates: Partial<DiagnosisCategories[keyof DiagnosisCategories]>
-  ) => {
-    setDiagnosisCategories((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        ...updates,
-      },
-    }));
-  };
-
-  // Update specific diagnosis entry
-  const updateDiagnosisEntry = (
-    category: "cancer" | "other",
-    index: number,
-    field: "text" | "date",
-    value: string | Date | null
-  ) => {
-    setDiagnosisCategories((prev) => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        diagnoses: prev[category].diagnoses.map((diagnosis, i) =>
-          i === index ? { ...diagnosis, [field]: value } : diagnosis
-        ) as [DiagnosisEntry, DiagnosisEntry, DiagnosisEntry],
-      },
-    }));
-  };
-
-  // Helper to validate date is in past and reasonable
-  const validateDate = (date: Date | null, label: string): string | null => {
-    if (!date) return null;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const minDate = new Date("1900-01-01");
-    const dateToCheck = new Date(date);
-    dateToCheck.setHours(0, 0, 0, 0);
-
-    if (dateToCheck > today) {
-      return `${label} cannot be in the future.`;
-    }
-
-    if (dateToCheck < minDate) {
-      return `${label} must be after January 1, 1900.`;
-    }
-
-    return null;
-  };
-
-  // Validation helper
-  const validateDiagnoses = () => {
-    const errors: Record<string, string[]> = {
-      cancer: [],
-      beryllium_sensitivity: [],
-      chronic_beryllium_disease: [],
-      chronic_silicosis: [],
-      other: [],
-      general: [],
-    };
-
-    const categories = diagnosisCategories;
-    let hasValidDiagnosis = false;
-
-    // Check Cancer
-    if (categories.cancer.selected) {
-      let cancerHasValid = false;
-      categories.cancer.diagnoses.forEach((diagnosis, i) => {
-        const label = String.fromCharCode(65 + i);
-        if (diagnosis.text) {
-          if (diagnosis.date) {
-            const dateError = validateDate(
-              diagnosis.date,
-              `Cancer diagnosis ${label}`
-            );
-            if (dateError) {
-              errors.cancer.push(dateError);
-            } else {
-              cancerHasValid = true;
-            }
-          } else {
-            errors.cancer.push(`Cancer diagnosis ${label} requires a date.`);
-          }
-        }
-      });
-      if (cancerHasValid) hasValidDiagnosis = true;
-      else if (!categories.cancer.diagnoses.some((d) => d.text)) {
-        errors.cancer.push(
-          "At least one specific cancer diagnosis is required when Cancer is selected."
-        );
-      }
-    }
-
-    // Check individual conditions
-    const conditions = [
-      { key: "beryllium_sensitivity", label: "Beryllium Sensitivity" },
-      { key: "chronic_beryllium_disease", label: "Chronic Beryllium Disease" },
-      { key: "chronic_silicosis", label: "Chronic Silicosis" },
-    ] as const;
-
-    conditions.forEach(({ key, label }) => {
-      if (categories[key].selected) {
-        if (categories[key].date) {
-          const dateError = validateDate(categories[key].date, label);
-          if (dateError) {
-            errors[key].push(dateError);
-          } else {
-            hasValidDiagnosis = true;
-          }
-        } else {
-          errors[key].push(`${label} date of diagnosis is required.`);
-        }
-      }
-    });
-
-    // Check Other conditions
-    if (categories.other.selected) {
-      let otherHasValid = false;
-      categories.other.diagnoses.forEach((diagnosis, i) => {
-        const label = String.fromCharCode(65 + i);
-        if (diagnosis.text) {
-          if (diagnosis.date) {
-            const dateError = validateDate(
-              diagnosis.date,
-              `Other condition ${label}`
-            );
-            if (dateError) {
-              errors.other.push(dateError);
-            } else {
-              otherHasValid = true;
-            }
-          } else {
-            errors.other.push(`Other condition ${label} requires a date.`);
-          }
-        }
-      });
-      if (otherHasValid) hasValidDiagnosis = true;
-      else if (!categories.other.diagnoses.some((d) => d.text)) {
-        errors.other.push(
-          "At least one specific other condition is required when Other is selected."
-        );
-      }
-    }
-
-    if (!hasValidDiagnosis) {
-      errors.general.push(
-        "At least one diagnosis category with date is required."
-      );
-    }
-
+  // Validation helper — the component owns the rules, the page owns the state
+  const runDiagnosisValidation = () => {
+    const errors = validateDiagnoses(diagnosisCategories);
     setDiagnosisErrors(errors);
-
-    // Return flat array for backward compatibility
     return Object.values(errors).flat();
   };
+
 
   const handleSubmitClick = async () => {
     setAttemptedSubmit(true);
@@ -614,7 +222,7 @@ export default function EE1Form() {
     }
 
     // Check diagnosis validation
-    const diagnosisErrorsList = validateDiagnoses();
+    const diagnosisErrorsList = runDiagnosisValidation();
     if (diagnosisErrorsList.length > 0) {
       // Scroll to diagnosis section
       setTimeout(() => {
@@ -633,13 +241,13 @@ export default function EE1Form() {
     form.handleSubmit(onSubmit)();
   };
 
-  const onSubmit = async (data: EE1FormData) => {
+  const onSubmit = async (data: EE1FormValues) => {
     setLoading(true);
     try {
       // Validate diagnoses
-      const diagnosisErrors = validateDiagnoses();
-      if (diagnosisErrors.length > 0) {
-        diagnosisErrors.forEach((error) => alert(error));
+      const validationErrors = runDiagnosisValidation();
+      if (validationErrors.length > 0) {
+        validationErrors.forEach((error) => alert(error));
         setLoading(false);
         return;
       }
@@ -649,65 +257,45 @@ export default function EE1Form() {
         throw new Error("Selected client not found");
       }
 
-      // Create FormData for file upload support
-      const formDataForAPI = new FormData();
-      formDataForAPI.append("client_record", JSON.stringify(selectedClient));
+      const pdfBytes = await generateEE1(
+        selectedClient,
+        {
+          first_name: data.first_name,
+          middle_initial: data.middle_initial || "",
+          last_name: data.last_name,
+          ssn: formatSSN(data.ssn),
+          dob: data.dob, // Keep as string in YYYY-MM-DD format
+          sex: data.sex,
+          address_main: data.address_main,
+          address_city: data.address_city,
+          address_state: data.address_state,
+          address_zip: data.address_zip,
+          phone: data.phone,
+          diagnosis_categories: diagnosisCategories,
+        },
+        signatureFile
+      );
 
-      // Create form data without signature file
-      const formDataWithoutFile = {
-        first_name: data.first_name,
-        middle_initial: data.middle_initial || "",
-        last_name: data.last_name,
-        ssn: `${data.ssn.slice(0, 3)}-${data.ssn.slice(3, 5)}-${data.ssn.slice(
-          5
-        )}`,
-        dob: data.dob, // Keep as string in YYYY-MM-DD format
-        sex: data.sex,
-        address_main: data.address_main,
-        address_city: data.address_city,
-        address_state: data.address_state,
-        address_zip: data.address_zip,
-        phone: data.phone,
-        diagnosis_categories: diagnosisCategories,
-      };
+      // Download the PDF
+      const blob = new Blob([pdfBytes], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `EE1_${data.first_name.charAt(0) || "X"}.${
+        data.last_name
+      }_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
 
-      formDataForAPI.append("form_data", JSON.stringify(formDataWithoutFile));
-
-      // Add signature file if present
-      if (signatureFile) {
-        formDataForAPI.append("signature_file", signatureFile);
+      // Track PDF generation
+      if (session?.user) {
+        trackEvent.pdfGenerated('ee1', session.user.id, data.client_id);
       }
 
-      const response = await fetch("/api/generate/ee1", {
-        method: "POST",
-        body: formDataForAPI,
-      });
-
-      if (response.ok) {
-        // Download the PDF
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `EE1_${data.first_name.charAt(0) || "X"}.${
-          data.last_name
-        }_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        // Track PDF generation
-        if (session?.user) {
-          trackEvent.pdfGenerated('ee1', session.user.id, data.client_id);
-        }
-
-        setFormSubmitted(true);
-        setSubmittedClient(selectedClient);
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate EE-1");
-      }
+      setFormSubmitted(true);
+      setSubmittedClient(selectedClient);
     } catch (error) {
       console.error("Error generating EE-1:", error);
       alert(error instanceof Error ? error.message : "Failed to generate EE-1");
@@ -716,37 +304,8 @@ export default function EE1Form() {
     }
   };
 
-  // Calculate form completion
-  const watchedFields = form.watch();
-  const requiredFieldsComplete = [
-    watchedFields.client_id,
-    watchedFields.first_name,
-    watchedFields.last_name,
-    watchedFields.ssn,
-    watchedFields.dob,
-    watchedFields.sex,
-  ].filter(Boolean).length;
+  const hasValidDiagnosis = hasAnyValidDiagnosis(diagnosisCategories);
 
-  const hasValidDiagnosis = Object.values(diagnosisCategories).some(
-    (category) => {
-      if ("selected" in category && category.selected) {
-        if ("date" in category) return category.date;
-        if ("diagnoses" in category) {
-          return category.diagnoses.some(
-            (d: DiagnosisEntry) => d.text && d.date
-          );
-        }
-      }
-      return false;
-    }
-  );
-
-  const totalRequiredFields = 6; // 6 required form fields
-  const progressPercentage =
-    hasValidDiagnosis && requiredFieldsComplete === totalRequiredFields
-      ? 100
-      : (requiredFieldsComplete / totalRequiredFields) * 80 +
-        (hasValidDiagnosis ? 20 : 0);
 
   if (clientsLoading) {
     return (
@@ -962,473 +521,16 @@ export default function EE1Form() {
         </Card>
 
         {/* Medical Diagnoses Section */}
-        <Card variant="elevated" id="diagnosis-section">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Heart className="h-5 w-5 text-error" />
-                <CardTitle>Client&apos;s Medical Diagnoses</CardTitle>
-              </div>
-              {attemptedSubmit &&
-                Object.values(diagnosisErrors).flat().length > 0 && (
-                  <Badge variant="error" size="sm">
-                    {Object.values(diagnosisErrors).flat().length} Error
-                    {Object.values(diagnosisErrors).flat().length !== 1
-                      ? "s"
-                      : ""}
-                  </Badge>
-                )}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Client&apos;s Diagnosed Condition(s) Being Claimed as Work-Related
-            </p>
-            {attemptedSubmit && diagnosisErrors.general.length > 0 && (
-              <div
-                className="mt-3 p-3 border-2 rounded-lg"
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--destructive) 15%, transparent)",
-                  borderColor: "var(--destructive)",
-                }}
-              >
-                {diagnosisErrors.general.map((error, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center text-sm text-destructive font-medium"
-                  >
-                    <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
-                    {error}
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Cancer Section */}
-            <Card
-              variant="outlined"
-              className={
-                attemptedSubmit && diagnosisErrors.cancer.length > 0
-                  ? "border-destructive bg-destructive/10"
-                  : diagnosisCategories.cancer.selected
-                  ? "border-warning/50 bg-warning/5"
-                  : ""
-              }
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={diagnosisCategories.cancer.selected}
-                        onChange={(e) =>
-                          updateDiagnosisCategory("cancer", {
-                            selected: e.target.checked,
-                          })
-                        }
-                        className="rounded border-border text-primary focus:ring-primary"
-                      />
-                      <CardTitle className="text-lg">
-                        🎗️ Cancer (List Specific Diagnosis Below)
-                      </CardTitle>
-                    </label>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground ml-6">
-                  Check this box if the client has been diagnosed with any
-                  cancer
-                </p>
-              </CardHeader>
-
-              {diagnosisCategories.cancer.selected && (
-                <CardContent className="pt-0">
-                  <p className="font-medium mb-4">
-                    Enter up to 3 specific cancer diagnoses for this client:
-                  </p>
-                  <div className="space-y-4">
-                    {diagnosisCategories.cancer.diagnoses.map(
-                      (diagnosis, i) => (
-                        <div key={i} className="space-y-2">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Input
-                              label={`Cancer diagnosis ${String.fromCharCode(
-                                65 + i
-                              )}`}
-                              placeholder="e.g., Lung cancer, Mesothelioma, etc."
-                              value={diagnosis.text}
-                              onChange={(e) =>
-                                updateDiagnosisEntry(
-                                  "cancer",
-                                  i,
-                                  "text",
-                                  e.target.value
-                                )
-                              }
-                            />
-                            {diagnosis.text && (
-                              <Input
-                                label={`Diagnosis Date ${String.fromCharCode(
-                                  65 + i
-                                )}`}
-                                type="date"
-                                value={
-                                  diagnosis.date
-                                    ? diagnosis.date.toISOString().split("T")[0]
-                                    : ""
-                                }
-                                onChange={(e) =>
-                                  updateDiagnosisEntry(
-                                    "cancer",
-                                    i,
-                                    "date",
-                                    e.target.value
-                                      ? new Date(e.target.value)
-                                      : null
-                                  )
-                                }
-                                helperText="Date when the client was diagnosed with this cancer"
-                              />
-                            )}
-                          </div>
-                          {i < 2 && <hr className="border-border/50" />}
-                        </div>
-                      )
-                    )}
-                  </div>
-                  {attemptedSubmit && diagnosisErrors.cancer.length > 0 && (
-                    <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
-                      {diagnosisErrors.cancer.map((error, i) => (
-                        <div
-                          key={i}
-                          className="flex items-start text-sm text-destructive"
-                        >
-                          <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-                          {error}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              )}
-            </Card>
-
-            {/* Individual Conditions */}
-            <div className="space-y-4">
-              <h4 className="font-medium text-foreground">
-                🔬 Specific Occupational Conditions
-              </h4>
-
-              {[
-                {
-                  key: "beryllium_sensitivity",
-                  label: "Beryllium Sensitivity",
-                  icon: "🟡",
-                },
-                {
-                  key: "chronic_beryllium_disease",
-                  label: "Chronic Beryllium Disease (CBD)",
-                  icon: "🔴",
-                },
-                {
-                  key: "chronic_silicosis",
-                  label: "Chronic Silicosis",
-                  icon: "⚫",
-                },
-              ].map(({ key, label, icon }) => (
-                <Card
-                  key={key}
-                  variant="outlined"
-                  className={
-                    attemptedSubmit &&
-                    diagnosisErrors[key as keyof typeof diagnosisErrors]
-                      ?.length > 0
-                      ? "border-destructive bg-destructive/10"
-                      : diagnosisCategories[key as keyof DiagnosisCategories]
-                          .selected
-                      ? "border-info/50 bg-info/5"
-                      : ""
-                  }
-                >
-                  <CardContent className="py-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={
-                            (
-                              diagnosisCategories[
-                                key as keyof DiagnosisCategories
-                              ] as { selected: boolean }
-                            ).selected
-                          }
-                          onChange={(event) =>
-                            updateDiagnosisCategory(
-                              key as keyof DiagnosisCategories,
-                              { selected: event.target.checked }
-                            )
-                          }
-                          className="rounded border-border text-primary focus:ring-primary"
-                        />
-                        <span className="font-medium">
-                          {icon} {label}
-                        </span>
-                      </label>
-                      {(
-                        diagnosisCategories[
-                          key as keyof DiagnosisCategories
-                        ] as { selected: boolean; date: Date | null }
-                      ).selected && (
-                        <Input
-                          label="Diagnosis Date"
-                          type="date"
-                          value={
-                            (
-                              diagnosisCategories[
-                                key as keyof DiagnosisCategories
-                              ] as { selected: boolean; date: Date | null }
-                            ).date
-                              ? (
-                                  diagnosisCategories[
-                                    key as keyof DiagnosisCategories
-                                  ] as { selected: boolean; date: Date | null }
-                                )
-                                  .date!.toISOString()
-                                  .split("T")[0]
-                              : ""
-                          }
-                          onChange={(e) =>
-                            updateDiagnosisCategory(
-                              key as keyof DiagnosisCategories,
-                              {
-                                date: e.target.value
-                                  ? new Date(e.target.value)
-                                  : null,
-                              }
-                            )
-                          }
-                          helperText={`Date when client was diagnosed with ${label.toLowerCase()}`}
-                        />
-                      )}
-                    </div>
-                    {attemptedSubmit &&
-                      diagnosisErrors[key as keyof typeof diagnosisErrors]
-                        ?.length > 0 && (
-                        <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
-                          {diagnosisErrors[
-                            key as keyof typeof diagnosisErrors
-                          ].map((error, i) => (
-                            <div
-                              key={i}
-                              className="flex items-start text-sm text-destructive"
-                            >
-                              <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-                              {error}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            {/* Other Work-Related Conditions */}
-            <Card
-              variant="outlined"
-              className={
-                attemptedSubmit && diagnosisErrors.other.length > 0
-                  ? "border-destructive bg-destructive/10"
-                  : diagnosisCategories.other.selected
-                  ? "border-secondary/50 bg-secondary/5"
-                  : ""
-              }
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={diagnosisCategories.other.selected}
-                        onChange={(e) =>
-                          updateDiagnosisCategory("other", {
-                            selected: e.target.checked,
-                          })
-                        }
-                        className="rounded border-border text-primary focus:ring-primary"
-                      />
-                      <CardTitle className="text-lg">
-                        ⚕️ Other Work-Related Conditions
-                      </CardTitle>
-                    </label>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground ml-6">
-                  Due to exposure to toxic substances or radiation
-                </p>
-              </CardHeader>
-
-              {diagnosisCategories.other.selected && (
-                <CardContent className="pt-0">
-                  <p className="font-medium mb-4">
-                    Enter up to 3 specific conditions for this client:
-                  </p>
-                  <div className="space-y-4">
-                    {diagnosisCategories.other.diagnoses.map((diagnosis, i) => (
-                      <div key={i} className="space-y-2">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <Input
-                            label={`Other condition ${String.fromCharCode(
-                              65 + i
-                            )}`}
-                            placeholder="e.g., Pulmonary fibrosis, Respiratory disease, etc."
-                            value={diagnosis.text}
-                            onChange={(e) =>
-                              updateDiagnosisEntry(
-                                "other",
-                                i,
-                                "text",
-                                e.target.value
-                              )
-                            }
-                          />
-                          {diagnosis.text && (
-                            <Input
-                              label={`Diagnosis Date ${String.fromCharCode(
-                                65 + i
-                              )}`}
-                              type="date"
-                              value={
-                                diagnosis.date
-                                  ? diagnosis.date.toISOString().split("T")[0]
-                                  : ""
-                              }
-                              onChange={(e) =>
-                                updateDiagnosisEntry(
-                                  "other",
-                                  i,
-                                  "date",
-                                  e.target.value
-                                    ? new Date(e.target.value)
-                                    : null
-                                )
-                              }
-                              helperText="Date when the client was diagnosed with this condition"
-                            />
-                          )}
-                        </div>
-                        {i < 2 && <hr className="border-border/50" />}
-                      </div>
-                    ))}
-                  </div>
-                  {attemptedSubmit && diagnosisErrors.other.length > 0 && (
-                    <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-1">
-                      {diagnosisErrors.other.map((error, i) => (
-                        <div
-                          key={i}
-                          className="flex items-start text-sm text-destructive"
-                        >
-                          <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-                          {error}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              )}
-            </Card>
-          </CardContent>
-        </Card>
+        <DiagnosisCategoriesSection
+          value={diagnosisCategories}
+          onChange={setDiagnosisCategories}
+          errors={diagnosisErrors}
+          attemptedSubmit={attemptedSubmit}
+        />
 
         {/* Signature Section */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <Upload className="h-5 w-5 text-primary" />
-              <CardTitle>Client Signature</CardTitle>
-            </div>
-            <div className="flex items-start space-x-2 text-sm text-info">
-              <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-              <p>
-                <strong>Note:</strong> Signature upload is optional. Signature
-                placement is not always perfect - if you find this happening,
-                regenerate the form without the signature and add it manually in
-                Adobe.
-              </p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="bg-info/10 border border-info/20 rounded-lg p-4">
-                <div className="flex items-start space-x-2">
-                  <Info className="h-5 w-5 text-info flex-shrink-0 mt-0.5" />
-                  <div className="text-sm space-y-2">
-                    <p className="font-medium text-info">Signature Upload Guidelines:</p>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                      <li>Upload a clear image of the signature on a white or light background</li>
-                      <li>PNG or JPG format accepted</li>
-                      <li>Use dark ink (black or dark blue) for best results</li>
-                      <li>Background will be automatically removed during processing</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
+        <SignatureUpload file={signatureFile} onChange={setSignatureFile} />
 
-              <Input
-                type="file"
-                label="Upload Client's Signature (Optional)"
-                accept="image/png,image/jpeg,image/jpg"
-                onChange={handleSignatureUpload}
-                helperText="Upload a clear image file of the client's signature (PNG, JPG, or JPEG format). This field is optional."
-              />
-
-              {signatureFile && (
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-2 text-sm text-success">
-                    <CheckCircle className="h-4 w-4" />
-                    <span>Client signature uploaded successfully</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        setShowSignaturePreview(!showSignaturePreview)
-                      }
-                      icon={
-                        showSignaturePreview ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )
-                      }
-                    >
-                      {showSignaturePreview ? "Hide" : "Preview"} Signature
-                    </Button>
-                  </div>
-
-                  {showSignaturePreview && signaturePreview && (
-                    <Card variant="outlined">
-                      <CardContent className="p-4">
-                        <p className="text-sm font-medium mb-2">
-                          Client&apos;s Signature Preview:
-                        </p>
-                        <Image
-                          src={signaturePreview}
-                          alt="Client's Signature"
-                          width={300}
-                          height={200}
-                          className="max-w-full h-auto border border-border rounded"
-                          style={{ maxHeight: "200px" }}
-                        />
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Submit Button */}
         <div className="flex flex-col gap-4 items-center">
