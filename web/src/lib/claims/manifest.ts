@@ -13,6 +13,7 @@
 export type ConditionCategory =
   | 'chronic_silicosis'
   | 'pneumoconiosis'
+  | 'work_related_asthma'
   | 'cancer'
   | 'other';
 
@@ -33,7 +34,7 @@ export interface Condition {
 export const CONDITIONS: Condition[] = [
   { id: 'chronic_silicosis', label: 'Chronic Silicosis', abbreviation: 'CS', category: 'chronic_silicosis' },
   { id: 'pneumoconiosis', label: 'Pneumoconiosis', abbreviation: 'PN', category: 'pneumoconiosis' },
-  { id: 'work_related_asthma', label: 'Work-Related Asthma', abbreviation: 'OA', category: 'other' },
+  { id: 'work_related_asthma', label: 'Work-Related Asthma', abbreviation: 'OA', category: 'work_related_asthma' },
   { id: 'copd', label: 'COPD', abbreviation: 'COPD', category: 'other' },
   { id: 'pulmonary_fibrosis', label: 'Pulmonary Fibrosis', abbreviation: 'PF', category: 'other' },
   { id: 'restrictive_lung_disease', label: 'Restrictive Lung Disease', abbreviation: 'RLD', category: 'other' },
@@ -157,6 +158,22 @@ function medicalEvidence(category: ConditionCategory): DocumentSlot[] {
         ...dxLetter,
         label: 'Diagnosis Letter (B-Read attached)',
         hint: 'Confirm a doctor signed it, and check the DOB and SSN on the attached B-read. No other medical records are needed for this condition.',
+      },
+    ];
+  }
+
+  // Work-related asthma is claimed off the diagnosis letter; the records behind
+  // it (PFT, OAA, follow-up notes) go in when we have them, but a missing one
+  // doesn't hold the claim.
+  if (category === 'work_related_asthma') {
+    return [
+      dxLetter,
+      {
+        id: 'medical_records',
+        label: 'Supporting Medical Records',
+        source: 'upload',
+        required: false,
+        hint: 'Optional — PFT, OAA, and follow-up visit notes. Include whatever supports the diagnosis.',
       },
     ];
   }

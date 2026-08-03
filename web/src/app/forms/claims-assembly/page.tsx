@@ -226,6 +226,8 @@ export default function ClaimsAssemblyPage() {
 
   // Uploaded file per slot id
   const [files, setFiles] = useState<Record<string, File>>({});
+  /** Bumped to remount the file inputs when the uploads are cleared */
+  const [uploadGeneration, setUploadGeneration] = useState(0);
 
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [assembling, setAssembling] = useState(false);
@@ -272,18 +274,19 @@ export default function ClaimsAssemblyPage() {
     setError(null);
   };
 
+  /**
+   * Switching client starts a new claim.
+   *
+   * Nothing on the page belongs to two clients — condition, uploads, signature
+   * and employment history are all claim-specific — so every field goes back to
+   * its default and only the Airtable details for the new client are filled in.
+   */
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     clearResult();
-    if (!client) return;
 
-    // Keep the claim setup, clear everything that belonged to the last client
-    const { condition_id, other_abbreviation, has_prior_claim } = form.getValues();
     form.reset({
       ...form.formState.defaultValues,
-      condition_id,
-      other_abbreviation,
-      has_prior_claim,
       client_id: clientId,
       employment_history: [emptyEmploymentRecord()],
     } as ClaimFormValues);
@@ -293,6 +296,13 @@ export default function ClaimsAssemblyPage() {
     setEmploymentDateErrors({});
     setCollapsedEmployment(new Set());
     setSignatureFile(null);
+    setAttemptedSubmit(false);
+    setFiles({});
+    // The file inputs are uncontrolled, so clearing state isn't enough to drop
+    // the filename the browser is still showing — remount them.
+    setUploadGeneration((n) => n + 1);
+
+    if (!client) return;
 
     const fields = client.fields as Record<string, string | undefined>;
 
@@ -884,6 +894,11 @@ export default function ClaimsAssemblyPage() {
                               Built by this tool
                             </span>
                           )}
+                          {upload && !slot.required && (
+                            <span className="inline-flex items-center rounded-full bg-accent px-2 py-0.5 text-xs text-muted-foreground">
+                              Optional
+                            </span>
+                          )}
                         </div>
 
                         {slot.hint && !upload && (
@@ -900,6 +915,7 @@ export default function ClaimsAssemblyPage() {
                               </p>
                             )}
                             <input
+                              key={`${slot.id}-${uploadGeneration}`}
                               type="file"
                               accept="application/pdf,.pdf"
                               onChange={(e) =>
