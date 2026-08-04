@@ -13,6 +13,7 @@ import {
   Database,
   CheckCircle,
   AlertCircle,
+  Phone,
 } from "lucide-react";
 import { buildLogEntry } from "@/lib/airtable-log";
 import {
@@ -27,6 +28,43 @@ interface Client {
     Name: string;
     [key: string]: string | string[] | undefined;
   };
+}
+
+/** Copy-to-clipboard button that confirms itself for a few seconds */
+function CopyButton({
+  value,
+  label,
+  variant = "outline",
+  size = "default",
+}: {
+  value: string;
+  label: string;
+  variant?: "outline" | "secondary";
+  size?: "sm" | "default";
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
+  return (
+    <Button
+      type="button"
+      onClick={handleCopy}
+      variant={copied ? "success" : variant}
+      size={size}
+      icon={<Copy className="h-4 w-4" />}
+    >
+      {copied ? "Copied!" : label}
+    </Button>
+  );
 }
 
 export interface TextTemplateCardProps {
@@ -56,9 +94,12 @@ export function TextTemplateCard({
   const [logging, setLogging] = useState(false);
   const [logged, setLogged] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const template = templates.find((t) => t.id === templateId);
+
+  // Airtable stores Phone as a plain string, but the record type allows arrays
+  const rawPhone = client.fields.Phone;
+  const phone = (typeof rawPhone === "string" ? rawPhone : "").trim();
 
   // Sender is whoever is signed in — the account's name, or the email local
   // part if a name was never set on it
@@ -91,16 +132,6 @@ export function TextTemplateCard({
   const missingRequired = (template?.fields ?? []).some(
     (field) => field.required && !fieldValues[field.key]?.trim()
   );
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(message);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    } catch (error) {
-      console.error("Failed to copy message:", error);
-    }
-  };
 
   const handleLog = async () => {
     if (!template || !message.trim() || missingRequired) return;
@@ -255,15 +286,33 @@ export function TextTemplateCard({
             </div>
           )}
 
+          {/* The number to send it to, straight off the client record */}
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 p-3">
+            <Phone className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm text-muted-foreground">Client Phone</div>
+              {phone ? (
+                <div className="font-mono text-base font-medium text-foreground break-all">
+                  {phone}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  No phone number on {client.fields.Name}&apos;s record
+                </div>
+              )}
+            </div>
+            {phone && (
+              <CopyButton
+                value={phone}
+                label="Copy Number"
+                variant="secondary"
+                size="sm"
+              />
+            )}
+          </div>
+
           <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              onClick={handleCopy}
-              variant={copied ? "success" : "outline"}
-              icon={<Copy className="h-4 w-4" />}
-            >
-              {copied ? "Copied!" : "Copy Message"}
-            </Button>
+            <CopyButton value={message} label="Copy Message" />
 
             {logged ? (
               <div className="flex items-center text-sm text-success">
