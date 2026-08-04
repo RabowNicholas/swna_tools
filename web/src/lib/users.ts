@@ -19,7 +19,7 @@ export const users: User[] = [
   {
     id: "1",
     email: "nickswna@outlook.com",
-    name: "Admin User",
+    name: "Nick",
     hashedPassword:
       "$2b$10$i38QWh7JcjBgwnDtZlXfYOuKJL58mBDxIyCOBXiiyP7OOkdryL1tG", // Password: Admin123!
     role: "admin",

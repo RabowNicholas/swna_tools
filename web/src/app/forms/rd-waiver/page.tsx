@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
+import { TextTemplateCard } from "@/components/text/TextTemplateCard";
+import { buildLogEntry } from "@/lib/airtable-log";
 import {
   ClientSelector,
   parseClientName,
@@ -250,15 +252,12 @@ export default function RDWaiverForm() {
 
   // The log line that will be prepended to the client's Airtable Log, built
   // from the option actually signed on the generated waiver
-  const buildLogEntry = (reference: string) => {
+  const waiverLogEntry = (reference: string) => {
     const option = WAIVER_OPTIONS.find((o) => o.value === submittedOption);
-    const now = new Date();
-    const logDate = `${String(now.getMonth() + 1).padStart(2, "0")}.${String(
-      now.getDate()
-    ).padStart(2, "0")}.${String(now.getFullYear()).slice(-2)}`;
-    const userEmail = session?.user?.email || "unknown";
-
-    return `Submitted RD waiver, Option ${submittedOption} (${option?.summary}) (*${reference}) via Tools App. Triggered by [${userEmail}] ${logDate}. TOOLS APP`;
+    return buildLogEntry(
+      `Submitted RD waiver, Option ${submittedOption} (${option?.summary}) (*${reference})`,
+      session?.user?.email
+    );
   };
 
   // Log the waiver on the client record once it's been submitted in the portal
@@ -275,7 +274,7 @@ export default function RDWaiverForm() {
         body: JSON.stringify({
           recordId: submittedClient.id,
           prepend: {
-            Log: buildLogEntry(reference),
+            Log: waiverLogEntry(reference),
           },
         }),
       });
@@ -605,7 +604,7 @@ export default function RDWaiverForm() {
                       <div className="text-sm text-muted-foreground">
                         Adds to {submittedClient.fields.Name}&apos;s log:{" "}
                         <span className="font-medium text-foreground">
-                          {buildLogEntry(
+                          {waiverLogEntry(
                             referenceNumber.trim() || "REFERENCE"
                           )}
                         </span>
@@ -626,6 +625,15 @@ export default function RDWaiverForm() {
                   )}
                 </CardContent>
               </Card>
+            )}
+
+            {/* Canned client text for the acceptance */}
+            {submittedClient && (
+              <TextTemplateCard
+                client={submittedClient}
+                tool="rd-waiver"
+                defaultClientName={form.getValues("claimant_name")}
+              />
             )}
           </>
         )}
