@@ -152,6 +152,12 @@ export default function Home() {
       description: "",
       href: "/forms/desert-pulm",
     },
+    {
+      id: "cs-letter",
+      name: "Chronic Silicosis Letter",
+      description: "Draft the causation letter for Dr. Toupin to sign, from the B-read",
+      href: "/forms/cs-letter",
+    },
     // Billing
     {
       id: "invoice",
@@ -193,7 +199,9 @@ export default function Home() {
       ["dol-letter", "withdrawal", "address-change", "phone-change", "rd-waiver", "dol-status-update", "ir-notice", "change-of-ar"].includes(tool.id)
     ),
     guides: allTools.filter((tool) => ["ir-process"].includes(tool.id)),
-    medical: allTools.filter((tool) => ["desert-pulm"].includes(tool.id)),
+    medical: allTools.filter((tool) =>
+      ["desert-pulm", "cs-letter"].includes(tool.id)
+    ),
     billing: allTools.filter((tool) => ["invoice"].includes(tool.id)),
     analytics: allTools.filter((tool) => ["pipeline"].includes(tool.id)),
     clientManagement: allTools.filter((tool) =>

@@ -152,6 +152,45 @@ export class AirtableService {
     }
   }
 
+  /**
+   * Adds a charge to the Invoicing table, linked back to the client.
+   *
+   * Invoicing carries no amount or date column — the whole charge reads out of `Name`,
+   * e.g. "$200 CS Letter for Dr. Toupin 08.05.26" — so the caller composes that string.
+   */
+  async createBillingRecord(fields: {
+    clientId: string;
+    description: string;
+    notes?: string;
+  }): Promise<AirtableRecord> {
+    try {
+      const body = {
+        fields: {
+          'Name': fields.description,
+          'Clients': [fields.clientId],
+          'Notes': fields.notes ?? '',
+        },
+      };
+
+      const response = await fetch(`${this.baseUrl}/Invoicing`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('Airtable billing create error:', errorBody);
+        throw new Error(`Airtable API error: ${response.status} ${response.statusText} - ${errorBody}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating billing record in Airtable:', error);
+      throw error;
+    }
+  }
+
   async createIRRecord(fields: {
     clientId: string;
     doctor: string;

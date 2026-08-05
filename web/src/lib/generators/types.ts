@@ -28,6 +28,19 @@ export interface GeneratorResult {
   pdfBytes: Buffer;
 }
 
+/**
+ * A generator that emits something other than a PDF.
+ *
+ * `GeneratorResult` names its payload `pdfBytes`, which every PDF generator and route
+ * already reads. Rather than rename it across all of them, non-PDF generators return
+ * this and their route sets `Content-Type` from `mimeType`.
+ */
+export interface DocumentResult {
+  filename: string;
+  bytes: Buffer;
+  mimeType: string;
+}
+
 export interface TextDrawOptions {
   x: number;
   y: number;
