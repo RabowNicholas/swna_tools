@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { trackEvent } from "@/lib/analytics";
@@ -30,15 +30,19 @@ import {
 import type { Client } from "@/lib/clientStorage";
 import {
   ILO_PROFUSIONS,
-  LETTER_TEMPLATES,
+  doctorsForCondition,
+  findLetterTemplate,
   letterChargeDescription,
+  letterConditions,
 } from "@/lib/generators/docx/letter-templates";
 
-const TEMPLATE = LETTER_TEMPLATES["cs-letter"];
+const CONDITIONS = letterConditions();
 
-const csLetterSchema = z
+const doctorLetterSchema = z
   .object({
     client_id: z.string().min(1, "Please select a client"),
+    condition_id: z.string().min(1, "Please choose what the letter is for"),
+    doctor_id: z.string().min(1, "Please choose which doctor will sign"),
     first_mi: z.string().min(1, "First name and middle initial are required"),
     last_name: z.string().min(1, "Last name is required"),
     sex: z.enum(["male", "female"]),
@@ -49,18 +53,32 @@ const csLetterSchema = z
     facility: z.string().min(1, "Facility name is required"),
     facility_abbr: z.string().min(1, "Facility abbreviation is required"),
     work_dates: z.string().min(1, "Employment dates are required"),
-    dx_date: z.string().min(1, "B-read date is required"),
-    profusion: z.string().min(1, "Profusion is required"),
-    impression: z.string().min(1, "Impression is required"),
+    // Chronic silicosis fields. Validated conditionally below so a future condition
+    // with a different field set doesn't have to fill these in.
+    dx_date: z.string(),
+    profusion: z.string(),
+    impression: z.string(),
   })
   // The letter identifies the claimant by case ID, falling back to date of birth.
   // With neither, the letterhead has nothing tying it to a claim.
   .refine((data) => data.case_id.trim() || data.dob.trim(), {
     message: "Enter a Case ID, or a date of birth if no case ID exists yet",
     path: ["case_id"],
-  });
+  })
+  .refine(
+    (d) => d.condition_id !== "chronic-silicosis" || d.dx_date.trim().length > 0,
+    { message: "B-read date is required", path: ["dx_date"] }
+  )
+  .refine(
+    (d) => d.condition_id !== "chronic-silicosis" || d.profusion.trim().length > 0,
+    { message: "Profusion is required", path: ["profusion"] }
+  )
+  .refine(
+    (d) => d.condition_id !== "chronic-silicosis" || d.impression.trim().length > 0,
+    { message: "Impression is required", path: ["impression"] }
+  );
 
-type CSLetterFormData = z.infer<typeof csLetterSchema>;
+type DoctorLetterFormData = z.infer<typeof doctorLetterSchema>;
 
 /**
  * Airtable stores names as "Last, First M. - SSN4". The letter needs the two halves
@@ -93,9 +111,7 @@ function todayStamp(): string {
   ).padStart(2, "0")}.${String(now.getFullYear()).slice(-2)}`;
 }
 
-const CHARGE = letterChargeDescription(TEMPLATE);
-
-export default function CSLetterForm() {
+export default function DoctorLetterForm() {
   const { data: session } = useSession();
   const {
     clients,
@@ -108,6 +124,7 @@ export default function CSLetterForm() {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  const [submittedCharge, setSubmittedCharge] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Set once a billing row lands and cleared once the whole flow completes, so it only
   // ever holds a charge whose log entry failed. Retrying then skips straight to the log
@@ -117,16 +134,18 @@ export default function CSLetterForm() {
 
   useEffect(() => {
     if (session?.user) {
-      trackEvent.formViewed("cs-letter", session.user.id);
+      trackEvent.formViewed("doctor-letter", session.user.id);
     }
   }, [session]);
 
-  const form = useForm<CSLetterFormData>({
-    resolver: zodResolver(csLetterSchema),
+  const form = useForm<DoctorLetterFormData>({
+    resolver: zodResolver(doctorLetterSchema),
     mode: "onSubmit",
     reValidateMode: "onChange",
     defaultValues: {
       client_id: "",
+      condition_id: CONDITIONS.length === 1 ? CONDITIONS[0].id : "",
+      doctor_id: "",
       first_mi: "",
       last_name: "",
       sex: "male",
@@ -143,12 +162,45 @@ export default function CSLetterForm() {
     },
   });
 
+  const conditionId = form.watch("condition_id");
+  const doctorId = form.watch("doctor_id");
+
+  const doctors = useMemo(
+    () => (conditionId ? doctorsForCondition(conditionId) : []),
+    [conditionId]
+  );
+  const template = useMemo(
+    () => (conditionId && doctorId ? findLetterTemplate(conditionId, doctorId) : null),
+    [conditionId, doctorId]
+  );
+  const charge = template ? letterChargeDescription(template) : null;
+
+  // With only one doctor writing for the chosen condition there is nothing to pick,
+  // so select them rather than making the user open a one-item dropdown.
+  useEffect(() => {
+    if (doctors.length === 1 && form.getValues("doctor_id") !== doctors[0].id) {
+      form.setValue("doctor_id", doctors[0].id);
+    } else if (
+      doctors.length !== 1 &&
+      !doctors.some((d) => d.id === form.getValues("doctor_id"))
+    ) {
+      form.setValue("doctor_id", "");
+    }
+  }, [doctors, form]);
+
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (!client) return;
 
+    // Keep the letter selection across the reset — it describes the job, not the client
+    const keep = {
+      condition_id: form.getValues("condition_id"),
+      doctor_id: form.getValues("doctor_id"),
+    };
     form.reset();
     form.setValue("client_id", clientId);
+    form.setValue("condition_id", keep.condition_id);
+    form.setValue("doctor_id", keep.doctor_id);
 
     const { firstMI, lastName } = splitClientName(client.fields.Name || "");
     form.setValue("first_mi", firstMI);
@@ -160,6 +212,7 @@ export default function CSLetterForm() {
     // billing state must not carry over.
     setFormSubmitted(false);
     setSubmittedClient(null);
+    setSubmittedCharge(null);
     setUnloggedChargeFor(null);
     setError(null);
   };
@@ -182,7 +235,7 @@ export default function CSLetterForm() {
     form.handleSubmit(onSubmit)();
   };
 
-  const onSubmit = async (data: CSLetterFormData) => {
+  const onSubmit = async (data: DoctorLetterFormData) => {
     setLoading(true);
     setError(null);
     try {
@@ -191,15 +244,28 @@ export default function CSLetterForm() {
         throw new Error("Selected client not found");
       }
 
-      const response = await fetch("/api/generate/cs-letter", {
+      const selectedTemplate = findLetterTemplate(data.condition_id, data.doctor_id);
+      if (!selectedTemplate) {
+        throw new Error(
+          "There is no letter template for that condition and doctor yet."
+        );
+      }
+      const chargeDescription = letterChargeDescription(selectedTemplate);
+
+      const response = await fetch("/api/generate/doctor-letter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ form_data: data }),
+        body: JSON.stringify({
+          template_id: selectedTemplate.id,
+          form_data: data,
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || "Failed to generate letter");
+        throw new Error(
+          errorData.message || errorData.error || "Failed to generate letter"
+        );
       }
 
       const blob = await response.blob();
@@ -213,7 +279,7 @@ export default function CSLetterForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             clientId: selectedClient.id,
-            description: `${CHARGE} ${stamp}`,
+            description: `${chargeDescription} ${stamp}`,
           }),
         });
 
@@ -234,7 +300,9 @@ export default function CSLetterForm() {
         body: JSON.stringify({
           recordId: selectedClient.id,
           fields: { "Last update": todayInputValue() },
-          prepend: { Log: buildLogEntry(CHARGE, session?.user?.email) },
+          prepend: {
+            Log: buildLogEntry(chargeDescription, session?.user?.email),
+          },
         }),
       });
 
@@ -258,18 +326,19 @@ export default function CSLetterForm() {
       a.download =
         /filename="([^"]+)"/.exec(
           response.headers.get("Content-Disposition") ?? ""
-        )?.[1] ?? `${TEMPLATE.filenamePrefix}_${stamp}.docx`;
+        )?.[1] ?? `${selectedTemplate.filenamePrefix}_${stamp}.docx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
       if (session?.user) {
-        trackEvent.pdfGenerated("cs-letter", session.user.id, data.client_id);
+        trackEvent.pdfGenerated("doctor-letter", session.user.id, data.client_id);
       }
 
       setFormSubmitted(true);
       setSubmittedClient(selectedClient);
+      setSubmittedCharge(`${chargeDescription} ${stamp}`);
 
       try {
         await refreshClients(true);
@@ -277,7 +346,7 @@ export default function CSLetterForm() {
         console.error("Failed to refresh client cache:", refreshError);
       }
     } catch (err) {
-      console.error("Error generating CS letter:", err);
+      console.error("Error generating doctor letter:", err);
       setError(err instanceof Error ? err.message : "Failed to generate letter");
     } finally {
       setLoading(false);
@@ -308,18 +377,17 @@ export default function CSLetterForm() {
     );
   }
 
-  const err = (field: keyof CSLetterFormData) =>
+  const err = (field: keyof DoctorLetterFormData) =>
     attemptedSubmit ? form.formState.errors[field]?.message : undefined;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div className="space-y-4">
         <h1 className="text-3xl font-bold text-foreground">
-          🫁 Chronic Silicosis Letter
+          🩺 Doctor Letter Drafting
         </h1>
         <p className="text-muted-foreground">
-          Draft the chronic silicosis causation letter for {TEMPLATE.signedBy} to
-          sign, from the B-read returned on the client&apos;s chest X-ray.
+          Draft a causation letter for a physician to review and sign.
         </p>
       </div>
 
@@ -337,6 +405,50 @@ export default function CSLetterForm() {
           error={err("client_id")}
           label="Choose which client this letter is for"
         />
+
+        {/* Which letter */}
+        <Card variant="elevated">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <CardTitle>Letter</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              What the letter establishes causation for, and who will sign it.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Select
+                label="Drafting For"
+                required
+                placeholder="Select a condition"
+                error={err("condition_id")}
+                helperText="The condition the letter addresses"
+                options={CONDITIONS.map((c) => ({ value: c.id, label: c.label }))}
+                {...form.register("condition_id")}
+              />
+              <Select
+                label="Signing Doctor"
+                required
+                placeholder={
+                  conditionId ? "Select a doctor" : "Choose a condition first"
+                }
+                disabled={!conditionId}
+                error={err("doctor_id")}
+                helperText="Physicians who write this letter"
+                options={doctors.map((d) => ({ value: d.id, label: d.label }))}
+                {...form.register("doctor_id")}
+              />
+            </div>
+
+            {conditionId && doctorId && !template && (
+              <p className="mt-4 text-sm text-destructive">
+                There is no letter template for that combination yet.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Employee identification */}
         <Card variant="elevated">
@@ -428,6 +540,15 @@ export default function CSLetterForm() {
                   })}
                 </div>
               </div>
+
+              <Input
+                label="Letter Date"
+                type="date"
+                required
+                error={err("letter_date")}
+                helperText="Printed at the top of the letter"
+                {...form.register("letter_date")}
+              />
             </div>
           </CardContent>
         </Card>
@@ -484,58 +605,63 @@ export default function CSLetterForm() {
           </CardContent>
         </Card>
 
-        {/* B-read findings */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center space-x-2">
-              <Stethoscope className="h-5 w-5 text-primary" />
-              <CardTitle>B-Read Findings</CardTitle>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Straight off the B-read returned by the radiologist.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="B-Read Date"
-                  type="date"
+        {/* Condition-specific findings. Each condition gets its own card here. */}
+        {conditionId === "chronic-silicosis" && (
+          <Card variant="elevated">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Stethoscope className="h-5 w-5 text-primary" />
+                <CardTitle>B-Read Findings</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Straight off the B-read returned by the radiologist.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    label="B-Read Date"
+                    type="date"
+                    required
+                    error={err("dx_date")}
+                    helperText="Also used as the date of diagnosis"
+                    {...form.register("dx_date")}
+                  />
+                  <Select
+                    label="Profusion"
+                    required
+                    placeholder="Select the ILO profusion"
+                    error={err("profusion")}
+                    helperText="As graded on the B-read"
+                    options={ILO_PROFUSIONS.map((p) => ({ value: p, label: p }))}
+                    {...form.register("profusion")}
+                  />
+                </div>
+
+                <Textarea
+                  label="Impression"
                   required
-                  error={err("dx_date")}
-                  helperText="Also used as the date of diagnosis"
-                  {...form.register("dx_date")}
-                />
-                <Select
-                  label="Profusion"
-                  required
-                  placeholder="Select the ILO profusion"
-                  error={err("profusion")}
-                  helperText="As graded on the B-read"
-                  options={ILO_PROFUSIONS.map((p) => ({ value: p, label: p }))}
-                  {...form.register("profusion")}
+                  rows={4}
+                  error={err("impression")}
+                  helperText="Quoted verbatim in the letter. Omit the surrounding quotation marks — the template supplies them."
+                  placeholder="Small rounded opacities, profusion 1/0, primarily in the upper lung zones"
+                  {...form.register("impression")}
                 />
               </div>
-
-              <Textarea
-                label="Impression"
-                required
-                rows={4}
-                error={err("impression")}
-                helperText="Quoted verbatim in the letter. Omit the surrounding quotation marks — the template supplies them."
-                placeholder="Small rounded opacities, profusion 1/0, primarily in the upper lung zones"
-                {...form.register("impression")}
-              />
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Submit */}
         <div className="flex flex-col gap-4 items-center">
-          <p className="text-sm text-muted-foreground text-center">
-            Generating also logs <span className="font-medium">{CHARGE}</span> on the
-            client and adds a matching billing record.
-          </p>
+          {charge && (
+            <p className="text-sm text-muted-foreground text-center">
+              Generating also logs{" "}
+              <span className="font-medium text-foreground">{charge}</span> on the
+              client and adds a matching billing record.
+            </p>
+          )}
 
           {attemptedSubmit && !form.formState.isValid && (
             <div className="text-sm text-muted-foreground">
@@ -546,13 +672,13 @@ export default function CSLetterForm() {
           <Button
             type="button"
             onClick={handleSubmitClick}
-            disabled={loading}
+            disabled={loading || !template}
             className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50 min-w-[200px]"
             size="xl"
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}
           >
-            {loading ? "Generating Letter..." : "Generate CS Letter"}
+            {loading ? "Generating Letter..." : "Generate Letter"}
           </Button>
 
           {error && (
@@ -580,10 +706,10 @@ export default function CSLetterForm() {
                     Letter drafted and downloaded
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Send it to {TEMPLATE.signedBy} for signature. Added to{" "}
+                    Send it off for signature. Added to{" "}
                     {submittedClient.fields.Name}&apos;s log and billing:{" "}
                     <span className="font-medium text-foreground">
-                      {CHARGE} {todayStamp()}
+                      {submittedCharge}
                     </span>
                   </p>
                 </div>

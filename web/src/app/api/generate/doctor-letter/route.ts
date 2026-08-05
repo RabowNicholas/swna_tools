@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { CSLetterGenerator } from '@/lib/generators/cs-letter-generator';
+import { DoctorLetterGenerator } from '@/lib/generators/doctor-letter-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,12 +8,18 @@ export async function POST(request: NextRequest) {
 
     const requestData = await request.json();
 
-    if (!requestData.form_data) {
-      return NextResponse.json({ error: 'Missing form_data' }, { status: 400 });
+    if (!requestData.template_id || !requestData.form_data) {
+      return NextResponse.json(
+        { error: 'Missing template_id or form_data' },
+        { status: 400 }
+      );
     }
 
-    const generator = new CSLetterGenerator();
-    const result = await generator.generate(requestData.form_data);
+    const generator = new DoctorLetterGenerator();
+    const result = await generator.generate(
+      requestData.template_id,
+      requestData.form_data
+    );
 
     return new NextResponse(result.bytes as unknown as BodyInit, {
       status: 200,
@@ -27,7 +33,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.error('CS letter generation error:', error);
+    console.error('Doctor letter generation error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

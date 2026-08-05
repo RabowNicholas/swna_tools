@@ -153,10 +153,10 @@ export default function Home() {
       href: "/forms/desert-pulm",
     },
     {
-      id: "cs-letter",
-      name: "Chronic Silicosis Letter",
-      description: "Draft the causation letter for Dr. Toupin to sign, from the B-read",
-      href: "/forms/cs-letter",
+      id: "doctor-letter",
+      name: "Doctor Letter Drafting",
+      description: "Draft a causation letter for a physician to review and sign",
+      href: "/forms/doctor-letter",
     },
     // Billing
     {
@@ -200,7 +200,7 @@ export default function Home() {
     ),
     guides: allTools.filter((tool) => ["ir-process"].includes(tool.id)),
     medical: allTools.filter((tool) =>
-      ["desert-pulm", "cs-letter"].includes(tool.id)
+      ["desert-pulm", "doctor-letter"].includes(tool.id)
     ),
     billing: allTools.filter((tool) => ["invoice"].includes(tool.id)),
     analytics: allTools.filter((tool) => ["pipeline"].includes(tool.id)),

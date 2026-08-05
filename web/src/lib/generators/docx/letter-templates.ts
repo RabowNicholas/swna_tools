@@ -1,11 +1,16 @@
 /**
  * Registry of the physician causation letters the app can draft.
  *
- * Adding another letter (Pulmonary Fibrosis, CS+AB Combo, ...) means:
+ * A letter is identified by the pair (condition, doctor) — the same condition may be
+ * written to different physicians, and one physician signs letters for several
+ * conditions. The form asks for those two, then resolves the pair to a template here.
+ *
+ * Adding another letter means:
  *   1. tokenize its .docx with scripts/build-cs-template.mjs
  *   2. add an entry here
- *   3. add a form page
- * The docx engine, generator, route, log entry and billing record are all shared.
+ *   3. if it is a new condition, add its field set to the form and a case to
+ *      DoctorLetterGenerator
+ * The docx engine, route, log entry and billing record are all shared.
  */
 
 /** ILO profusion readings, in the order they appear on a B-read form. */
@@ -25,14 +30,18 @@ export const ILO_PROFUSIONS = [
 ] as const;
 
 export interface LetterTemplate {
-  /** Tool id — also the route segment under /forms and /api/generate. */
+  /** Stable key, `<condition>--<doctor>`. */
   id: string;
-  /** Human label, used in the UI and in the Airtable log entry. */
-  label: string;
+  /** Condition the letter establishes causation for. */
+  conditionId: string;
+  conditionLabel: string;
+  /** Physician who signs it. */
+  doctorId: string;
+  doctorLabel: string;
+  /** Short name used in the log entry and billing row, e.g. "CS Letter". */
+  chargeLabel: string;
   /** Filename under public/templates. */
   templateFile: string;
-  /** Physician who signs the letter. */
-  signedBy: string;
   /** Flat fee billed for drafting it, in whole dollars. */
   fee: number;
   /** Leading token of the generated filename. */
@@ -40,15 +49,49 @@ export interface LetterTemplate {
 }
 
 export const LETTER_TEMPLATES: Record<string, LetterTemplate> = {
-  'cs-letter': {
-    id: 'cs-letter',
-    label: 'CS Letter',
+  'chronic-silicosis--toupin': {
+    id: 'chronic-silicosis--toupin',
+    conditionId: 'chronic-silicosis',
+    conditionLabel: 'Chronic Silicosis',
+    doctorId: 'toupin',
+    doctorLabel: 'Dr. Toupin',
+    chargeLabel: 'CS Letter',
     templateFile: 'chronic-silicosis-toupin.docx',
-    signedBy: 'Dr. Toupin',
     fee: 200,
     filenamePrefix: 'CS_Letter_Toupin',
   },
 };
+
+const ALL = Object.values(LETTER_TEMPLATES);
+
+/** Distinct conditions that have at least one template, for the first dropdown. */
+export function letterConditions(): { id: string; label: string }[] {
+  const seen = new Map<string, string>();
+  for (const t of ALL) seen.set(t.conditionId, t.conditionLabel);
+  return [...seen].map(([id, label]) => ({ id, label }));
+}
+
+/** Doctors who sign the given condition, for the second dropdown. */
+export function doctorsForCondition(
+  conditionId: string
+): { id: string; label: string }[] {
+  const seen = new Map<string, string>();
+  for (const t of ALL) {
+    if (t.conditionId === conditionId) seen.set(t.doctorId, t.doctorLabel);
+  }
+  return [...seen].map(([id, label]) => ({ id, label }));
+}
+
+/** The template for a (condition, doctor) pair, or null if that pair has none. */
+export function findLetterTemplate(
+  conditionId: string,
+  doctorId: string
+): LetterTemplate | null {
+  return (
+    ALL.find((t) => t.conditionId === conditionId && t.doctorId === doctorId) ??
+    null
+  );
+}
 
 export function getLetterTemplate(id: string): LetterTemplate {
   const template = LETTER_TEMPLATES[id];
@@ -65,5 +108,5 @@ export function getLetterTemplate(id: string): LetterTemplate {
  * e.g. "$200 CS Letter for Dr. Toupin"
  */
 export function letterChargeDescription(template: LetterTemplate): string {
-  return `$${template.fee} ${template.label} for ${template.signedBy}`;
+  return `$${template.fee} ${template.chargeLabel} for ${template.doctorLabel}`;
 }

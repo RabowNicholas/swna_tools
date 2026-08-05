@@ -112,10 +112,10 @@ const navigationItems = [
         description: 'Medical referral documentation'
       },
       {
-        id: 'cs-letter',
-        title: 'Chronic Silicosis Letter',
-        href: '/forms/cs-letter',
-        description: 'Causation letter for Dr. Toupin'
+        id: 'doctor-letter',
+        title: 'Doctor Letter Drafting',
+        href: '/forms/doctor-letter',
+        description: 'Causation letters for physician signature'
       }
     ]
   },
@@ -172,7 +172,7 @@ function generateBreadcrumbs(pathname: string) {
     'ee3': 'EE-3 Form',
     'invoice': 'Invoice Generator',
     'desert-pulm': 'Desert Pulmonary Referral',
-    'cs-letter': 'Chronic Silicosis Letter',
+    'doctor-letter': 'Doctor Letter Drafting',
     'withdrawal': 'Withdrawal Letter',
     'ee1': 'EE-1 Form',
     'ee1a': 'EE-1a Form',
