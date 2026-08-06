@@ -23,6 +23,7 @@ import {
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import { PortalAccess } from "@/components/portal/PortalAccess";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import { EmailDraft } from "@/components/email/EmailDraft";
 import { CoordinationChecklist } from "@/components/email/CoordinationChecklist";
 import {
@@ -193,6 +194,13 @@ export default function EE10Form() {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  // The claim type and doctor as they stood when the form was submitted, so
+  // changing the pickers afterward can't log something else
+  const [submittedClaim, setSubmittedClaim] = useState("");
+  const [submittedDoctor, setSubmittedDoctor] = useState("");
+  // Bumped per submission, and used as the log card's key so going round again
+  // starts a fresh one
+  const [submissionId, setSubmissionId] = useState(0);
   const [mode, setMode] = useState<'generate' | 'skip'>('generate');
 
   const form = useForm<EE10FormData>({
@@ -314,6 +322,9 @@ export default function EE10Form() {
 
     setFormSubmitted(true);
     setSubmittedClient(selectedClient);
+    setSubmittedClaim(form.watch("claim_type"));
+    setSubmittedDoctor(form.watch("doctor"));
+    setSubmissionId((id) => id + 1);
   };
 
   // Handle submit click with manual validation
@@ -403,6 +414,9 @@ export default function EE10Form() {
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
+        setSubmittedClaim(data.claim_type);
+        setSubmittedDoctor(data.doctor);
+        setSubmissionId((id) => id + 1);
 
         // Create IR record in Airtable
         setIrLoading(true);
@@ -847,6 +861,19 @@ export default function EE10Form() {
             {submittedClient && (
               <>
                 <PortalAccess client={submittedClient} autoOpen={true} />
+
+                {/* Airtable update — after submitting in the portal, paste the
+                    reference number here to log the EE-10 on the client. The IR
+                    record above goes in its own table; this is the entry on the
+                    client's own log. */}
+                <AirtableLogCard
+                  key={submissionId}
+                  client={submittedClient}
+                  subject="the EE-10"
+                  action={(reference) =>
+                    `Submitted EE-10, ${submittedClaim} with ${submittedDoctor} (*${reference})`
+                  }
+                />
 
                 {/* Email Drafting */}
                 <EmailDraft

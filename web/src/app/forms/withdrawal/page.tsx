@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/Badge";
 import { FileText, CheckCircle, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import {
   ClientSelector,
   parseClientName,
@@ -57,6 +58,12 @@ export default function WithdrawalForm() {
   }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  // The condition as it was written into the letter, so a later edit to the
+  // form can't log a condition different from the one withdrawn
+  const [submittedCondition, setSubmittedCondition] = useState("");
+  // Bumped per generated letter, and used as the log card's key so a
+  // regenerated letter starts a fresh submission
+  const [submissionId, setSubmissionId] = useState(0);
 
   const form = useForm<WithdrawalFormData>({
     resolver: zodResolver(withdrawalSchema),
@@ -138,6 +145,8 @@ export default function WithdrawalForm() {
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
+        setSubmittedCondition(data.claimed_condition);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -338,6 +347,17 @@ export default function WithdrawalForm() {
           </Card>
 
           <PortalAccess client={submittedClient as any} autoOpen={true} />
+
+          {/* Airtable update — after submitting in the portal, paste the
+              reference number here to log the withdrawal on the client */}
+          <AirtableLogCard
+            key={submissionId}
+            client={submittedClient}
+            subject="the withdrawal"
+            action={(reference) =>
+              `Submitted withdrawal of claim for ${submittedCondition} (*${reference})`
+            }
+          />
         </>
       )}
     </div>

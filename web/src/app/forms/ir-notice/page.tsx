@@ -25,6 +25,7 @@ import {
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import { PortalAccess } from "@/components/portal/PortalAccess";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import {
   ClientSelector,
   parseClientName,
@@ -174,6 +175,9 @@ export default function IRNoticeForm() {
   const [submittedProvider, setSubmittedProvider] = useState<string>("");
   const [submittedAppointmentDate, setSubmittedAppointmentDate] = useState<string>("");
   const [submittedClientName, setSubmittedClientName] = useState<string>("");
+  // Bumped per generated notice, and used as the log card's key so a
+  // regenerated notice starts a fresh submission
+  const [submissionId, setSubmissionId] = useState(0);
 
   const form = useForm<IRNoticeFormData>({
     resolver: zodResolver(irNoticeSchema),
@@ -287,6 +291,7 @@ export default function IRNoticeForm() {
         setSubmittedProvider(data.provider_name);
         setSubmittedAppointmentDate(data.appointment_date);
         setSubmittedClientName(data.client_name);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -303,6 +308,13 @@ export default function IRNoticeForm() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // The appointment date for the log line, formatted from the yyyy-mm-dd input
+  // value directly — parsing it as a Date would shift it a day west of UTC
+  const appointmentLogDate = () => {
+    const [year, month, day] = submittedAppointmentDate.split("-");
+    return `${month}.${day}.${year.slice(-2)}`;
   };
 
   if (clientsLoading) {
@@ -493,6 +505,19 @@ export default function IRNoticeForm() {
             {/* Portal Access */}
             {submittedClient && (
               <PortalAccess client={submittedClient} autoOpen={true} />
+            )}
+
+            {/* Airtable update — after submitting in the portal, paste the
+                reference number here to log the notice on the client */}
+            {submittedClient && submittedAppointmentDate && (
+              <AirtableLogCard
+                key={submissionId}
+                client={submittedClient}
+                subject="the IR schedule notice"
+                action={(reference) =>
+                  `Submitted IR schedule notice, ${submittedProvider} on ${appointmentLogDate()} (*${reference})`
+                }
+              />
             )}
 
             {/* Email Draft Section */}

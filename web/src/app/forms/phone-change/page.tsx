@@ -20,6 +20,10 @@ import {
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import {
+  AirtableLogCard,
+  type ExtraFields,
+} from "@/components/airtable/AirtableLogCard";
+import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
@@ -70,6 +74,12 @@ export default function PhoneChangeForm() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  // The number as it was generated into the letter, so a later edit to the form
+  // can't push something different to Airtable than what was submitted
+  const [submittedPhone, setSubmittedPhone] = useState<string | null>(null);
+  // Bumped per generated letter, and used as the log card's key so a
+  // regenerated letter starts a fresh submission
+  const [submissionId, setSubmissionId] = useState(0);
 
   const form = useForm<PhoneChangeFormData>({
     resolver: zodResolver(phoneChangeSchema),
@@ -179,6 +189,8 @@ export default function PhoneChangeForm() {
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
+        setSubmittedPhone(data.phone_number);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -195,6 +207,16 @@ export default function PhoneChangeForm() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // The new number, written in the same request as the log entry so the record
+  // can't be updated without the log.
+  const phoneFields = (): ExtraFields => {
+    if (!submittedPhone) {
+      return { error: "No generated phone number to write. Nothing was updated." };
+    }
+
+    return { fields: { Phone: submittedPhone } };
   };
 
   if (clientsLoading) {
@@ -371,6 +393,40 @@ export default function PhoneChangeForm() {
             {/* Portal Access */}
             {submittedClient && (
               <PortalAccess client={submittedClient} autoOpen={true} />
+            )}
+
+            {/* Airtable update — after submitting in the portal, paste the
+                reference number here to record the new number on the client */}
+            {submittedClient && (
+              <AirtableLogCard
+                key={submissionId}
+                client={submittedClient}
+                subject="the phone change"
+                action={(reference) => `Submitted phone change (*${reference})`}
+                extraFields={phoneFields}
+                description={
+                  <>
+                    Once you&apos;ve submitted in the portal, paste the
+                    reference number below to update the client&apos;s phone
+                    number and log it.
+                  </>
+                }
+                confirmation={(reference) => (
+                  <>
+                    {submittedClient.fields.Name}&apos;s phone number was
+                    updated and reference {reference} was added to the log.
+                  </>
+                )}
+                preview={
+                  <>
+                    Updates the phone number to{" "}
+                    <span className="font-medium text-foreground">
+                      {submittedPhone}
+                    </span>{" "}
+                    on {submittedClient.fields.Name}
+                  </>
+                }
+              />
             )}
           </>
         )}

@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/Badge";
 import { FileText, CheckCircle, Zap } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import {
   ClientSelector,
   parseClientName,
@@ -55,6 +56,9 @@ export default function EN16Form() {
   }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  // Bumped per generated form, and used as the log card's key so a regenerated
+  // EN-16 starts a fresh submission
+  const [submissionId, setSubmissionId] = useState(0);
 
   const form = useForm<EN16FormData>({
     resolver: zodResolver(en16Schema),
@@ -136,6 +140,7 @@ export default function EN16Form() {
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to generate EN-16");
@@ -306,6 +311,15 @@ export default function EN16Form() {
           </Card>
 
           <PortalAccess client={submittedClient as any} autoOpen={true} />
+
+          {/* Airtable update — after submitting in the portal, paste the
+              reference number here to log the EN-16 on the client */}
+          <AirtableLogCard
+            key={submissionId}
+            client={submittedClient}
+            subject="the EN-16"
+            action={(reference) => `Submitted EN-16 (*${reference})`}
+          />
         </>
       )}
     </div>

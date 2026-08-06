@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/Badge";
 import { FileEdit, CheckCircle, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import {
   ClientSelector,
   parseClientName,
@@ -61,6 +62,9 @@ export default function DolLetterForm() {
 
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  // Bumped per generated letter, and used as the log card's key so a
+  // regenerated letter starts a fresh submission
+  const [submissionId, setSubmissionId] = useState(0);
 
   const form = useForm<DolLetterFormData>({
     resolver: zodResolver(dolLetterSchema),
@@ -141,6 +145,7 @@ export default function DolLetterForm() {
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -352,6 +357,15 @@ export default function DolLetterForm() {
           </Card>
 
           <PortalAccess client={submittedClient as any} autoOpen={true} />
+
+          {/* Airtable update — after submitting in the portal, paste the
+              reference number here to log the letter on the client */}
+          <AirtableLogCard
+            key={submissionId}
+            client={submittedClient}
+            subject="the letter"
+            action={(reference) => `Submitted DOL letter (*${reference})`}
+          />
         </>
       )}
     </div>
