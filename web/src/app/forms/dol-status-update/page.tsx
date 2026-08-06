@@ -11,21 +11,14 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import {
-  FileText,
-  CheckCircle,
-  X,
-  Bell,
-  Database,
-  AlertCircle,
-} from "lucide-react";
+import { FileText, CheckCircle, X, Bell } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
-import { buildLogEntry } from "@/lib/airtable-log";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 
 // Zod schema for form validation
 const dolStatusUpdateSchema = z.object({
@@ -65,10 +58,9 @@ export default function DolStatusUpdateForm() {
 
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
-  const [referenceNumber, setReferenceNumber] = useState("");
-  const [updatingAirtable, setUpdatingAirtable] = useState(false);
-  const [airtableUpdated, setAirtableUpdated] = useState(false);
-  const [airtableError, setAirtableError] = useState<string | null>(null);
+  // Bumped per generated letter, and used as the log card's key so a
+  // regenerated letter starts a fresh submission
+  const [submissionId, setSubmissionId] = useState(0);
 
   const form = useForm<DolStatusUpdateFormData>({
     resolver: zodResolver(dolStatusUpdateSchema),
@@ -147,11 +139,7 @@ export default function DolStatusUpdateForm() {
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
-        // A regenerated letter starts a fresh submission, so clear any
-        // reference number and result from the previous one
-        setReferenceNumber("");
-        setAirtableUpdated(false);
-        setAirtableError(null);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -168,66 +156,6 @@ export default function DolStatusUpdateForm() {
     } finally {
       setLoading(false);
     }
-  };
-
-  // The log line that will be prepended to the client's Airtable Log, built
-  // from the reference number the portal gave back for the submission
-  const statusUpdateLogEntry = (reference: string) =>
-    buildLogEntry(
-      `Submitted status update request (*${reference})`,
-      session?.user?.email
-    );
-
-  // Log the status update request on the client record once it's been submitted
-  // in the portal
-  const handleUpdateAirtable = async () => {
-    const reference = referenceNumber.trim();
-    if (!submittedClient || !reference) return;
-
-    setUpdatingAirtable(true);
-    setAirtableError(null);
-    try {
-      const response = await fetch("/api/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recordId: submittedClient.id,
-          prepend: {
-            Log: statusUpdateLogEntry(reference),
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.details ||
-            errorData.error ||
-            "Failed to update client in Airtable"
-        );
-      }
-
-      setAirtableUpdated(true);
-    } catch (error) {
-      console.error("Error updating Airtable:", error);
-      setAirtableError(
-        error instanceof Error
-          ? `${error.message}. Please try again.`
-          : "Failed to update Airtable. Please try again."
-      );
-      setUpdatingAirtable(false);
-      return;
-    }
-
-    // Keep the cached client list in step with what Airtable now holds. This
-    // is after the fact — a stale cache must not be reported as a failed
-    // update, since the record has already been written.
-    try {
-      await refreshClients(true);
-    } catch (error) {
-      console.error("Failed to refresh client cache after update:", error);
-    }
-    setUpdatingAirtable(false);
   };
 
   if (clientsLoading) {
@@ -399,76 +327,14 @@ export default function DolStatusUpdateForm() {
 
           {/* Airtable update — after submitting in the portal, paste the
               reference number here to log the request on the client */}
-          <Card variant="elevated">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Database className="h-5 w-5 text-primary" />
-                <CardTitle>Update Airtable</CardTitle>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Once you&apos;ve submitted in the portal, paste the reference
-                number below to log the status update request on the
-                client&apos;s record.
-              </p>
-            </CardHeader>
-            <CardContent>
-              {airtableUpdated ? (
-                <div className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
-                  <div className="ml-4">
-                    <h3 className="text-base font-medium text-foreground mb-1">
-                      Airtable updated
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      The status update request was added to{" "}
-                      {submittedClient.fields.Name}&apos;s log with reference{" "}
-                      {referenceNumber.trim()}.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Input
-                    label="Portal Reference Number"
-                    required
-                    placeholder="Paste the reference number from the portal"
-                    value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value)}
-                    disabled={updatingAirtable}
-                    helperText="Shown by the submission portal after you submit"
-                  />
-
-                  {airtableError && (
-                    <div className="flex items-start text-sm text-destructive">
-                      <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                      <span className="ml-2">{airtableError}</span>
-                    </div>
-                  )}
-
-                  <div className="text-sm text-muted-foreground">
-                    Adds to {submittedClient.fields.Name}&apos;s log:{" "}
-                    <span className="font-medium text-foreground">
-                      {statusUpdateLogEntry(
-                        referenceNumber.trim() || "REFERENCE"
-                      )}
-                    </span>
-                  </div>
-
-                  <Button
-                    type="button"
-                    onClick={handleUpdateAirtable}
-                    disabled={!referenceNumber.trim() || updatingAirtable}
-                    loading={updatingAirtable}
-                    icon={<Database className="h-5 w-5" />}
-                  >
-                    {updatingAirtable
-                      ? "Updating Airtable..."
-                      : "Update Airtable"}
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <AirtableLogCard
+            key={submissionId}
+            client={submittedClient}
+            subject="the status update request"
+            action={(reference) =>
+              `Submitted status update request (*${reference})`
+            }
+          />
         </>
       )}
     </div>

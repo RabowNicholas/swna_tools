@@ -21,11 +21,14 @@ import {
   Calendar,
   Home,
   User,
-  Database,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import { toAirtableStateName } from "@/lib/states";
+import {
+  AirtableLogCard,
+  type ExtraFields,
+} from "@/components/airtable/AirtableLogCard";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import {
   ClientSelector,
@@ -85,10 +88,9 @@ export default function AddressChangeForm() {
   // can't push something different to Airtable than what was submitted
   const [submittedAddress, setSubmittedAddress] =
     useState<AddressChangeFormData | null>(null);
-  const [referenceNumber, setReferenceNumber] = useState("");
-  const [updatingAirtable, setUpdatingAirtable] = useState(false);
-  const [airtableUpdated, setAirtableUpdated] = useState(false);
-  const [airtableError, setAirtableError] = useState<string | null>(null);
+  // Bumped per generated letter, and used as the log card's key so a
+  // regenerated letter starts a fresh submission
+  const [submissionId, setSubmissionId] = useState(0);
 
   const form = useForm<AddressChangeFormData>({
     resolver: zodResolver(addressChangeSchema),
@@ -205,11 +207,7 @@ export default function AddressChangeForm() {
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
         setSubmittedAddress(data);
-        // A regenerated letter starts a fresh submission, so clear any
-        // reference number and result from the previous one
-        setReferenceNumber("");
-        setAirtableUpdated(false);
-        setAirtableError(null);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -228,80 +226,30 @@ export default function AddressChangeForm() {
     }
   };
 
-  // Push the submitted address to Airtable and log the portal reference number.
-  // Both go in a single request so the record can't be updated without the log.
-  const handleUpdateAirtable = async () => {
-    const reference = referenceNumber.trim();
-    if (!submittedClient || !submittedAddress || !reference) return;
+  // The new address, written in the same request as the log entry so the record
+  // can't be updated without the log.
+  const addressFields = (): ExtraFields => {
+    if (!submittedAddress) {
+      return { error: "No generated address to write. Nothing was updated." };
+    }
 
     // Resolve the select value before sending: a state Airtable doesn't offer
     // would fail the whole update, so catch it here rather than at Airtable.
     const stateName = toAirtableStateName(submittedAddress.state);
     if (!stateName) {
-      setAirtableError(
-        `"${submittedAddress.state}" isn't a state Airtable recognizes. Use a 2-letter code such as NM. Nothing was updated.`
-      );
-      return;
+      return {
+        error: `"${submittedAddress.state}" isn't a state Airtable recognizes. Use a 2-letter code such as NM. Nothing was updated.`,
+      };
     }
 
-    setUpdatingAirtable(true);
-    setAirtableError(null);
-    try {
-      const now = new Date();
-      const logDate = `${String(now.getMonth() + 1).padStart(2, "0")}.${String(
-        now.getDate()
-      ).padStart(2, "0")}.${String(now.getFullYear()).slice(-2)}`;
-      const userEmail = session?.user?.email || "unknown";
-
-      const logEntry = `Submitted change of address (*${reference}) via Tools App. Triggered by [${userEmail}] ${logDate}. TOOLS APP`;
-
-      const response = await fetch("/api/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recordId: submittedClient.id,
-          fields: {
-            "Street Address": submittedAddress.street_address,
-            City: submittedAddress.city,
-            State: stateName,
-            "ZIP Code": submittedAddress.zip_code,
-          },
-          prepend: {
-            Log: logEntry,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.details ||
-            errorData.error ||
-            "Failed to update client in Airtable"
-        );
-      }
-
-      setAirtableUpdated(true);
-    } catch (error) {
-      console.error("Error updating Airtable:", error);
-      setAirtableError(
-        error instanceof Error
-          ? `${error.message}. Please try again.`
-          : "Failed to update Airtable. Please try again."
-      );
-      setUpdatingAirtable(false);
-      return;
-    }
-
-    // Keep the cached client list in step with what Airtable now holds. This
-    // is after the fact — a stale cache must not be reported as a failed
-    // update, since the record has already been written.
-    try {
-      await refreshClients(true);
-    } catch (error) {
-      console.error("Failed to refresh client cache after update:", error);
-    }
-    setUpdatingAirtable(false);
+    return {
+      fields: {
+        "Street Address": submittedAddress.street_address,
+        City: submittedAddress.city,
+        State: stateName,
+        "ZIP Code": submittedAddress.zip_code,
+      },
+    };
   };
 
   if (clientsLoading) {
@@ -526,77 +474,39 @@ export default function AddressChangeForm() {
             {/* Airtable update — after submitting in the portal, paste the
                 reference number here to record the change on the client */}
             {submittedClient && (
-              <Card variant="elevated">
-                <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <Database className="h-5 w-5 text-primary" />
-                    <CardTitle>Update Airtable</CardTitle>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
+              <AirtableLogCard
+                key={submissionId}
+                client={submittedClient}
+                subject="the change of address"
+                action={(reference) =>
+                  `Submitted change of address (*${reference})`
+                }
+                extraFields={addressFields}
+                description={
+                  <>
                     Once you&apos;ve submitted in the portal, paste the
                     reference number below to update the client&apos;s address
                     and log it.
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  {airtableUpdated ? (
-                    <div className="flex items-start">
-                      <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
-                      <div className="ml-4">
-                        <h3 className="text-base font-medium text-foreground mb-1">
-                          Airtable updated
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {submittedClient.fields.Name}&apos;s address was
-                          updated and reference {referenceNumber.trim()} was
-                          added to the log.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <Input
-                        label="Portal Reference Number"
-                        required
-                        placeholder="Paste the reference number from the portal"
-                        value={referenceNumber}
-                        onChange={(e) => setReferenceNumber(e.target.value)}
-                        disabled={updatingAirtable}
-                        helperText="Shown by the submission portal after you submit"
-                      />
-
-                      {airtableError && (
-                        <div className="flex items-start text-sm text-destructive">
-                          <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                          <span className="ml-2">{airtableError}</span>
-                        </div>
-                      )}
-
-                      <div className="text-sm text-muted-foreground">
-                        Updates{" "}
-                        <span className="font-medium text-foreground">
-                          {submittedAddress?.street_address},{" "}
-                          {submittedAddress?.city} {submittedAddress?.state}{" "}
-                          {submittedAddress?.zip_code}
-                        </span>{" "}
-                        on {submittedClient.fields.Name}
-                      </div>
-
-                      <Button
-                        type="button"
-                        onClick={handleUpdateAirtable}
-                        disabled={!referenceNumber.trim() || updatingAirtable}
-                        loading={updatingAirtable}
-                        icon={<Database className="h-5 w-5" />}
-                      >
-                        {updatingAirtable
-                          ? "Updating Airtable..."
-                          : "Update Airtable"}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </>
+                }
+                confirmation={(reference) => (
+                  <>
+                    {submittedClient.fields.Name}&apos;s address was updated and
+                    reference {reference} was added to the log.
+                  </>
+                )}
+                preview={
+                  <>
+                    Updates{" "}
+                    <span className="font-medium text-foreground">
+                      {submittedAddress?.street_address},{" "}
+                      {submittedAddress?.city} {submittedAddress?.state}{" "}
+                      {submittedAddress?.zip_code}
+                    </span>{" "}
+                    on {submittedClient.fields.Name}
+                  </>
+                }
+              />
             )}
           </>
         )}

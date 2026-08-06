@@ -16,12 +16,11 @@ import {
   CheckCircle,
   FileText,
   User,
-  Database,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import { TextTemplateCard } from "@/components/text/TextTemplateCard";
-import { buildLogEntry } from "@/lib/airtable-log";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import {
   ClientSelector,
   parseClientName,
@@ -89,10 +88,9 @@ export default function RDWaiverForm() {
   // The option as it was signed on the generated waiver, so changing the radio
   // afterward can't log an option different from the one in the PDF
   const [submittedOption, setSubmittedOption] = useState<"1" | "2" | null>(null);
-  const [referenceNumber, setReferenceNumber] = useState("");
-  const [updatingAirtable, setUpdatingAirtable] = useState(false);
-  const [airtableUpdated, setAirtableUpdated] = useState(false);
-  const [airtableError, setAirtableError] = useState<string | null>(null);
+  // Bumped per generated waiver, and used as the log card's key so a
+  // regenerated waiver starts a fresh submission
+  const [submissionId, setSubmissionId] = useState(0);
 
   const form = useForm<RDWaiverFormData>({
     resolver: zodResolver(rdWaiverSchema),
@@ -138,13 +136,11 @@ export default function RDWaiverForm() {
       form.setValue("case_id", fields["Case ID"] || "");
 
       // A different client is a fresh start — the previous waiver's success
-      // card and reference number must not carry over onto this one
+      // card must not carry over onto this one. Hiding it unmounts the log
+      // card, which takes its reference number with it.
       setFormSubmitted(false);
       setSubmittedClient(null);
       setSubmittedOption(null);
-      setReferenceNumber("");
-      setAirtableUpdated(false);
-      setAirtableError(null);
     }
   };
 
@@ -227,11 +223,7 @@ export default function RDWaiverForm() {
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
         setSubmittedOption(data.option);
-        // A regenerated waiver starts a fresh submission, so clear any
-        // reference number and result from the previous one
-        setReferenceNumber("");
-        setAirtableUpdated(false);
-        setAirtableError(null);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -250,65 +242,11 @@ export default function RDWaiverForm() {
     }
   };
 
-  // The log line that will be prepended to the client's Airtable Log, built
-  // from the option actually signed on the generated waiver
-  const waiverLogEntry = (reference: string) => {
+  // The act logged on the client's Airtable record, built from the option
+  // actually signed on the generated waiver
+  const waiverLogAction = (reference: string) => {
     const option = WAIVER_OPTIONS.find((o) => o.value === submittedOption);
-    return buildLogEntry(
-      `Submitted RD waiver, Option ${submittedOption} (${option?.summary}) (*${reference})`,
-      session?.user?.email
-    );
-  };
-
-  // Log the waiver on the client record once it's been submitted in the portal
-  const handleUpdateAirtable = async () => {
-    const reference = referenceNumber.trim();
-    if (!submittedClient || !submittedOption || !reference) return;
-
-    setUpdatingAirtable(true);
-    setAirtableError(null);
-    try {
-      const response = await fetch("/api/clients", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recordId: submittedClient.id,
-          prepend: {
-            Log: waiverLogEntry(reference),
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.details ||
-            errorData.error ||
-            "Failed to update client in Airtable"
-        );
-      }
-
-      setAirtableUpdated(true);
-    } catch (error) {
-      console.error("Error updating Airtable:", error);
-      setAirtableError(
-        error instanceof Error
-          ? `${error.message}. Please try again.`
-          : "Failed to update Airtable. Please try again."
-      );
-      setUpdatingAirtable(false);
-      return;
-    }
-
-    // Keep the cached client list in step with what Airtable now holds. This
-    // is after the fact — a stale cache must not be reported as a failed
-    // update, since the record has already been written.
-    try {
-      await refreshClients(true);
-    } catch (error) {
-      console.error("Failed to refresh client cache after update:", error);
-    }
-    setUpdatingAirtable(false);
+    return `Submitted RD waiver, Option ${submittedOption} (${option?.summary}) (*${reference})`;
   };
 
   if (clientsLoading) {
@@ -556,75 +494,12 @@ export default function RDWaiverForm() {
             {/* Airtable update — after submitting in the portal, paste the
                 reference number here to log the waiver on the client */}
             {submittedClient && (
-              <Card variant="elevated">
-                <CardHeader>
-                  <div className="flex items-center space-x-2">
-                    <Database className="h-5 w-5 text-primary" />
-                    <CardTitle>Update Airtable</CardTitle>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Once you&apos;ve submitted in the portal, paste the
-                    reference number below to log the waiver on the client&apos;s
-                    record.
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  {airtableUpdated ? (
-                    <div className="flex items-start">
-                      <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
-                      <div className="ml-4">
-                        <h3 className="text-base font-medium text-foreground mb-1">
-                          Airtable updated
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          The waiver was added to {submittedClient.fields.Name}
-                          &apos;s log with reference {referenceNumber.trim()}.
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <Input
-                        label="Portal Reference Number"
-                        required
-                        placeholder="Paste the reference number from the portal"
-                        value={referenceNumber}
-                        onChange={(e) => setReferenceNumber(e.target.value)}
-                        disabled={updatingAirtable}
-                        helperText="Shown by the submission portal after you submit"
-                      />
-
-                      {airtableError && (
-                        <div className="flex items-start text-sm text-destructive">
-                          <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                          <span className="ml-2">{airtableError}</span>
-                        </div>
-                      )}
-
-                      <div className="text-sm text-muted-foreground">
-                        Adds to {submittedClient.fields.Name}&apos;s log:{" "}
-                        <span className="font-medium text-foreground">
-                          {waiverLogEntry(
-                            referenceNumber.trim() || "REFERENCE"
-                          )}
-                        </span>
-                      </div>
-
-                      <Button
-                        type="button"
-                        onClick={handleUpdateAirtable}
-                        disabled={!referenceNumber.trim() || updatingAirtable}
-                        loading={updatingAirtable}
-                        icon={<Database className="h-5 w-5" />}
-                      >
-                        {updatingAirtable
-                          ? "Updating Airtable..."
-                          : "Update Airtable"}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <AirtableLogCard
+                key={submissionId}
+                client={submittedClient}
+                subject="the waiver"
+                action={waiverLogAction}
+              />
             )}
 
             {/* Canned client text for the acceptance */}
