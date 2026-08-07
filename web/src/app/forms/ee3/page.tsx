@@ -43,9 +43,7 @@ export default function EE3Form() {
       trackEvent.formViewed('ee3', session.user.id);
     }
   }, [session]);
-  const [portalLoading, setPortalLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const [lastFormData, setLastFormData] = useState<EE3FormValues | null>(null);
   const [collapsedEmployment, setCollapsedEmployment] = useState<Set<number>>(
     new Set()
   );
@@ -214,65 +212,12 @@ export default function EE3Form() {
         trackEvent.pdfGenerated('ee3', session.user.id, data.client_id);
       }
 
-      // Mark form as submitted and store data for portal access
       setFormSubmitted(true);
-      setLastFormData(data);
     } catch (error) {
       console.error("Error generating EE-3:", error);
       alert(error instanceof Error ? error.message : "Failed to generate EE-3");
     } finally {
       setLoading(false);
-    }
-  };
-
-
-  const handlePortalAccess = async () => {
-    if (!lastFormData) return;
-
-    setPortalLoading(true);
-    try {
-      const selectedClient = clients.find(
-        (c) => c.id === lastFormData.client_id
-      );
-      if (!selectedClient) {
-        throw new Error("Selected client not found");
-      }
-
-      // Extract case ID and SSN last 4 from client data
-      const caseId = selectedClient.fields["Case ID"] || "";
-      const clientName = selectedClient.fields.Name || "";
-      const ssnLast4 =
-        clientName.split("-").pop()?.trim() || lastFormData.ssn.slice(-4);
-
-      const portalData = {
-        case_id: caseId,
-        last_name: lastFormData.last_name,
-        ssn_last4: ssnLast4,
-        client_name: `${lastFormData.first_name} ${lastFormData.last_name}`,
-      };
-
-      const response = await fetch("/api/portal", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(portalData),
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        alert(
-          "Portal automation completed! Please select and upload your PDF file manually."
-        );
-      } else {
-        throw new Error(result.error || "Portal automation failed");
-      }
-    } catch (error) {
-      console.error("Portal access error:", error);
-      alert(error instanceof Error ? error.message : "Portal access failed");
-    } finally {
-      setPortalLoading(false);
     }
   };
 
