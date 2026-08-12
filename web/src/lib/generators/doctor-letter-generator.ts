@@ -339,9 +339,14 @@ export class DoctorLetterGenerator {
     const abbr = form.facility_abbr.trim();
     const dxDate = formatSlashed(form.dx_date);
     const workDates = formatWorkDates(form.work_date_ranges, form.employment_basis);
-    // The quotation is closed with a period by the sentence itself, so an impression that
-    // already ends in one would render as `...pneumoconiosis.".`
-    const impression = form.impression.trim().replace(/\.$/, '');
+    // The impression is quoted as a matter of record, so it is reproduced exactly as the
+    // B-read words it — including any punctuation the radiologist used. The sentence's
+    // full stop goes inside the closing quote, as the sent letters set it, and is only
+    // added when the impression does not already end in one of its own.
+    const impressionText = form.impression.trim();
+    const impression = /[.?!]$/.test(impressionText)
+      ? impressionText
+      : `${impressionText}.`;
 
     const text = (value: string): Paragraph => ({
       runs: [{ text: value, font: fonts.body, size: BODY_SIZE }],
@@ -410,7 +415,7 @@ export class DoctorLetterGenerator {
             `${dxDate} Chest Radiograph with B-Read Interpretation. ${title} ` +
             `${last}’s radiograph documented classifiable parenchymal abnormalities and ` +
             `small opacities. The profusion identified was ${form.profusion.trim()}. The ` +
-            `impression states, “${impression}”.`,
+            `impression states, “${impression}”`,
           font: fonts.body,
           size: BODY_SIZE,
         },
