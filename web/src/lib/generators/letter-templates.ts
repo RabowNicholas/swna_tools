@@ -6,11 +6,11 @@
  * conditions. The form asks for those two, then resolves the pair to a template here.
  *
  * Adding another letter means:
- *   1. tokenize its .docx with scripts/build-cs-template.mjs
+ *   1. extract its letterhead with scripts/build-letterhead.mjs
  *   2. add an entry here
- *   3. if it is a new condition, add its field set to the form and a case to
- *      DoctorLetterGenerator
- * The docx engine, route, log entry and billing record are all shared.
+ *   3. if it is a new condition, add its field set to the form, its prose to
+ *      DoctorLetterGenerator, and a case to the switch there
+ * The flow engine, route, log entry and billing record are all shared.
  */
 
 /** ILO profusion readings, in the order they appear on a B-read form. */
@@ -40,7 +40,7 @@ export interface LetterTemplate {
   doctorLabel: string;
   /** Short name used in the log entry and billing row, e.g. "CS Letter". */
   chargeLabel: string;
-  /** Filename under public/templates. */
+  /** Letterhead PDF under public/templates, drawn on as page 1. */
   templateFile: string;
   /** Flat fee billed for drafting it, in whole dollars. */
   fee: number;
@@ -56,7 +56,7 @@ export const LETTER_TEMPLATES: Record<string, LetterTemplate> = {
     doctorId: 'toupin',
     doctorLabel: 'Dr. Toupin',
     chargeLabel: 'CS Letter',
-    templateFile: 'chronic-silicosis-toupin.docx',
+    templateFile: 'chronic-silicosis-toupin-letterhead.pdf',
     fee: 200,
     filenamePrefix: 'CS_Letter_Toupin',
   },

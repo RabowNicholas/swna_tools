@@ -21,10 +21,10 @@ export async function POST(request: NextRequest) {
       requestData.form_data
     );
 
-    return new NextResponse(result.bytes as unknown as BodyInit, {
+    return new NextResponse(result.pdfBytes as unknown as BodyInit, {
       status: 200,
       headers: {
-        'Content-Type': result.mimeType,
+        'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${result.filename}"`,
       },
     });

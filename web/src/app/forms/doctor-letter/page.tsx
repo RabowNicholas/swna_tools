@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { trackEvent } from "@/lib/analytics";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
@@ -20,6 +20,10 @@ import {
   User,
   Stethoscope,
   Briefcase,
+  Paperclip,
+  Plus,
+  Trash2,
+  Lock,
 } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { buildLogEntry } from "@/lib/airtable-log";
@@ -34,9 +38,12 @@ import {
   findLetterTemplate,
   letterChargeDescription,
   letterConditions,
-} from "@/lib/generators/docx/letter-templates";
+} from "@/lib/generators/letter-templates";
+import { assembleClaim, formatPageRange } from "@/lib/claims/assemble";
 
 const CONDITIONS = letterConditions();
+
+const CURRENT_YEAR = new Date().getFullYear();
 
 const doctorLetterSchema = z
   .object({
@@ -48,16 +55,22 @@ const doctorLetterSchema = z
     sex: z.enum(["male", "female"]),
     dob: z.string(),
     case_id: z.string(),
-    letter_date: z.string().min(1, "Letter date is required"),
     position: z.string().min(1, "Job title is required"),
     facility: z.string().min(1, "Facility name is required"),
     facility_abbr: z.string().min(1, "Facility abbreviation is required"),
-    work_dates: z.string().min(1, "Employment dates are required"),
+    employment_basis: z.enum(["recalled", "doe_verified"]),
+    work_date_ranges: z
+      .array(z.object({ from: z.string(), to: z.string() }))
+      .min(1, "Add at least one stretch of employment"),
     // Chronic silicosis fields. Validated conditionally below so a future condition
     // with a different field set doesn't have to fill these in.
     dx_date: z.string(),
     profusion: z.string(),
     impression: z.string(),
+    // Tyler's review found impressions that had drifted from the B-read, including
+    // "perfusion" for "profusion". The letter quotes the B-read as a matter of record,
+    // so the drafter confirms they checked it before the letter can be generated.
+    impression_verified: z.boolean(),
   })
   // The letter identifies the claimant by case ID, falling back to date of birth.
   // With neither, the letterhead has nothing tying it to a claim.
@@ -76,7 +89,59 @@ const doctorLetterSchema = z
   .refine(
     (d) => d.condition_id !== "chronic-silicosis" || d.impression.trim().length > 0,
     { message: "Impression is required", path: ["impression"] }
-  );
+  )
+  .refine(
+    (d) => d.condition_id !== "chronic-silicosis" || d.impression_verified,
+    {
+      message: "Confirm the impression matches the B-read word for word",
+      path: ["impression_verified"],
+    }
+  )
+  .superRefine((d, ctx) => {
+    d.work_date_ranges.forEach((range, index) => {
+      const validate = (value: string, key: "from" | "to", label: string) => {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          ctx.addIssue({
+            code: "custom",
+            message: `${label} is required`,
+            path: ["work_date_ranges", index, key],
+          });
+          return null;
+        }
+        if (d.employment_basis === "doe_verified") return trimmed;
+        // Recalled employment is stated in years only, so a year is all we accept.
+        if (!/^\d{4}$/.test(trimmed)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Use a 4-digit year",
+            path: ["work_date_ranges", index, key],
+          });
+          return null;
+        }
+        const year = Number(trimmed);
+        if (year < 1940 || year > CURRENT_YEAR) {
+          ctx.addIssue({
+            code: "custom",
+            message: `Year must be between 1940 and ${CURRENT_YEAR}`,
+            path: ["work_date_ranges", index, key],
+          });
+          return null;
+        }
+        return trimmed;
+      };
+
+      const from = validate(range.from, "from", "Start");
+      const to = validate(range.to, "to", "End");
+      if (from && to && to < from) {
+        ctx.addIssue({
+          code: "custom",
+          message: "End cannot be before start",
+          path: ["work_date_ranges", index, "to"],
+        });
+      }
+    });
+  });
 
 type DoctorLetterFormData = z.infer<typeof doctorLetterSchema>;
 
@@ -125,12 +190,22 @@ export default function DoctorLetterForm() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
   const [submittedCharge, setSubmittedCharge] = useState<string | null>(null);
+  const [submittedPages, setSubmittedPages] = useState<{
+    total: number;
+    bRead: string;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Set once a billing row lands and cleared once the whole flow completes, so it only
   // ever holds a charge whose log entry failed. Retrying then skips straight to the log
   // instead of charging twice — Airtable has no undo for a duplicate row. A deliberate
   // re-draft starts from null and bills normally.
   const [unloggedChargeFor, setUnloggedChargeFor] = useState<string | null>(null);
+  // The B-read is merged onto the end of the letter. It stays in the browser and is never
+  // posted to the server, the same split Claims Assembly uses for medical records.
+  const [bReadFile, setBReadFile] = useState<File | null>(null);
+  // The file input is uncontrolled, so clearing state alone leaves the old filename on
+  // screen. Bumping this remounts it.
+  const [uploadGeneration, setUploadGeneration] = useState(0);
 
   useEffect(() => {
     if (session?.user) {
@@ -151,19 +226,49 @@ export default function DoctorLetterForm() {
       sex: "male",
       dob: "",
       case_id: "",
-      letter_date: todayInputValue(),
       position: "",
       facility: "Nevada Test Site",
       facility_abbr: "NTS",
-      work_dates: "",
+      employment_basis: "recalled",
+      work_date_ranges: [{ from: "", to: "" }],
       dx_date: "",
       profusion: "",
       impression: "",
+      impression_verified: false,
     },
   });
 
   const conditionId = form.watch("condition_id");
   const doctorId = form.watch("doctor_id");
+  const employmentBasis = form.watch("employment_basis");
+  const impression = form.watch("impression");
+  const profusion = form.watch("profusion");
+
+  const {
+    fields: workDateFields,
+    append: appendWorkDate,
+    remove: removeWorkDate,
+    replace: replaceWorkDates,
+  } = useFieldArray({ control: form.control, name: "work_date_ranges" });
+
+  // Advisory only — these never block generation, because a B-read can legitimately word
+  // things in ways a rule would flag. They exist to catch the two mistakes Tyler found.
+  const impressionWarnings = useMemo(() => {
+    const warnings: string[] = [];
+    const text = impression?.trim() ?? "";
+    if (!text) return warnings;
+    if (/perfusion/i.test(text)) {
+      warnings.push(
+        'This says "perfusion". The B-read term is "profusion" — check the original before continuing.'
+      );
+    }
+    if (profusion && !text.includes(profusion)) {
+      warnings.push(
+        `The profusion selected above (${profusion}) does not appear in this text. Confirm they agree.`
+      );
+    }
+    return warnings;
+  }, [impression, profusion]);
 
   const doctors = useMemo(
     () => (conditionId ? doctorsForCondition(conditionId) : []),
@@ -208,13 +313,23 @@ export default function DoctorLetterForm() {
     form.setValue("case_id", client.fields["Case ID"] || "");
     form.setValue("dob", client.fields["Date of Birth"] || "");
 
-    // A different client is a fresh draft — the previous letter's success card and
-    // billing state must not carry over.
+    // A different client is a fresh draft — the previous letter's success card, billing
+    // state and B-read must not carry over.
     setFormSubmitted(false);
     setSubmittedClient(null);
     setSubmittedCharge(null);
     setUnloggedChargeFor(null);
     setError(null);
+    setBReadFile(null);
+    setUploadGeneration((n) => n + 1);
+  };
+
+  const scrollTo = (id: string) => {
+    setTimeout(() => {
+      document
+        .getElementById(id)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
 
   const handleSubmitClick = async () => {
@@ -232,6 +347,13 @@ export default function DoctorLetterForm() {
       return;
     }
 
+    // The B-read goes out with every letter, so a letter cannot be produced without it.
+    if (!bReadFile) {
+      setError("Still needed: B-Read");
+      scrollTo("documents-section");
+      return;
+    }
+
     form.handleSubmit(onSubmit)();
   };
 
@@ -242,6 +364,9 @@ export default function DoctorLetterForm() {
       const selectedClient = clients.find((c) => c.id === data.client_id);
       if (!selectedClient) {
         throw new Error("Selected client not found");
+      }
+      if (!bReadFile) {
+        throw new Error("Still needed: B-Read");
       }
 
       const selectedTemplate = findLetterTemplate(data.condition_id, data.doctor_id);
@@ -268,7 +393,26 @@ export default function DoctorLetterForm() {
         );
       }
 
-      const blob = await response.blob();
+      const letterBytes = await response.arrayBuffer();
+      const filename =
+        /filename="([^"]+)"/.exec(
+          response.headers.get("Content-Disposition") ?? ""
+        )?.[1] ?? `${selectedTemplate.filenamePrefix}_${todayStamp()}.pdf`;
+
+      // Merged in the browser so the B-read never reaches the server. Done before the
+      // Airtable writes: a merge failure should leave no charge behind.
+      const assembled = await assembleClaim([
+        { slotId: "letter", label: "Letter", bytes: letterBytes },
+        {
+          slotId: "b-read",
+          label: "B-Read",
+          bytes: await bReadFile.arrayBuffer(),
+        },
+      ]);
+
+      const blob = new Blob([assembled.pdfBytes as BlobPart], {
+        type: "application/pdf",
+      });
       const stamp = todayStamp();
 
       // Airtable is written before the download, the way the invoice tool does it, so a
@@ -323,10 +467,7 @@ export default function DoctorLetterForm() {
       a.href = url;
       // The generator already sanitized the filename; reuse it rather than rebuilding
       // a second version here that could drift from it.
-      a.download =
-        /filename="([^"]+)"/.exec(
-          response.headers.get("Content-Disposition") ?? ""
-        )?.[1] ?? `${selectedTemplate.filenamePrefix}_${stamp}.docx`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -339,6 +480,11 @@ export default function DoctorLetterForm() {
       setFormSubmitted(true);
       setSubmittedClient(selectedClient);
       setSubmittedCharge(`${chargeDescription} ${stamp}`);
+      const bReadRange = assembled.ranges.find((r) => r.slotId === "b-read");
+      setSubmittedPages({
+        total: assembled.pageCount,
+        bRead: bReadRange ? formatPageRange(bReadRange) : "",
+      });
 
       try {
         await refreshClients(true);
@@ -540,15 +686,6 @@ export default function DoctorLetterForm() {
                   })}
                 </div>
               </div>
-
-              <Input
-                label="Letter Date"
-                type="date"
-                required
-                error={err("letter_date")}
-                helperText="Printed at the top of the letter"
-                {...form.register("letter_date")}
-              />
             </div>
           </CardContent>
         </Card>
@@ -576,30 +713,183 @@ export default function DoctorLetterForm() {
                   {...form.register("position")}
                 />
                 <Input
-                  label="Employment Dates"
-                  required
-                  error={err("work_dates")}
-                  helperText="Reads after “occurred from approximately”"
-                  placeholder="June 1974 to March 1988"
-                  {...form.register("work_dates")}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
                   label="Facility"
                   required
                   error={err("facility")}
                   helperText="Full name of the DOE facility"
                   {...form.register("facility")}
                 />
-                <Input
-                  label="Facility Abbreviation"
-                  required
-                  error={err("facility_abbr")}
-                  helperText="Used throughout the rest of the letter"
-                  {...form.register("facility_abbr")}
-                />
+              </div>
+
+              <Input
+                label="Facility Abbreviation"
+                required
+                error={err("facility_abbr")}
+                helperText="Used throughout the rest of the letter"
+                {...form.register("facility_abbr")}
+              />
+
+              <div>
+                <span className="block text-sm font-medium mb-2 text-foreground">
+                  Where the Dates Come From
+                  <span className="text-red-500 ml-1" aria-label="required">
+                    *
+                  </span>
+                </span>
+                <p className="text-sm text-muted-foreground mb-3">
+                  This changes the sentence in the letter, and how precisely the dates
+                  are stated.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {(
+                    [
+                      {
+                        value: "recalled",
+                        label: "Recalled by the patient",
+                        detail: "Years only. The usual case.",
+                      },
+                      {
+                        value: "doe_verified",
+                        label: "DOE verified",
+                        detail:
+                          "Exact dates. Only when DOE has verified them on a prior or active case.",
+                      },
+                    ] as const
+                  ).map((opt) => {
+                    const selected = employmentBasis === opt.value;
+                    return (
+                      <label
+                        key={opt.value}
+                        className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
+                          selected
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          value={opt.value}
+                          checked={selected}
+                          onChange={() => {
+                            form.setValue("employment_basis", opt.value, {
+                              shouldValidate: attemptedSubmit,
+                            });
+                            // The two modes hold incompatible values. A year left behind
+                            // in a date input reads as empty but is still "1982" in the
+                            // form, which would reach the generator and fail there.
+                            replaceWorkDates([{ from: "", to: "" }]);
+                          }}
+                          className="mt-1 h-4 w-4 accent-primary"
+                        />
+                        <span>
+                          <span className="block text-foreground">{opt.label}</span>
+                          <span className="block text-sm text-muted-foreground">
+                            {opt.detail}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <p className="mt-3 text-sm text-muted-foreground">
+                  The letter will read:{" "}
+                  <span className="text-foreground">
+                    {employmentBasis === "doe_verified"
+                      ? "“Described employment is DOE verified to have occurred from …”"
+                      : "“Described employment is recalled by the patient to have occurred from approximately …”"}
+                  </span>
+                </p>
+              </div>
+
+              <div>
+                <span className="block text-sm font-medium mb-2 text-foreground">
+                  Employment Dates
+                  <span className="text-red-500 ml-1" aria-label="required">
+                    *
+                  </span>
+                </span>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {employmentBasis === "doe_verified"
+                    ? "Exactly as DOE verified them."
+                    : "Years only — a month and day imply a precision recall doesn’t have."}{" "}
+                  Add a row for each separate stretch; they are joined into one list.
+                </p>
+
+                <div className="space-y-3">
+                  {workDateFields.map((field, index) => {
+                    const rangeErrors = attemptedSubmit
+                      ? form.formState.errors.work_date_ranges?.[index]
+                      : undefined;
+                    return (
+                      <div key={field.id} className="flex items-start gap-3">
+                        <Input
+                          label={index === 0 ? "From" : undefined}
+                          type={
+                            employmentBasis === "doe_verified" ? "date" : "text"
+                          }
+                          inputMode={
+                            employmentBasis === "doe_verified"
+                              ? undefined
+                              : "numeric"
+                          }
+                          maxLength={
+                            employmentBasis === "doe_verified" ? undefined : 4
+                          }
+                          placeholder={
+                            employmentBasis === "doe_verified" ? undefined : "1982"
+                          }
+                          error={rangeErrors?.from?.message}
+                          {...form.register(`work_date_ranges.${index}.from`)}
+                        />
+                        <Input
+                          label={index === 0 ? "To" : undefined}
+                          type={
+                            employmentBasis === "doe_verified" ? "date" : "text"
+                          }
+                          inputMode={
+                            employmentBasis === "doe_verified"
+                              ? undefined
+                              : "numeric"
+                          }
+                          maxLength={
+                            employmentBasis === "doe_verified" ? undefined : 4
+                          }
+                          placeholder={
+                            employmentBasis === "doe_verified" ? undefined : "1986"
+                          }
+                          error={rangeErrors?.to?.message}
+                          {...form.register(`work_date_ranges.${index}.to`)}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeWorkDate(index)}
+                          disabled={workDateFields.length === 1}
+                          aria-label={`Remove employment range ${index + 1}`}
+                          className={`rounded-md p-2 transition-colors ${
+                            index === 0 ? "mt-7" : "mt-1"
+                          } ${
+                            workDateFields.length === 1
+                              ? "cursor-not-allowed text-muted-foreground/40"
+                              : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                          }`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => appendWorkDate({ from: "", to: "" })}
+                  icon={<Plus className="h-4 w-4" />}
+                >
+                  Add another stretch
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -639,19 +929,117 @@ export default function DoctorLetterForm() {
                   />
                 </div>
 
-                <Textarea
-                  label="Impression"
-                  required
-                  rows={4}
-                  error={err("impression")}
-                  helperText="Quoted verbatim in the letter. Omit the surrounding quotation marks — the template supplies them."
-                  placeholder="Small rounded opacities, profusion 1/0, primarily in the upper lung zones"
-                  {...form.register("impression")}
-                />
+                <div>
+                  <Textarea
+                    label="Impression"
+                    required
+                    rows={4}
+                    error={err("impression")}
+                    helperText="Quoted verbatim in the letter. Omit the surrounding quotation marks — the letter supplies them."
+                    placeholder="Small rounded opacities, profusion 1/0, primarily in the upper lung zones"
+                    {...form.register("impression")}
+                  />
+
+                  {impressionWarnings.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {impressionWarnings.map((warning) => (
+                        <div
+                          key={warning}
+                          className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3"
+                        >
+                          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
+                          <p className="text-sm text-foreground">{warning}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <label className="mt-4 flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 accent-primary"
+                      {...form.register("impression_verified")}
+                    />
+                    <span className="text-sm text-foreground">
+                      I compared this impression against the B-read word for word.
+                      <span className="text-red-500 ml-1" aria-label="required">
+                        *
+                      </span>
+                    </span>
+                  </label>
+                  {err("impression_verified") && (
+                    <p className="mt-1 text-sm text-destructive">
+                      {err("impression_verified")}
+                    </p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Documents merged onto the end of the letter */}
+        <Card variant="elevated" id="documents-section">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <Paperclip className="h-5 w-5 text-primary" />
+              <CardTitle>Documents</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Attached to the back of the finished letter.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border border-border p-4">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                    bReadFile
+                      ? "bg-success text-white"
+                      : "bg-accent text-foreground"
+                  }`}
+                >
+                  1
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">B-Read</span>
+                    <span className="rounded bg-accent px-2 py-0.5 text-xs text-muted-foreground">
+                      Appended to the letter
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    The same B-read the findings above were taken from.
+                  </p>
+                  <input
+                    key={`b-read-${uploadGeneration}`}
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    onChange={(e) => {
+                      setBReadFile(e.target.files?.[0] ?? null);
+                      setError(null);
+                    }}
+                    className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-accent/80"
+                  />
+                  {bReadFile && (
+                    <div className="flex items-center gap-2 text-sm text-success">
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="truncate">{bReadFile.name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
+              <Lock className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <p>
+                The B-read is merged into the letter here in your browser. It is never
+                uploaded to the server.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Submit */}
         <div className="flex flex-col gap-4 items-center">
@@ -666,6 +1054,12 @@ export default function DoctorLetterForm() {
           {attemptedSubmit && !form.formState.isValid && (
             <div className="text-sm text-muted-foreground">
               Please correct the errors above to continue
+            </div>
+          )}
+
+          {!bReadFile && (
+            <div className="text-sm text-muted-foreground">
+              Still needed: <span className="text-foreground">B-Read</span>
             </div>
           )}
 
@@ -705,9 +1099,15 @@ export default function DoctorLetterForm() {
                   <h3 className="text-lg font-medium text-foreground mb-2">
                     Letter drafted and downloaded
                   </h3>
+                  {submittedPages && (
+                    <p className="text-sm text-muted-foreground mb-1">
+                      {submittedPages.total} pages, signed, with the B-read on{" "}
+                      {submittedPages.bRead.includes("–") ? "pages" : "page"}{" "}
+                      {submittedPages.bRead}. Read it through before it goes out.
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">
-                    Send it off for signature. Added to{" "}
-                    {submittedClient.fields.Name}&apos;s log and billing:{" "}
+                    Added to {submittedClient.fields.Name}&apos;s log and billing:{" "}
                     <span className="font-medium text-foreground">
                       {submittedCharge}
                     </span>
@@ -722,8 +1122,8 @@ export default function DoctorLetterForm() {
       <div className="flex items-start gap-2 text-sm text-muted-foreground">
         <FileText className="h-4 w-4 flex-shrink-0 mt-0.5" />
         <p>
-          The letter downloads as a Word document so it can be reviewed and adjusted
-          before it goes out for signature.
+          The letter downloads finished: dated today, signed by the doctor, with the
+          B-read already on the end. Nothing to convert or attach afterwards.
         </p>
       </div>
     </div>

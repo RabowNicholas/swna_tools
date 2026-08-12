@@ -40,3 +40,5 @@ out/
 *_test.pdf
 test_*.pdf
 Address_Change_*.pdf
+# LibreOffice/ONLYOFFICE lock files, left behind while a template is open
+.~lock.*#

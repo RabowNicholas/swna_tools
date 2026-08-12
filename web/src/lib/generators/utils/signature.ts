@@ -59,8 +59,12 @@ const NOISE_AREA = 0.00002;
 /**
  * Crop an image down to its ink and make the paper background transparent.
  * Returns a PNG buffer, or null if the image has no discernible ink.
+ *
+ * Exported because the doctor letter needs the same treatment for a signature that ships
+ * with the app rather than one a user uploads: Dr. Toupin's signature on file is a scan on
+ * solid white, which would paint a box over the signature line if drawn as-is.
  */
-async function isolateInk(buffer: Buffer): Promise<Buffer | null> {
+export async function isolateInk(buffer: Buffer): Promise<Buffer | null> {
   // Pass 1: normalize orientation and flatten any existing transparency onto
   // white, so the analysis below sees the same thing a human sees.
   const normalized = await sharp(buffer)
