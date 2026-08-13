@@ -18,6 +18,7 @@ import {
 import { buildLogEntry } from "@/lib/airtable-log";
 import {
   fillTemplate,
+  firstNameOf,
   formatAmount,
   getTemplatesForTool,
 } from "@/lib/text-templates";
@@ -71,7 +72,10 @@ export interface TextTemplateCardProps {
   client: Client;
   /** Which form this card is on — selects the templates it offers */
   tool: string;
-  /** Client name as the form already parsed it, used to seed the name field */
+  /**
+   * Client name as the form already parsed it ("First Last"). Only the first
+   * name reaches the greeting — the card narrows it.
+   */
   defaultClientName: string;
 }
 
@@ -85,7 +89,7 @@ export function TextTemplateCard({
 
   const templates = useMemo(() => getTemplatesForTool(tool), [tool]);
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? "");
-  const [clientName, setClientName] = useState(defaultClientName);
+  const [clientName, setClientName] = useState(firstNameOf(defaultClientName));
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   // Edits the user makes to the composed message. Cleared whenever an input
   // changes, so a stale hand-edit can't outlive the values it was based on.
@@ -246,7 +250,7 @@ export function TextTemplateCard({
                 setClientName(e.target.value);
                 resetComposed();
               }}
-              helperText="How they're addressed in the text — a first name reads better"
+              helperText="How they're greeted in the text — edit if they go by something else"
             />
 
             {(template.fields ?? []).map((field) => (

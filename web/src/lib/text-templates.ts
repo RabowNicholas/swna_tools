@@ -101,6 +101,20 @@ export function getTemplatesForTool(tool: string): TextTemplate[] {
 }
 
 /**
+ * The name to greet someone by in a text. Client records hold "Last, First -
+ * 1234", which the forms parse to "First Last" for the documents they
+ * generate — but a text that opens with someone's full legal name reads like a
+ * form letter, so only the first name carries through to the greeting.
+ *
+ * A name of one word comes back unchanged, and the field stays editable for
+ * the people this guesses wrong: someone who goes by a middle name, a
+ * two-word first name, anyone whose record was typed in a different shape.
+ */
+export function firstNameOf(fullName: string): string {
+  return fullName.trim().split(/\s+/)[0] ?? "";
+}
+
+/**
  * Normalize a typed dollar amount for display: "85000" and "85,000" both come
  * back as "85,000". Anything that isn't a plain number is left alone so an
  * unusual entry still reaches the message rather than being silently mangled.
