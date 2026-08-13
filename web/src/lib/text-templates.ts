@@ -49,8 +49,9 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       "Hi {client_name}, this is {sender_name} with SWNA. The DOL has issued a " +
       "Recommended Decision of Acceptance for your claim under Part B & Part E. " +
       "I've submitted the waiver on your behalf so the claim can move forward. " +
-      "There's nothing further you need to do at this time. I'll keep you " +
-      "updated as soon as we receive the Final Decision.",
+      "There's nothing further you need to do at this time. I'll update you as " +
+      "soon as the Final Decision is issued. If you have any questions, feel " +
+      "free to give me a call.",
     logSummary: "RD acceptance (Part B & E)",
   },
   {
@@ -63,8 +64,9 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       "Hi {client_name}, this is {sender_name} with SWNA. The DOL has issued a " +
       "Recommended Decision of Acceptance for your claim in the amount of " +
       "${amount}. I've submitted the waiver on your behalf so payment can be " +
-      "processed. There's nothing further you need to do at this time—I'll " +
-      "update you once the Final Decision is issued.",
+      "processed. There's nothing further you need to do at this time. I'll " +
+      "update you as soon as the Final Decision is issued. If you have any " +
+      "questions, feel free to give me a call.",
     fields: [
       {
         key: "amount",
@@ -76,6 +78,20 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       },
     ],
     logSummary: "RD acceptance (${amount})",
+  },
+  {
+    id: "en16-submitted",
+    tool: "en16",
+    name: "EN-16 Submitted",
+    description:
+      "A questionnaire came in with a DOL letter and we've filled it out and sent it back.",
+    body:
+      "Hi {client_name}, this is {sender_name} with SWNA. We received a letter " +
+      "from the DOL with a questionnaire attached. We've submitted one of " +
+      "these for you before, so I've gone ahead and filled this one out and " +
+      "submitted it as well. There's nothing further you need to do at this " +
+      "time. If you have any questions, feel free to give me a call.",
+    logSummary: "EN-16 questionnaire",
   },
 ];
 

@@ -15,6 +15,7 @@ import { FileText, CheckCircle, Zap } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
+import { TextTemplateCard } from "@/components/text/TextTemplateCard";
 import {
   ClientSelector,
   parseClientName,
@@ -85,6 +86,12 @@ export default function EN16Form() {
       const displayName = parseClientName(fields.Name || "");
       form.setValue("name", displayName);
       form.setValue("case_id", fields["Case ID"] || "");
+
+      // A different client is a fresh start — the previous EN-16's success
+      // block must not carry over. Hiding it unmounts the log and text cards,
+      // so neither can be filed against the client who is no longer selected.
+      setFormSubmitted(false);
+      setSubmittedClient(null);
     }
   };
 
@@ -319,6 +326,14 @@ export default function EN16Form() {
             client={submittedClient}
             subject="the EN-16"
             action={(reference) => `Submitted EN-16 (*${reference})`}
+          />
+
+          {/* Canned client text letting them know we filled out and returned
+              the questionnaire that came with the DOL letter */}
+          <TextTemplateCard
+            client={submittedClient}
+            tool="en16"
+            defaultClientName={form.getValues("name")}
           />
         </>
       )}
