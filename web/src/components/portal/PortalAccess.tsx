@@ -108,6 +108,18 @@ export interface PortalAccessProps {
   autoOpen?: boolean;
 }
 
+/**
+ * The portal window this tab has open, if it still is.
+ *
+ * The portal is opened under a window name so a second call reuses the window
+ * instead of stacking up tabs — but reuse means `window.open` NAVIGATES it.
+ * Firing it again while a submission is half-entered drops the user back at
+ * the portal's front page and loses the work. Holding the reference lets an
+ * open portal be focused rather than reloaded. Module scope, because the
+ * window outlives any one mount of this component.
+ */
+let portalWindow: Window | null = null;
+
 export function PortalAccess({ client, autoOpen = true }: PortalAccessProps) {
   const portalData = extractPortalData(client);
 
@@ -123,6 +135,13 @@ export function PortalAccess({ client, autoOpen = true }: PortalAccessProps) {
   }, [autoOpen]);
 
   const openPortal = () => {
+    // Already open — bring it forward. Re-opening would reload it out from
+    // under whatever is entered in it.
+    if (portalWindow && !portalWindow.closed) {
+      portalWindow.focus();
+      return;
+    }
+
     // Open in a new window with specific dimensions and features
     const windowFeatures = [
       "width=1200",
@@ -139,7 +158,7 @@ export function PortalAccess({ client, autoOpen = true }: PortalAccessProps) {
 
     const portalUrl = "https://eclaimant.dol.gov/portal/?program_name=EN";
 
-    window.open(portalUrl, "DOLPortal", windowFeatures);
+    portalWindow = window.open(portalUrl, "DOLPortal", windowFeatures);
   };
 
   return (
