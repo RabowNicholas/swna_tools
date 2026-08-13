@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
-import { findUserByEmail, verifyPassword } from '@/lib/users';
+import { findUserByEmail, getUserById, verifyPassword } from '@/lib/users';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true, // Required for Vercel/production deployments
@@ -82,6 +82,20 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+
+        // Read the name, email and role off the user list rather than trusting
+        // the token's copy of them. A JWT session is written once at sign-in
+        // and then rolled forward on every renewal, carrying those values with
+        // it — so editing someone in users.ts never reaches a browser that
+        // stayed signed in. Renaming the nickswna account from "Admin User"
+        // left it signing client texts as "Admin User" for weeks. The id is
+        // what identifies the user; everything else is looked up fresh.
+        const user = getUserById(token.id as string);
+        if (user) {
+          session.user.name = user.name;
+          session.user.email = user.email;
+          session.user.role = user.role;
+        }
       }
       return session;
     },
