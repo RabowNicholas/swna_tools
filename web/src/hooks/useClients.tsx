@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { clientStorage, Client } from '@/lib/clientStorage';
 import { useClientContext } from '@/contexts/ClientContext';
 
@@ -18,14 +18,17 @@ export function useClients(): UseClientsReturn {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [localError, setLocalError] = useState<string | null>(null);
+  const hasLoaded = useRef(false);
 
   const refreshClients = useCallback(async (force: boolean = false) => {
-    setLoading(true);
+    // Background refreshes don't block — same reasoning as ClientContext
+    if (!hasLoaded.current) setLoading(true);
     setLocalError(null);
 
     try {
       const fetchedClients = await clientStorage.getClients(force);
       setClients(fetchedClients);
+      hasLoaded.current = true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load clients';
       setLocalError(errorMessage);

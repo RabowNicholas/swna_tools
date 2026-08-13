@@ -19,14 +19,23 @@ export function ClientProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true); // Start as loading
   const [error, setError] = useState<string | null>(null);
   const hasInitialized = useRef(false);
+  // Whether a list has ever landed. Gates the loading flag below — see why it
+  // matters there.
+  const hasLoaded = useRef(false);
 
   const refreshClients = useCallback(async (force: boolean = false) => {
-    setLoading(true);
+    // Only the first load blocks. Every form page renders a full-page spinner
+    // while `loading` is true, so raising it for a background refresh unmounts
+    // the open form along with whatever card asked for the refresh — the
+    // Airtable log card would lose the reference number it had just written
+    // and come back blank, making a successful write look like it reset.
+    if (!hasLoaded.current) setLoading(true);
     setError(null);
 
     try {
       const fetchedClients = await clientStorage.getClients(force);
       setClients(fetchedClients);
+      hasLoaded.current = true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load clients';
       setError(errorMessage);
