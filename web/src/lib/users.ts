@@ -122,7 +122,7 @@ export const users: User[] = [
   },
   {
     id: "14",
-    email: "ThorinSWNA@yahoo.com",
+    email: "thorinswna@outlook.com",
     name: "Thorin",
     hashedPassword:
       "$2b$10$fJ1VRt6puHHLfhIu9c9aruvzNEFMF9IXqQu/wwoB0m0TI7L95mLQm",
