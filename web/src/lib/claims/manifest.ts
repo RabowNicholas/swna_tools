@@ -162,30 +162,18 @@ function medicalEvidence(category: ConditionCategory): DocumentSlot[] {
     ];
   }
 
-  // Work-related asthma is claimed off the diagnosis letter; the records behind
-  // it (PFT, OAA, follow-up notes) go in when we have them, but a missing one
-  // doesn't hold the claim.
-  if (category === 'work_related_asthma') {
-    return [
-      dxLetter,
-      {
-        id: 'medical_records',
-        label: 'Supporting Medical Records',
-        source: 'upload',
-        required: false,
-        hint: 'Optional — PFT, OAA, and follow-up visit notes. Include whatever supports the diagnosis.',
-      },
-    ];
-  }
-
+  // Everything else is claimed off the diagnosis letter. The records behind it
+  // (PFT, OAA, follow-up notes) are usually attached to the letter already, so
+  // they go in separately only when we hold them loose — a missing one doesn't
+  // hold the claim.
   return [
     dxLetter,
     {
       id: 'medical_records',
       label: 'Supporting Medical Records',
       source: 'upload',
-      required: true,
-      hint: 'Everything used to make the diagnosis — e.g. for asthma: PFT, OAA, and follow-up visit notes.',
+      required: false,
+      hint: 'Optional — often already attached to the diagnosis letter. Add anything that supports it, e.g. for asthma: PFT, OAA, and follow-up visit notes.',
     },
   ];
 }
