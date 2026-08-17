@@ -101,9 +101,14 @@ const SMALL_LINE_HEIGHT = 11.5;
 const BODY_BOTTOM = 60;
 /** The claimant identifier block sits to the right of the date. */
 const IDENTIFIER_X = 330;
-/** The signature is indented from the margin and drawn at its measured size. */
+/**
+ * The signature is indented from the margin and drawn at the ink height measured off the
+ * reference letter. The width follows from the image's own proportions rather than a second
+ * measured constant: a fixed width/height pair does not stay in step with whatever the ink
+ * isolation crops to, and the mismatched pair it replaced stretched the strokes sideways by a
+ * fifth, which reads as a thin signature.
+ */
 const SIGNATURE_X = MARGIN_X + 15.4;
-const SIGNATURE_WIDTH = 126;
 const SIGNATURE_HEIGHT = 49;
 /** "Respectfully," baseline down to the bottom edge of the signature image. */
 const SIGNATURE_BOTTOM_DROP = 52.5;
@@ -508,10 +513,12 @@ export class DoctorLetterGenerator {
     });
 
     const signatureImage = await pdfDoc.embedPng(await loadSignature());
+    const signatureWidth =
+      SIGNATURE_HEIGHT * (signatureImage.width / signatureImage.height);
     flow.currentPage.drawImage(signatureImage, {
       x: SIGNATURE_X,
       y: respectfully - SIGNATURE_BOTTOM_DROP,
-      width: SIGNATURE_WIDTH,
+      width: signatureWidth,
       height: SIGNATURE_HEIGHT,
     });
 
