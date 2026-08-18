@@ -56,6 +56,15 @@ const WAIVER_OPTIONS = [
   },
 ] as const;
 
+// The RD tags offered after the waiver is logged, so the tag doesn't have to be
+// set by hand in Airtable. Only offered for Option 2 — Option 1 reserves the
+// right to object to the denied portion, so the RD isn't settled yet.
+const RD_STATUS_OPTIONS = [
+  { value: "RD Accept", label: "RD Accept" },
+  { value: "RD Accept IR", label: "RD Accept IR" },
+  { value: "RD Deny", label: "RD Deny" },
+];
+
 interface Client {
   id: string;
   fields: {
@@ -244,9 +253,12 @@ export default function RDWaiverForm() {
 
   // The act logged on the client's Airtable record, built from the option
   // actually signed on the generated waiver
-  const waiverLogAction = (reference: string) => {
+  const waiverLogAction = (reference: string, statusTags: string[]) => {
     const option = WAIVER_OPTIONS.find((o) => o.value === submittedOption);
-    return `Submitted RD waiver, Option ${submittedOption} (${option?.summary}) (*${reference})`;
+    const act = `Submitted RD waiver, Option ${submittedOption} (${option?.summary}) (*${reference})`;
+    return statusTags.length
+      ? `${act}, ${statusTags.join(" and ")} tag added`
+      : act;
   };
 
   if (clientsLoading) {
@@ -499,6 +511,14 @@ export default function RDWaiverForm() {
                 client={submittedClient}
                 subject="the waiver"
                 action={waiverLogAction}
+                statusPicker={
+                  submittedOption === "2"
+                    ? {
+                        label: "Add an RD tag (optional)",
+                        options: RD_STATUS_OPTIONS,
+                      }
+                    : undefined
+                }
               />
             )}
 

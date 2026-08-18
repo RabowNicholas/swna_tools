@@ -26,14 +26,27 @@ export type ExtraFields =
   | { fields: Record<string, string | string[]> }
   | { error: string };
 
+/**
+ * An optional set of Status tags to offer alongside the log entry, so a tag
+ * that always follows a submission can be applied without opening Airtable.
+ * The picked tag is prepended to the record's existing Status rather than
+ * replacing it — see the `prepend` handling in `/api/clients`.
+ */
+export interface StatusPicker {
+  /** Sentence above the choices */
+  label: string;
+  options: { value: string; label: string }[];
+}
+
 interface AirtableLogCardProps {
   client: Client;
   /**
    * The completed act to log, built from the reference number the portal gave
-   * back, e.g. `Submitted RD waiver, Option 1 (*12345)`. Goes through
-   * `buildLogEntry` so every tool's entries read the same way.
+   * back and whichever Status tag was picked, e.g. `Submitted RD waiver,
+   * Option 1 (*12345)`. Goes through `buildLogEntry` so every tool's entries
+   * read the same way.
    */
-  action: (reference: string) => string;
+  action: (reference: string, statusTags: string[]) => string;
   /**
    * What was submitted, in the form "the waiver" — fills the default
    * description and confirmation.
@@ -46,6 +59,8 @@ interface AirtableLogCardProps {
   /** Overrides the preview above the button, which defaults to the log line */
   preview?: ReactNode;
   extraFields?: () => ExtraFields;
+  /** Offers a Status tag to add in the same write. Omit to show no picker. */
+  statusPicker?: StatusPicker;
 }
 
 /**
@@ -66,17 +81,21 @@ export function AirtableLogCard({
   confirmation,
   preview,
   extraFields,
+  statusPicker,
 }: AirtableLogCardProps) {
   const { data: session } = useSession();
   const { refreshClients } = useClients();
   const [referenceNumber, setReferenceNumber] = useState("");
+  const [statusTag, setStatusTag] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const clientName = client.fields.Name;
+  // Picking a tag is optional — a submission that warrants no tag still logs.
+  const statusTags = statusPicker && statusTag ? [statusTag] : [];
   const logEntry = (reference: string) =>
-    buildLogEntry(action(reference), session?.user?.email);
+    buildLogEntry(action(reference, statusTags), session?.user?.email);
 
   const handleUpdate = async () => {
     const reference = referenceNumber.trim();
@@ -101,6 +120,9 @@ export function AirtableLogCard({
           ...(extra ? { fields: extra.fields } : {}),
           prepend: {
             Log: logEntry(reference),
+            // Goes through `prepend` rather than `fields` so the tag is merged
+            // ahead of the record's existing Status instead of replacing it.
+            ...(statusTags.length ? { Status: statusTags } : {}),
           },
         }),
       });
@@ -167,6 +189,12 @@ export function AirtableLogCard({
                     {subject.charAt(0).toUpperCase()}
                     {subject.slice(1)} was added to {clientName}&apos;s log with
                     reference {referenceNumber.trim()}.
+                    {statusTags.length > 0 && (
+                      <>
+                        {" "}
+                        The {statusTags.join(" and ")} tag was added to Status.
+                      </>
+                    )}
                   </>
                 )}
               </p>
@@ -183,6 +211,43 @@ export function AirtableLogCard({
               disabled={updating}
               helperText="Shown by the submission portal after you submit"
             />
+
+            {statusPicker && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-foreground">
+                  {statusPicker.label}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {statusPicker.options.map((opt) => {
+                    const selected = statusTag === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        // Clicking the picked tag again clears it, so a mispick
+                        // doesn't need a reload to undo.
+                        onClick={() =>
+                          setStatusTag(selected ? null : opt.value)
+                        }
+                        disabled={updating}
+                        className={`rounded-lg border px-3 py-2 text-sm transition-colors disabled:opacity-50 ${
+                          selected
+                            ? "border-primary bg-primary/5 font-medium text-foreground"
+                            : "border-border text-muted-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {statusTag
+                    ? `Adds the ${statusTag} tag to the client's Status, keeping the tags already on the record.`
+                    : "Optional — leave unpicked to log without changing Status."}
+                </p>
+              </div>
+            )}
 
             {error && (
               <div className="flex items-start text-sm text-destructive">
