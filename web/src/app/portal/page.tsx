@@ -19,6 +19,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   ClientSelector,
 } from "@/components/form/ClientSelector";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 
 interface PortalData {
   caseId: string;
@@ -330,6 +331,30 @@ function PortalPageContent() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Airtable update — this tool doesn't produce the submission
+                  itself, so the user says what went in before it's logged */}
+              <AirtableLogCard
+                key={selectedClientId}
+                client={selectedClient}
+                subject="the submission"
+                action={(reference, _statusTags, submission) =>
+                  `Submitted ${submission} (*${reference})`
+                }
+                submissionField={{
+                  label: "What was submitted",
+                  placeholder: "e.g. supporting medical records",
+                  helperText:
+                    "Written into the log as-is, so phrase it the way it should read",
+                }}
+                description={
+                  <>
+                    Once you&apos;ve submitted in the portal, say what you sent
+                    and paste the reference number to log it on the
+                    client&apos;s record.
+                  </>
+                }
+              />
             </>
           ) : (
             <Card

@@ -38,6 +38,18 @@ export interface StatusPicker {
   options: { value: string; label: string }[];
 }
 
+/**
+ * A free-text field asking what was submitted, for tools where the submission
+ * isn't one fixed document. What the user types is passed to `action` and
+ * nothing is written until it's filled in.
+ */
+export interface SubmissionField {
+  /** Label above the box */
+  label: string;
+  placeholder?: string;
+  helperText?: string;
+}
+
 interface AirtableLogCardProps {
   client: Client;
   /**
@@ -46,7 +58,11 @@ interface AirtableLogCardProps {
    * Option 1 (*12345)`. Goes through `buildLogEntry` so every tool's entries
    * read the same way.
    */
-  action: (reference: string, statusTags: string[]) => string;
+  action: (
+    reference: string,
+    statusTags: string[],
+    submission: string
+  ) => string;
   /**
    * What was submitted, in the form "the waiver" — fills the default
    * description and confirmation.
@@ -61,6 +77,11 @@ interface AirtableLogCardProps {
   extraFields?: () => ExtraFields;
   /** Offers a Status tag to add in the same write. Omit to show no picker. */
   statusPicker?: StatusPicker;
+  /**
+   * Asks the user what was submitted before the write can go ahead. Omit for
+   * tools that already know — the log line is fixed there.
+   */
+  submissionField?: SubmissionField;
 }
 
 /**
@@ -82,11 +103,13 @@ export function AirtableLogCard({
   preview,
   extraFields,
   statusPicker,
+  submissionField,
 }: AirtableLogCardProps) {
   const { data: session } = useSession();
   const { refreshClients } = useClients();
   const [referenceNumber, setReferenceNumber] = useState("");
   const [statusTag, setStatusTag] = useState<string | null>(null);
+  const [submission, setSubmission] = useState("");
   const [updating, setUpdating] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -94,12 +117,15 @@ export function AirtableLogCard({
   const clientName = client.fields.Name;
   // Picking a tag is optional — a submission that warrants no tag still logs.
   const statusTags = statusPicker && statusTag ? [statusTag] : [];
+  const submitted = submission.trim();
+  // A card that asks what was submitted can't log until it's been answered.
+  const ready = !!referenceNumber.trim() && (!submissionField || !!submitted);
   const logEntry = (reference: string) =>
-    buildLogEntry(action(reference, statusTags), session?.user?.email);
+    buildLogEntry(action(reference, statusTags, submitted), session?.user?.email);
 
   const handleUpdate = async () => {
     const reference = referenceNumber.trim();
-    if (!reference) return;
+    if (!reference || !ready) return;
 
     const extra = extraFields?.();
     if (extra && "error" in extra) {
@@ -202,6 +228,18 @@ export function AirtableLogCard({
           </div>
         ) : (
           <div className="space-y-4">
+            {submissionField && (
+              <Input
+                label={submissionField.label}
+                required
+                placeholder={submissionField.placeholder}
+                value={submission}
+                onChange={(e) => setSubmission(e.target.value)}
+                disabled={updating}
+                helperText={submissionField.helperText}
+              />
+            )}
+
             <Input
               label="Portal Reference Number"
               required
@@ -270,7 +308,7 @@ export function AirtableLogCard({
             <Button
               type="button"
               onClick={handleUpdate}
-              disabled={!referenceNumber.trim() || updating}
+              disabled={!ready || updating}
               loading={updating}
               icon={<Database className="h-5 w-5" />}
             >
