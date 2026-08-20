@@ -61,7 +61,10 @@ const WAIVER_OPTIONS = [
 // right to object to the denied portion, so the RD isn't settled yet.
 const RD_STATUS_OPTIONS = [
   { value: "RD Accept", label: "RD Accept" },
-  { value: "RD Accept IR", label: "RD Accept IR" },
+  // The RD is what the IR was submitted for, so accepting it answers the
+  // earlier tag rather than sitting next to it — drop IR Submitted in the
+  // same write.
+  { value: "RD Accept IR", label: "RD Accept IR", removes: ["IR Submitted"] },
   { value: "RD Deny", label: "RD Deny" },
 ];
 

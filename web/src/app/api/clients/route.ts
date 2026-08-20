@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Require authentication
     await requireAuth();
 
-    const { recordId, fields, prepend } = await request.json();
+    const { recordId, fields, prepend, remove } = await request.json();
 
     if (!recordId) {
       return NextResponse.json(
@@ -54,8 +54,17 @@ export async function POST(request: NextRequest) {
           : `${prepend.Log}\n`;
       }
 
-      if (Array.isArray(prepend.Status) && prepend.Status.length > 0) {
-        const newTags: string[] = prepend.Status;
+      // Status is rewritten whole, so adds and removes are resolved together
+      // against what the record currently holds. A tag named in both is kept —
+      // the caller asked for it, and dropping it would be the surprising read.
+      const addedStatus: string[] = Array.isArray(prepend.Status)
+        ? prepend.Status
+        : [];
+      const removedStatus: string[] = Array.isArray(remove?.Status)
+        ? remove.Status
+        : [];
+
+      if (addedStatus.length > 0 || removedStatus.length > 0) {
         const rawStatus = current.fields.Status;
         const currentStatus: string[] = Array.isArray(rawStatus)
           ? (rawStatus as string[])
@@ -63,8 +72,10 @@ export async function POST(request: NextRequest) {
             ? [String(rawStatus)]
             : [];
         mergedFields.Status = [
-          ...newTags,
-          ...currentStatus.filter((t) => !newTags.includes(t)),
+          ...addedStatus,
+          ...currentStatus.filter(
+            (t) => !addedStatus.includes(t) && !removedStatus.includes(t)
+          ),
         ];
       }
 

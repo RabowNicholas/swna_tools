@@ -35,7 +35,15 @@ export type ExtraFields =
 export interface StatusPicker {
   /** Sentence above the choices */
   label: string;
-  options: { value: string; label: string }[];
+  options: {
+    value: string;
+    label: string;
+    /**
+     * Tags this choice supersedes, dropped from Status in the same write —
+     * for a tag that answers an earlier one rather than sitting beside it.
+     */
+    removes?: string[];
+  }[];
 }
 
 /**
@@ -116,7 +124,9 @@ export function AirtableLogCard({
 
   const clientName = client.fields.Name;
   // Picking a tag is optional — a submission that warrants no tag still logs.
+  const pickedOption = statusPicker?.options.find((o) => o.value === statusTag);
   const statusTags = statusPicker && statusTag ? [statusTag] : [];
+  const removedTags = pickedOption?.removes ?? [];
   const submitted = submission.trim();
   // A card that asks what was submitted can't log until it's been answered.
   const ready = !!referenceNumber.trim() && (!submissionField || !!submitted);
@@ -150,6 +160,9 @@ export function AirtableLogCard({
             // ahead of the record's existing Status instead of replacing it.
             ...(statusTags.length ? { Status: statusTags } : {}),
           },
+          // Resolved against the record's current Status in the same PATCH, so
+          // the superseded tag can't survive the one that replaces it.
+          ...(removedTags.length ? { remove: { Status: removedTags } } : {}),
         }),
       });
 
@@ -218,7 +231,11 @@ export function AirtableLogCard({
                     {statusTags.length > 0 && (
                       <>
                         {" "}
-                        The {statusTags.join(" and ")} tag was added to Status.
+                        The {statusTags.join(" and ")} tag was added to Status
+                        {removedTags.length > 0 && (
+                          <> and {removedTags.join(" and ")} was removed</>
+                        )}
+                        .
                       </>
                     )}
                   </>
@@ -281,7 +298,11 @@ export function AirtableLogCard({
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {statusTag
-                    ? `Adds the ${statusTag} tag to the client's Status, keeping the tags already on the record.`
+                    ? removedTags.length > 0
+                      ? `Adds the ${statusTag} tag to the client's Status and removes ${removedTags.join(
+                          " and "
+                        )}, keeping the other tags already on the record.`
+                      : `Adds the ${statusTag} tag to the client's Status, keeping the tags already on the record.`
                     : "Optional — leave unpicked to log without changing Status."}
                 </p>
               </div>
