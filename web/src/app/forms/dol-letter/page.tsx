@@ -359,12 +359,22 @@ export default function DolLetterForm() {
           <PortalAccess client={submittedClient as any} autoOpen={true} />
 
           {/* Airtable update — after submitting in the portal, paste the
-              reference number here to log the letter on the client */}
+              reference number here to log the letter on the client. The letter
+              is free-form, so the log line only says anything useful if the
+              user describes what it was about. */}
           <AirtableLogCard
             key={submissionId}
             client={submittedClient}
             subject="the letter"
-            action={(reference) => `Submitted DOL letter (*${reference})`}
+            action={(reference, _statusTags, submission) =>
+              `Submitted DOL letter re: ${submission} (*${reference})`
+            }
+            submissionField={{
+              label: "What the letter was for",
+              placeholder: "e.g. requesting a copy of the case file",
+              helperText:
+                "Written into the log as-is, so phrase it the way it should read",
+            }}
           />
         </>
       )}
