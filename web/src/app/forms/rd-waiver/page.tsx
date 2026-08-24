@@ -60,7 +60,10 @@ const WAIVER_OPTIONS = [
 // set by hand in Airtable. Only offered for Option 2 — Option 1 reserves the
 // right to object to the denied portion, so the RD isn't settled yet.
 const RD_STATUS_OPTIONS = [
-  { value: "RD Accept", label: "RD Accept" },
+  // The RD is what the claim was developed for, so accepting it answers the
+  // earlier tag rather than sitting next to it — drop Claim Developed in the
+  // same write.
+  { value: "RD Accept", label: "RD Accept", removes: ["Claim Developed"] },
   // The RD is what the IR was submitted for, so accepting it answers the
   // earlier tag rather than sitting next to it — drop IR Submitted in the
   // same write.
