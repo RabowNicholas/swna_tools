@@ -70,8 +70,12 @@ function CopyButton({
 
 export interface TextTemplateCardProps {
   client: Client;
-  /** Which form this card is on — selects the templates it offers */
-  tool: string;
+  /**
+   * Which form this card is on — selects the templates it offers. Omit to
+   * offer every template regardless of source form (the standalone
+   * text-message tool).
+   */
+  tool?: string;
   /**
    * Client name as the form already parsed it ("First Last"). Only the first
    * name reaches the greeting — the card narrows it.
@@ -121,6 +125,9 @@ export function TextTemplateCard({
         key === "amount" ? formatAmount(value) : value,
       ])
     ),
+    // Derived last so a computed token (e.g. a dollar amount from a typed
+    // percentage) wins over anything with the same name in fieldValues.
+    ...(template?.computeTokens?.(fieldValues) ?? {}),
   };
 
   const composed = template ? fillTemplate(template.body, tokenValues) : "";

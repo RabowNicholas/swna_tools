@@ -17,7 +17,8 @@ import {
   Bell,
   FileEdit,
   BookOpen,
-  Phone
+  Phone,
+  MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
@@ -94,6 +95,7 @@ const navigationCategories: NavigationCategory[] = [
     icon: Users,
     items: [
       { name: 'Client Manager', href: '/clients', icon: Users, description: 'View and manage client data' },
+      { name: 'Text a Client', href: '/forms/text-message', icon: MessageSquare, description: 'Send a canned text and log it' },
     ]
   },
 ];

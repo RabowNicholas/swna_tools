@@ -172,6 +172,12 @@ export default function Home() {
       description: "",
       href: "/clients",
     },
+    {
+      id: "text-message",
+      name: "Text a Client",
+      description: "Send a canned text and log it to the client's record",
+      href: "/forms/text-message",
+    },
     // Analytics
     {
       id: "pipeline",
@@ -205,7 +211,7 @@ export default function Home() {
     billing: allTools.filter((tool) => ["invoice"].includes(tool.id)),
     analytics: allTools.filter((tool) => ["pipeline"].includes(tool.id)),
     clientManagement: allTools.filter((tool) =>
-      ["clients", "portal"].includes(tool.id)
+      ["clients", "text-message", "portal"].includes(tool.id)
     ),
     portalAccess: allTools.filter((tool) => ["portal"].includes(tool.id)),
   };

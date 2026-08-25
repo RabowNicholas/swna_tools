@@ -32,6 +32,13 @@ export interface TextTemplate {
   /** Inputs beyond client name and sender name */
   fields?: TextTemplateField[];
   /**
+   * Derives extra tokens from what was typed into `fields`, for a value the
+   * client shouldn't have to compute by hand — e.g. a dollar figure from a
+   * percentage. Runs after the raw field values are collected, so a returned
+   * token can override one of the same name.
+   */
+  computeTokens?: (fieldValues: Record<string, string>) => Record<string, string>;
+  /**
    * Phrase describing this text in the Airtable log. May itself contain
    * tokens, so a logged amount matches the amount that was texted.
    */
@@ -53,6 +60,21 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       "soon as the Final Decision is issued. If you have any questions, feel " +
       "free to give me a call.",
     logSummary: "RD acceptance (Part B & E)",
+  },
+  {
+    id: "rd-accept-part-e",
+    tool: "rd-waiver",
+    name: "RD Accept — Part E Only",
+    description:
+      "Acceptance covering Part E only, with no dollar figure to quote yet.",
+    body:
+      "Hi {client_name}, this is {sender_name} with SWNA. The DOL has issued a " +
+      "Recommended Decision of Acceptance for your claim under Part E. I've " +
+      "submitted the waiver on your behalf so the claim can move forward. " +
+      "There's nothing further you need to do at this time. I'll update you as " +
+      "soon as the Final Decision is issued. If you have any questions, feel " +
+      "free to give me a call.",
+    logSummary: "RD acceptance (Part E)",
   },
   {
     id: "rd-accept-monetary",
@@ -93,11 +115,51 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       "time. If you have any questions, feel free to give me a call.",
     logSummary: "EN-16 questionnaire",
   },
+  {
+    id: "ir-report-submitted",
+    tool: "text-message",
+    name: "IR Report Submitted",
+    description:
+      "A new impairment rating came back and has been submitted to the DOL.",
+    body:
+      "Hi {client_name} this is {sender_name} with SWNA. We just received your " +
+      "new impairment report. Your doctor rated you at {percentage}%, and I've " +
+      "submitted that report to the Department of Labor for review.\n" +
+      "For compensation, every 1% is worth $2,500 under Part E. At " +
+      "{percentage}%, this equals ${amount} in potential compensation if the " +
+      "DOL accepts the rating.\n" +
+      "I'll keep you updated as soon as we hear back from them. Let me know if " +
+      "you have any questions.",
+    fields: [
+      {
+        key: "percentage",
+        label: "Impairment Rating (%)",
+        placeholder: "25",
+        helperText: "The rating from the new impairment report",
+        required: true,
+      },
+    ],
+    // $2,500 per percentage point under Part E — the client never types this,
+    // it's derived from the rating so the two figures can't drift apart.
+    computeTokens: (fieldValues): Record<string, string> => {
+      const percentage = parseFloat(fieldValues.percentage);
+      return Number.isFinite(percentage)
+        ? { amount: formatAmount(String(percentage * 2500)) }
+        : {};
+    },
+    logSummary: "IR report submitted ({percentage}%, ${amount})",
+  },
 ];
 
-/** Templates a given form should offer, in the order they're defined. */
-export function getTemplatesForTool(tool: string): TextTemplate[] {
-  return TEXT_TEMPLATES.filter((template) => template.tool === tool);
+/**
+ * Templates a given form should offer, in the order they're defined. Omit
+ * `tool` to get every template regardless of which form it belongs to — used
+ * by the standalone text-message tool, which isn't tied to one document flow.
+ */
+export function getTemplatesForTool(tool?: string): TextTemplate[] {
+  return tool
+    ? TEXT_TEMPLATES.filter((template) => template.tool === tool)
+    : TEXT_TEMPLATES;
 }
 
 /**
