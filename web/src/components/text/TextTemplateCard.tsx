@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
@@ -213,39 +214,26 @@ export function TextTemplateCard({
         <div className="space-y-6">
           {/* Template picker — hidden when a tool only offers one */}
           {templates.length > 1 && (
-            <div className="space-y-3">
-              {templates.map((option) => {
-                const selected = option.id === templateId;
-                return (
-                  <label
-                    key={option.id}
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${
-                      selected
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      value={option.id}
-                      checked={selected}
-                      onChange={() => {
-                        setTemplateId(option.id);
-                        resetComposed();
-                      }}
-                      className="mt-1 h-4 w-4 accent-primary"
-                    />
-                    <div>
-                      <div className="font-medium text-foreground">
-                        {option.name}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {option.description}
-                      </p>
-                    </div>
-                  </label>
-                );
-              })}
+            <div className="space-y-2">
+              <Select
+                label="Message Template"
+                value={templateId}
+                onChange={(e) => {
+                  setTemplateId(e.target.value);
+                  resetComposed();
+                }}
+              >
+                {templates.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.name}
+                  </option>
+                ))}
+              </Select>
+              {template && (
+                <p className="text-sm text-muted-foreground">
+                  {template.description}
+                </p>
+              )}
             </div>
           )}
 
