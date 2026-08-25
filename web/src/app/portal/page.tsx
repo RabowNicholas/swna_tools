@@ -21,6 +21,32 @@ import {
 } from "@/components/form/ClientSelector";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 
+// Tags a fresh IR Report submission supersedes — every stage a case can be at
+// while an IR is being scheduled or is out with a doctor, from pipeline-config.ts's
+// impairment_rating stage (minus the terminal tags that already mean it's back).
+const IR_IN_PROGRESS_TAGS = [
+  "Pre-IR",
+  "Pre-Dr. Lewis IR",
+  "Pre-La Plata IR",
+  "IR (Dr. Lewis)",
+  "IR (La Plata)",
+  "IR (Dr. Soo Hoo)",
+  "IR (Dr. Lakatosh)",
+  "IR Recommended",
+];
+
+// Submissions common enough through the portal that the tag work shouldn't
+// have to happen by hand in Airtable afterward. Add another entry here for
+// the next common one.
+const COMMON_SUBMISSIONS = [
+  {
+    value: "IR Submitted",
+    label: "IR Report",
+    submissionText: "IR Report",
+    removes: IR_IN_PROGRESS_TAGS,
+  },
+];
+
 interface PortalData {
   caseId: string;
   lastName: string;
@@ -346,6 +372,10 @@ function PortalPageContent() {
                   placeholder: "e.g. supporting medical records",
                   helperText:
                     "Written into the log as-is, so phrase it the way it should read",
+                }}
+                statusPicker={{
+                  label: "Common Submission (optional)",
+                  options: COMMON_SUBMISSIONS,
                 }}
                 description={
                   <>

@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Database, CheckCircle, AlertCircle } from "lucide-react";
 import { buildLogEntry } from "@/lib/airtable-log";
@@ -43,6 +44,13 @@ export interface StatusPicker {
      * for a tag that answers an earlier one rather than sitting beside it.
      */
     removes?: string[];
+    /**
+     * Prefills the submission field (when the card has one) so a common
+     * submission doesn't need its description typed out by hand. Overwrites
+     * whatever was there when picked; left alone if the choice is cleared, so
+     * a hand-edit made after picking survives an accidental re-toggle.
+     */
+    submissionText?: string;
   }[];
 }
 
@@ -269,33 +277,28 @@ export function AirtableLogCard({
 
             {statusPicker && (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-foreground">
-                  {statusPicker.label}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {statusPicker.options.map((opt) => {
-                    const selected = statusTag === opt.value;
-                    return (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        // Clicking the picked tag again clears it, so a mispick
-                        // doesn't need a reload to undo.
-                        onClick={() =>
-                          setStatusTag(selected ? null : opt.value)
-                        }
-                        disabled={updating}
-                        className={`rounded-lg border px-3 py-2 text-sm transition-colors disabled:opacity-50 ${
-                          selected
-                            ? "border-primary bg-primary/5 font-medium text-foreground"
-                            : "border-border text-muted-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
+                <Select
+                  label={statusPicker.label}
+                  value={statusTag ?? ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setStatusTag(value || null);
+                    const picked = statusPicker.options.find(
+                      (o) => o.value === value
                     );
-                  })}
-                </div>
+                    if (picked?.submissionText) {
+                      setSubmission(picked.submissionText);
+                    }
+                  }}
+                  disabled={updating}
+                >
+                  <option value="">None</option>
+                  {statusPicker.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </Select>
                 <p className="text-xs text-muted-foreground">
                   {statusTag
                     ? removedTags.length > 0
