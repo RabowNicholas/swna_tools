@@ -123,14 +123,23 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       "A new impairment rating came back and has been submitted to the DOL.",
     body:
       "Hi {client_name} this is {sender_name} with SWNA. We just received your " +
-      "new impairment report. Your doctor rated you at {percentage}%, and I've " +
-      "submitted that report to the Department of Labor for review.\n" +
+      "new impairment report. Your doctor rated you at {percentage}%, up from " +
+      "your previous rating of {previous_percentage}%, and I've submitted that " +
+      "report to the Department of Labor for review.\n" +
       "For compensation, every 1% is worth $2,500 under Part E. At " +
       "{percentage}%, this equals ${amount} in potential compensation if the " +
-      "DOL accepts the rating.\n" +
+      "DOL accepts the rating — an increase of ${increase_amount} over your " +
+      "previous rating.\n" +
       "I'll keep you updated as soon as we hear back from them. Let me know if " +
       "you have any questions.",
     fields: [
+      {
+        key: "previous_percentage",
+        label: "Previous Impairment Rating (%)",
+        placeholder: "15",
+        helperText: "The rating from their last impairment report",
+        required: true,
+      },
       {
         key: "percentage",
         label: "Impairment Rating (%)",
@@ -139,15 +148,27 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
         required: true,
       },
     ],
-    // $2,500 per percentage point under Part E — the client never types this,
-    // it's derived from the rating so the two figures can't drift apart.
+    // $2,500 per percentage point under Part E — the client never types the
+    // dollar figures, they're derived from the ratings so they can't drift
+    // apart from what's typed into the fields.
     computeTokens: (fieldValues): Record<string, string> => {
       const percentage = parseFloat(fieldValues.percentage);
-      return Number.isFinite(percentage)
-        ? { amount: formatAmount(String(percentage * 2500)) }
-        : {};
+      const previousPercentage = parseFloat(fieldValues.previous_percentage);
+      if (!Number.isFinite(percentage)) return {};
+
+      const tokens: Record<string, string> = {
+        amount: formatAmount(String(percentage * 2500)),
+      };
+      if (Number.isFinite(previousPercentage)) {
+        tokens.increase_amount = formatAmount(
+          String((percentage - previousPercentage) * 2500)
+        );
+      }
+      return tokens;
     },
-    logSummary: "IR report submitted ({percentage}%, ${amount})",
+    logSummary:
+      "IR report submitted ({previous_percentage}% → {percentage}%, " +
+      "${amount}, +${increase_amount})",
   },
 ];
 
