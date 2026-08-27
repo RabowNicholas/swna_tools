@@ -601,7 +601,10 @@ export default function DesertPulmForm() {
             </Card>
 
             {submittedClient && (
-              <DPReferralEmailDraft patientName={form.watch("patient_name")} />
+              <DPReferralEmailDraft
+                patientName={form.watch("patient_name")}
+                client={submittedClient}
+              />
             )}
           </>
         )}

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useClients } from '@/hooks/useClients';
 import { Button } from '@/components/ui/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Mail, Copy, ExternalLink, CheckCircle } from 'lucide-react';
+import { Mail, Copy, ExternalLink, CheckCircle, Database, AlertCircle } from 'lucide-react';
 import {
   EMAIL_ADDRESSES,
   formatDPReferralEmailBody,
@@ -11,9 +13,19 @@ import {
   createMailtoLink,
   formatCompleteEmail,
 } from '@/lib/email-utils';
+import { buildLogEntry } from '@/lib/airtable-log';
+
+interface Client {
+  id: string;
+  fields: {
+    Name?: string;
+    [key: string]: string | string[] | undefined;
+  };
+}
 
 export interface DPReferralEmailDraftProps {
   patientName: string;
+  client: Client;
 }
 
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -42,7 +54,9 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   );
 }
 
-export function DPReferralEmailDraft({ patientName }: DPReferralEmailDraftProps) {
+export function DPReferralEmailDraft({ patientName, client }: DPReferralEmailDraftProps) {
+  const { data: session } = useSession();
+  const { refreshClients } = useClients();
   const to = [EMAIL_ADDRESSES.ao];
   const cc: string[] = [];
   const subject = getDPReferralSubjectLine(patientName);
@@ -50,6 +64,59 @@ export function DPReferralEmailDraft({ patientName }: DPReferralEmailDraftProps)
 
   const mailtoLink = createMailtoLink(to, cc, subject, body);
   const completeEmail = formatCompleteEmail(to, cc, subject, body);
+
+  const [logging, setLogging] = useState(false);
+  const [logged, setLogged] = useState(false);
+  const [logError, setLogError] = useState<string | null>(null);
+
+  const handleLog = async () => {
+    setLogging(true);
+    setLogError(null);
+    try {
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recordId: client.id,
+          prepend: {
+            Log: buildLogEntry(
+              `Sent Desert Pulmonary referral to ${to.join(', ')}`,
+              session?.user?.email
+            ),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.details ||
+            errorData.error ||
+            'Failed to update client in Airtable'
+        );
+      }
+
+      setLogged(true);
+    } catch (error) {
+      console.error('Error logging Desert Pulmonary referral to Airtable:', error);
+      setLogError(
+        error instanceof Error
+          ? `${error.message}. Please try again.`
+          : 'Failed to log to Airtable. Please try again.'
+      );
+      setLogging(false);
+      return;
+    }
+
+    // After the fact — a stale cache must not be reported as a failed write,
+    // since the log entry has already landed
+    try {
+      await refreshClients(true);
+    } catch (error) {
+      console.error('Failed to refresh client cache after logging:', error);
+    }
+    setLogging(false);
+  };
 
   return (
     <div className="space-y-8">
@@ -139,6 +206,46 @@ export function DPReferralEmailDraft({ patientName }: DPReferralEmailDraftProps)
               &quot;Copy All&quot; copies the complete email with headers. &quot;Open in Email Client&quot; opens your default email application with everything pre-filled. Attach the downloaded referral PDF before sending.
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card variant="elevated">
+        <CardHeader>
+          <div className="flex items-center space-x-2">
+            <Database className="h-5 w-5 text-primary" />
+            <CardTitle>Update Airtable</CardTitle>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Once you&apos;ve sent the email, log it here to note the referral
+            went to {to.join(', ')}.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {logError && (
+            <div className="flex items-start text-sm text-destructive mb-4">
+              <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+              <span className="ml-2">{logError}</span>
+            </div>
+          )}
+
+          {logged ? (
+            <div className="flex items-center text-sm text-success">
+              <CheckCircle className="h-5 w-5 flex-shrink-0" />
+              <span className="ml-2">
+                Logged on {client.fields.Name ?? "the client"}&apos;s record
+              </span>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              onClick={handleLog}
+              disabled={logging}
+              loading={logging}
+              icon={<Database className="h-4 w-4" />}
+            >
+              {logging ? "Logging..." : "Log to Airtable"}
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>
