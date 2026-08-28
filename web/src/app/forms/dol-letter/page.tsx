@@ -149,7 +149,7 @@ export default function DolLetterForm() {
       } else {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || "Failed to generate DOL letter"
+          errorData.message || errorData.error || "Failed to generate DOL letter"
         );
       }
     } catch (error) {

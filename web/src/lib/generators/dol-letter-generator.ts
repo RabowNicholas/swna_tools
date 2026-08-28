@@ -6,6 +6,7 @@
 import { BaseGenerator } from "./base-generator";
 import { ClientRecord, GeneratorResult } from "./types";
 import { formatDateMMDDYY } from "./utils/formatters";
+import { sanitizeForWinAnsi } from "./utils/text-flow";
 import { StandardFonts, rgb } from "pdf-lib";
 import { readFile } from "fs/promises";
 import path from "path";
@@ -88,10 +89,10 @@ export class DolLetterGenerator extends BaseGenerator {
     doctor: string,
     formData: DolLetterFormData
   ): Promise<GeneratorResult> {
-    const claimantName = formData.claimant_name || "";
-    const caseId = formData.case_id || "";
+    const claimantName = sanitizeForWinAnsi(formData.claimant_name || "");
+    const caseId = sanitizeForWinAnsi(formData.case_id || "");
     const letterDate = formData.letter_date;
-    const letterContent = formData.letter_content || "";
+    const letterContent = sanitizeForWinAnsi(formData.letter_content || "");
 
     // Format the letter date as "Month DD, YYYY"
     let formattedDate: string;
