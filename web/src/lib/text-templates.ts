@@ -19,6 +19,17 @@ export interface TextTemplateField {
   required?: boolean;
 }
 
+/**
+ * Either a plain body/summary string, or a function of the collected tokens
+ * for text that has to branch on what was actually filled in — e.g. dropping
+ * a "previous rating" sentence entirely when there isn't one. A function's
+ * return value still runs through `fillTemplate`, so it can return either
+ * fully-composed text or a string with its own {tokens} left to fill.
+ */
+export type TemplateText =
+  | string
+  | ((tokens: Record<string, string>) => string);
+
 export interface TextTemplate {
   id: string;
   /** Which form surfaces this template, e.g. "rd-waiver" */
@@ -28,7 +39,7 @@ export interface TextTemplate {
   /** When to reach for this one */
   description: string;
   /** Message body with {client_name}, {sender_name} and any field tokens */
-  body: string;
+  body: TemplateText;
   /** Inputs beyond client name and sender name */
   fields?: TextTemplateField[];
   /**
@@ -42,7 +53,7 @@ export interface TextTemplate {
    * Phrase describing this text in the Airtable log. May itself contain
    * tokens, so a logged amount matches the amount that was texted.
    */
-  logSummary: string;
+  logSummary: TemplateText;
 }
 
 export const TEXT_TEMPLATES: TextTemplate[] = [
@@ -121,24 +132,41 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
     name: "IR Report Submitted",
     description:
       "A new impairment rating came back and has been submitted to the DOL.",
-    body:
-      "Hi {client_name} this is {sender_name} with SWNA. We just received your " +
-      "new impairment report. Your doctor rated you at {percentage}%, up from " +
-      "your previous rating of {previous_percentage}%, and I've submitted that " +
-      "report to the Department of Labor for review.\n" +
-      "For compensation, every 1% is worth $2,500 under Part E. At " +
-      "{percentage}%, this equals ${amount} in potential compensation if the " +
-      "DOL accepts the rating — an increase of ${increase_amount} over your " +
-      "previous rating.\n" +
-      "I'll keep you updated as soon as we hear back from them. Let me know if " +
-      "you have any questions.",
+    body: (tokens) => {
+      const hasPrevious = Boolean(tokens.previous_percentage?.trim());
+
+      const ratingSentence = hasPrevious
+        ? "Your doctor rated you at {percentage}%, up from your previous " +
+          "rating of {previous_percentage}%, and I've submitted that report " +
+          "to the Department of Labor for review."
+        : "Your doctor rated you at {percentage}%, and I've submitted that " +
+          "report to the Department of Labor for review.";
+
+      const compensationSentence = hasPrevious
+        ? "For compensation, every 1% is worth $2,500 under Part E. At " +
+          "{percentage}%, this equals ${amount} in potential compensation " +
+          "if the DOL accepts the rating — an increase of " +
+          "${increase_amount} over your previous rating."
+        : "For compensation, every 1% is worth $2,500 under Part E. At " +
+          "{percentage}%, this equals ${amount} in potential compensation " +
+          "if the DOL accepts the rating.";
+
+      return (
+        "Hi {client_name} this is {sender_name} with SWNA. We just received " +
+        `your new impairment report. ${ratingSentence}\n` +
+        `${compensationSentence}\n` +
+        "I'll keep you updated as soon as we hear back from them. Let me " +
+        "know if you have any questions."
+      );
+    },
     fields: [
       {
         key: "previous_percentage",
         label: "Previous Impairment Rating (%)",
         placeholder: "15",
-        helperText: "The rating from their last impairment report",
-        required: true,
+        helperText:
+          "The rating from their last impairment report — leave blank if " +
+          "this is their first",
       },
       {
         key: "percentage",
@@ -166,9 +194,11 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       }
       return tokens;
     },
-    logSummary:
-      "IR report submitted ({previous_percentage}% → {percentage}%, " +
-      "${amount}, +${increase_amount})",
+    logSummary: (tokens) =>
+      tokens.previous_percentage?.trim()
+        ? "IR report submitted ({previous_percentage}% → {percentage}%, " +
+          "${amount}, +${increase_amount})"
+        : "IR report submitted ({percentage}%, ${amount})",
   },
 ];
 
@@ -224,4 +254,16 @@ export function fillTemplate(
     const value = values[key];
     return value && value.trim() ? value.trim() : token;
   });
+}
+
+/**
+ * Resolves a `TemplateText` — calling it with the collected tokens if it's a
+ * function, otherwise using it as-is — then fills whatever {tokens} remain.
+ */
+export function renderTemplateText(
+  text: TemplateText,
+  values: Record<string, string>
+): string {
+  const raw = typeof text === "function" ? text(values) : text;
+  return fillTemplate(raw, values);
 }

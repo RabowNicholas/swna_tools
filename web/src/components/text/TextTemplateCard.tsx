@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 import { buildLogEntry } from "@/lib/airtable-log";
 import {
-  fillTemplate,
   firstNameOf,
   formatAmount,
   getTemplatesForTool,
+  renderTemplateText,
 } from "@/lib/text-templates";
 
 interface Client {
@@ -131,7 +131,9 @@ export function TextTemplateCard({
     ...(template?.computeTokens?.(fieldValues) ?? {}),
   };
 
-  const composed = template ? fillTemplate(template.body, tokenValues) : "";
+  const composed = template
+    ? renderTemplateText(template.body, tokenValues)
+    : "";
   const message = edited ?? composed;
 
   // Any change to the inputs recomposes the message from scratch
@@ -151,7 +153,7 @@ export function TextTemplateCard({
     setLogging(true);
     setLogError(null);
     try {
-      const summary = fillTemplate(template.logSummary, tokenValues);
+      const summary = renderTemplateText(template.logSummary, tokenValues);
       const response = await fetch("/api/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
