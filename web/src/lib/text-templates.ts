@@ -200,6 +200,41 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
           "${amount}, +${increase_amount})"
         : "IR report submitted ({percentage}%, ${amount})",
   },
+  {
+    id: "initial-work-history-rfi",
+    tool: "text-message",
+    name: "Initial Work History RFI",
+    description:
+      "The DOL's first request for work history documentation — no action needed yet, just an offer to help.",
+    body:
+      "Hi {client_name},\n" +
+      "This is Nick from Tyler Bailey's office. We just received the initial " +
+      "work history request for your claim. At this stage, no action is " +
+      "required from you. However, if you happen to have any documents that " +
+      "could help confirm your work history—such as pay stubs, W-2s, union " +
+      "records, or employment letters—sending those along may help speed up " +
+      "the process.\n" +
+      "Please let us know if you have anything available or if you have " +
+      "questions.",
+    logSummary: "Initial work history RFI",
+  },
+  {
+    id: "work-history-rfi",
+    tool: "text-message",
+    name: "Work History RFI",
+    description:
+      "A follow-up work history request — documents are needed to move the claim forward.",
+    body:
+      "Hi {client_name},\n" +
+      "This is Nick from Tyler Bailey's office. We just received the work " +
+      "history request for your claim. We need any documents that could " +
+      "help confirm your work history—such as pay stubs, W-2s, union " +
+      "records, or employment letters.\n" +
+      "Please let us know if you have anything available or if you have " +
+      "questions. If you don't have anything, we do other paths to get it " +
+      "verified.",
+    logSummary: "Work history RFI",
+  },
 ];
 
 /**
