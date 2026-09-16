@@ -249,8 +249,6 @@ export default function DolLetterForm() {
                       error={form.formState.errors.claimant_name?.message}
                       helperText="Client's full name"
                       {...form.register("claimant_name")}
-                      readOnly
-                      className="bg-muted/30"
                     />
 
                     <Input
