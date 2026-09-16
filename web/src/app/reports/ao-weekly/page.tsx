@@ -114,9 +114,13 @@ export default function AOWeeklyReportPage() {
       lines.push('');
     }
 
-    await navigator.clipboard.writeText(lines.join('\n').trim());
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(lines.join('\n').trim());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError('Could not copy to clipboard — your browser may be blocking clipboard access.');
+    }
   };
 
   const handleDownload = async () => {
