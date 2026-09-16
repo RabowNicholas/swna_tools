@@ -357,6 +357,10 @@ export default function WithdrawalForm() {
             action={(reference) =>
               `Submitted withdrawal of claim for ${submittedCondition} (*${reference})`
             }
+            autoStatus={{
+              add: ["Withdrawn"],
+              remove: [],
+            }}
           />
         </>
       )}
