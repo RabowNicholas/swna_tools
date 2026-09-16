@@ -185,6 +185,12 @@ export default function Home() {
       description: "Management view - identify bottlenecks and prioritize follow-ups by responsibility",
       href: "/pipeline",
     },
+    {
+      id: "ao-weekly-report",
+      name: "AO Weekly Report",
+      description: "Find AO clients with recent claim activity to report weekly",
+      href: "/reports/ao-weekly",
+    },
     // Portal Access
     {
       id: "portal",
@@ -209,7 +215,7 @@ export default function Home() {
       ["desert-pulm", "doctor-letter"].includes(tool.id)
     ),
     billing: allTools.filter((tool) => ["invoice"].includes(tool.id)),
-    analytics: allTools.filter((tool) => ["pipeline"].includes(tool.id)),
+    analytics: allTools.filter((tool) => ["pipeline", "ao-weekly-report"].includes(tool.id)),
     clientManagement: allTools.filter((tool) =>
       ["clients", "text-message", "portal"].includes(tool.id)
     ),
