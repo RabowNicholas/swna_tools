@@ -39,6 +39,15 @@ export interface WorkDateRange {
   to: string;
 }
 
+/** A paragraph of the letter body, plus how it is placed. */
+interface BodyBlock {
+  paragraph: Paragraph;
+  /** The paragraph carries the footnote marker, so the citation prints on its page. */
+  carriesFootnote?: boolean;
+  /** Begin this paragraph at the top of the second page rather than wherever page 1 ends. */
+  startsNewPage?: boolean;
+}
+
 /** Fields every letter needs, whatever the condition. */
 export interface DoctorLetterCommonFields {
   first_mi: string;
@@ -275,6 +284,10 @@ export class DoctorLetterGenerator {
     });
 
     for (const block of this.buildBody(template, formData, fonts)) {
+      // Only a break from page 1 is forced. If the content has already spilled onto a later
+      // page, that page already starts with body text and another break would only strand
+      // the remainder of it.
+      if (block.startsNewPage && flow.currentPage === firstPage) flow.breakPage();
       flow.drawParagraph(block.paragraph);
       if (block.carriesFootnote) footnotePage = flow.currentPage;
     }
@@ -321,7 +334,7 @@ export class DoctorLetterGenerator {
     template: LetterTemplate,
     form: DoctorLetterFormData,
     fonts: Fonts
-  ): { paragraph: Paragraph; carriesFootnote?: boolean }[] {
+  ): BodyBlock[] {
     switch (template.conditionId) {
       case 'chronic-silicosis':
         return this.chronicSilicosisBody(form, fonts);
@@ -333,7 +346,7 @@ export class DoctorLetterGenerator {
   private chronicSilicosisBody(
     form: ChronicSilicosisFields,
     fonts: Fonts
-  ): { paragraph: Paragraph; carriesFootnote?: boolean }[] {
+  ): BodyBlock[] {
     const male = form.sex === 'male';
     const title = male ? 'Mr.' : 'Ms.';
     const possessive = male ? 'his' : 'her';
@@ -367,9 +380,11 @@ export class DoctorLetterGenerator {
       spaceAfter: LINE_HEIGHT,
     });
 
-    const blocks: { paragraph: Paragraph; carriesFootnote?: boolean }[] = [];
-    const push = (paragraph: Paragraph, carriesFootnote = false) =>
-      blocks.push({ paragraph, carriesFootnote });
+    const blocks: BodyBlock[] = [];
+    const push = (
+      paragraph: Paragraph,
+      { carriesFootnote = false, startsNewPage = false } = {}
+    ) => blocks.push({ paragraph, carriesFootnote, startsNewPage });
 
     push(text(formatLongDate(todayIso())));
 
@@ -464,7 +479,9 @@ export class DoctorLetterGenerator {
         ],
         spaceAfter: LINE_HEIGHT,
       },
-      true
+      // The disease description always opens page 2, so its first sentence is never left
+      // stranded at the foot of page 1.
+      { carriesFootnote: true, startsNewPage: true }
     );
 
     push(heading('Discussion and Summary Opinion'));
