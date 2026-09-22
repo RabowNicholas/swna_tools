@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { DolStatusUpdateGenerator } from '@/lib/generators/dol-status-update-generator';
+import { DolStatusUpdateGenerator, SubjectError } from '@/lib/generators/dol-status-update-generator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,6 +39,11 @@ export async function POST(request: NextRequest) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    // A problem with what the user typed, not a server fault: return the message as-is
+    if (error instanceof SubjectError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     console.error('DOL Status Update generation error:', error);

@@ -19,6 +19,20 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
+import {
+  DEFAULT_STATUS_UPDATE_SUBJECT,
+  STATUS_UPDATE_SUBJECT_MAX_LENGTH,
+} from "@/lib/status-update-subject";
+
+// Fill the subject and leave the cursor at the end so the blank can be typed in
+const SUBJECT_PRESETS = [
+  { label: "Whole claim", value: DEFAULT_STATUS_UPDATE_SUBJECT },
+  {
+    label: "Impairment report",
+    value: "the impairment report submitted on ",
+  },
+  { label: "Specific claim", value: "the claim for " },
+];
 
 // Zod schema for form validation
 const dolStatusUpdateSchema = z.object({
@@ -26,6 +40,16 @@ const dolStatusUpdateSchema = z.object({
   claimant_name: z.string().min(1, "Client name is required"),
   case_id: z.string().min(1, "Case ID is required"),
   letter_date: z.string().min(1, "Letter date is required"),
+  subject: z
+    .string()
+    .trim()
+    .min(1, "Enter what the letter is asking about")
+    .max(
+      STATUS_UPDATE_SUBJECT_MAX_LENGTH,
+      `Keep this under ${STATUS_UPDATE_SUBJECT_MAX_LENGTH} characters so it fits the letter`
+    )
+    // A preset left unfinished ("the claim for ") would print as a dangling sentence
+    .refine((value) => !/\b(on|for)$/i.test(value), "Finish filling in the blank"),
 });
 
 type DolStatusUpdateFormData = z.infer<typeof dolStatusUpdateSchema>;
@@ -58,6 +82,10 @@ export default function DolStatusUpdateForm() {
 
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  // What was actually printed, so the log matches the letter even if the field is edited after
+  const [submittedSubject, setSubmittedSubject] = useState(
+    DEFAULT_STATUS_UPDATE_SUBJECT
+  );
   // Bumped per generated letter, and used as the log card's key so a
   // regenerated letter starts a fresh submission
   const [submissionId, setSubmissionId] = useState(0);
@@ -69,6 +97,7 @@ export default function DolStatusUpdateForm() {
       claimant_name: "",
       case_id: "",
       letter_date: new Date().toISOString().split("T")[0],
+      subject: DEFAULT_STATUS_UPDATE_SUBJECT,
     },
   });
 
@@ -102,6 +131,7 @@ export default function DolStatusUpdateForm() {
           claimant_name: data.claimant_name,
           case_id: data.case_id,
           letter_date: data.letter_date,
+          subject: data.subject,
         },
       };
 
@@ -139,6 +169,7 @@ export default function DolStatusUpdateForm() {
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
+        setSubmittedSubject(data.subject);
         setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
@@ -255,6 +286,35 @@ export default function DolStatusUpdateForm() {
                   />
                 </div>
 
+                <div>
+                  <Input
+                    label="What are you asking about?"
+                    required
+                    maxLength={STATUS_UPDATE_SUBJECT_MAX_LENGTH}
+                    error={form.formState.errors.subject?.message}
+                    helperText='Fills in the blank: "request a status update on ___"'
+                    {...form.register("subject")}
+                  />
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {SUBJECT_PRESETS.map((preset) => (
+                      <Button
+                        key={preset.label}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          form.setValue("subject", preset.value, {
+                            shouldValidate: true,
+                          });
+                          form.setFocus("subject");
+                        }}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
                 <Input
                   label="Letter Date"
                   type="date"
@@ -332,7 +392,9 @@ export default function DolStatusUpdateForm() {
             client={submittedClient}
             subject="the status update request"
             action={(reference) =>
-              `Submitted status update request (*${reference})`
+              submittedSubject === DEFAULT_STATUS_UPDATE_SUBJECT
+                ? `Submitted status update request (*${reference})`
+                : `Submitted status update request re: ${submittedSubject} (*${reference})`
             }
           />
         </>
