@@ -397,30 +397,22 @@ export function getCoordinationSteps(
   if (clientStatus === CLIENT_STATUS.AO) {
     if (clientState === "NV") {
       return {
-        testing: ["Send Desert Pulm referral form + general availability to Roxy at AO"],
-        ovn: ["AO will provide OV note and ADL"],
+        testing: ["Send Desert Pulm referral form + general availability to Roxy at AO (CC Hunter)"],
+        ovn: ["AO will provide OV note"],
       };
     } else {
       return {
         testing: ["Work with client directly — help them coordinate 6MWT and PFT"],
-        ovn: ["AO will provide OV note and ADL"],
+        ovn: ["AO will provide OV note"],
       };
     }
   }
 
-  // La Plata: GHHC NV
-  if (clientStatus === CLIENT_STATUS.GHHC_NV) {
+  // La Plata: GHHC — GHHC coordinates testing wherever the client lives
+  if (isGHHCClient(clientStatus)) {
     return {
-      testing: ["Mobile testing + GHHC coordination requested in La Plata email (Zeke CC'd)"],
-      ovn: ["OV note and ADL requested in La Plata email"],
-    };
-  }
-
-  // La Plata: GHHC TN (non-NV GHHC)
-  if (clientStatus === CLIENT_STATUS.GHHC_TN) {
-    return {
-      testing: ["GHHC coordination requested in La Plata email"],
-      ovn: ["OV note and ADL requested in La Plata email"],
+      testing: ["GHHC coordination of 6MWT and PFT requested in La Plata email"],
+      ovn: ["OV note requested from GHHC in La Plata email"],
     };
   }
 
