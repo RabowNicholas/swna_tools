@@ -10,6 +10,7 @@ export const EMAIL_ADDRESSES = {
     "Dr. Lewis": "admin@drlewis.org",
   },
   ao: "roxy@aomedicalgroup.com",
+  aoHunter: "hunter@aomedicalgroup.com",
   hhc: {
     nv: "ar.nv@givinghhc.com",
     tn: "ar.tn@givinghhc.com",
@@ -379,55 +380,104 @@ export function formatIRNoticeEmailBody(
 }
 
 /**
- * Get testing and OVN coordination steps based on doctor, client status, and state
+ * One line of the post-email coordination checklist. Lines with `logText` are
+ * checkable and, once checked, go into the Airtable log entry; lines without
+ * it are information only (something already handled elsewhere).
  */
-export function getCoordinationSteps(
+export interface CoordinationItem {
+  id: string;
+  section: "email" | "testing" | "ovn";
+  label: string;
+  logText?: string;
+  /** The Desert Pulmonary referral is generated from this line */
+  dpReferral?: boolean;
+}
+
+const OVN_INSTRUCTIONS_ITEM: CoordinationItem = {
+  id: "ovn-client",
+  section: "ovn",
+  label:
+    "Gave client OVN instructions — within the last year, lists meds and covered conditions (portal, pick up, or fax to 702-825-0145)",
+  logText: "gave client OVN instructions",
+};
+
+const LOCAL_TESTING_ITEM: CoordinationItem = {
+  id: "testing-local",
+  section: "testing",
+  label:
+    "Worked with client to find a local facility for the 6MWT (before the PFT) and sent the La Plata PFT/6MWT instructions",
+  logText: "worked with client on scheduling 6MWT and PFT locally",
+};
+
+/**
+ * The coordination checklist for the IR request, by doctor, client status, and
+ * state. The first item is always the IR request email itself, whose log text
+ * names who it went to.
+ */
+export function getCoordinationItems(
   doctor: "La Plata" | "Dr. Lewis",
   clientStatus: string,
   clientState?: string
-): { testing: string[]; ovn: string[] } {
+): CoordinationItem[] {
+  const { to, cc } = getEmailRecipients(doctor, clientStatus, clientState);
+  const sentTo = `${to.join(", ")}${cc.length ? ` (cc ${cc.join(", ")})` : ""}`;
+  const emailItem = (asking?: string): CoordinationItem => ({
+    id: "email",
+    section: "email",
+    label: `Sent IR request email to ${doctor}${asking ? `, ${asking}` : ""}`,
+    logText: `Emailed IR request to ${sentTo}${asking ? `, ${asking}` : ""}`,
+  });
+
   if (doctor === "Dr. Lewis") {
-    return {
-      testing: ["Dr. Lewis handles all testing — no action needed"],
-      ovn: ["OVN not required for Dr. Lewis"],
-    };
+    return [
+      emailItem(),
+      { id: "testing-info", section: "testing", label: "Dr. Lewis does all testing in-office — no action needed" },
+      { id: "ovn-info", section: "ovn", label: "OVN not required for Dr. Lewis" },
+    ];
   }
 
-  // La Plata: AO paths
+  // La Plata: AO handles the OVN wherever the client lives
   if (clientStatus === CLIENT_STATUS.AO) {
+    const aoOvn: CoordinationItem = {
+      id: "ovn-info",
+      section: "ovn",
+      label: "AO will provide the OV note (asked in the IR email)",
+    };
     if (clientState === "NV") {
-      return {
-        testing: ["Send Desert Pulm referral form + general availability to Roxy at AO (CC Hunter)"],
-        ovn: ["AO will provide OV note"],
-      };
-    } else {
-      return {
-        testing: ["Work with client directly — help them coordinate 6MWT and PFT"],
-        ovn: ["AO will provide OV note"],
-      };
+      return [
+        emailItem("asking AO for the OVN"),
+        {
+          id: "dp-referral",
+          section: "testing",
+          label: "Sent Desert Pulm referral + client availability to Roxy at AO (CC Hunter)",
+          logText: "sent Desert Pulm referral to Roxy (cc Hunter) with client availability",
+          dpReferral: true,
+        },
+        aoOvn,
+      ];
     }
+    return [emailItem("asking AO for the OVN"), LOCAL_TESTING_ITEM, aoOvn];
   }
 
-  // La Plata: GHHC — GHHC coordinates testing wherever the client lives
+  // La Plata: GHHC coordinates testing and the OVN wherever the client lives
   if (isGHHCClient(clientStatus)) {
-    return {
-      testing: ["GHHC coordination of 6MWT and PFT requested in La Plata email"],
-      ovn: ["OV note requested from GHHC in La Plata email"],
-    };
+    return [
+      emailItem("asking GHHC to coordinate the 6MWT/PFT and OVN"),
+      { id: "testing-info", section: "testing", label: "GHHC coordinating the 6MWT and PFT (asked in the IR email)" },
+      { id: "ovn-info", section: "ovn", label: "GHHC obtaining the OV note (asked in the IR email)" },
+    ];
   }
 
-  // La Plata: No HHC
+  // La Plata: no HHC
   if (clientState === "NV") {
-    return {
-      testing: ["Mobile testing requested in La Plata email (Zeke CC'd)"],
-      ovn: ["Client must obtain their own OV note (portal, in person, or fax to 702-825-0145)"],
-    };
+    return [
+      emailItem("requesting mobile testing"),
+      { id: "testing-info", section: "testing", label: "Mobile testing requested in the IR email (Zeke CC'd)" },
+      OVN_INSTRUCTIONS_ITEM,
+    ];
   }
 
-  return {
-    testing: ["Work with client directly — help them coordinate 6MWT and PFT"],
-    ovn: ["Client must obtain their own OV note (portal, in person, or fax to 702-825-0145)"],
-  };
+  return [emailItem(), LOCAL_TESTING_ITEM, OVN_INSTRUCTIONS_ITEM];
 }
 
 // Desert Pulmonary referral email
@@ -438,8 +488,12 @@ Thank you,`;
 /**
  * Format Desert Pulmonary referral email body
  */
-export function formatDPReferralEmailBody(patientName: string): string {
-  return DP_REFERRAL_TEMPLATE.replace("{name}", patientName);
+export function formatDPReferralEmailBody(patientName: string, availability?: string): string {
+  const body = DP_REFERRAL_TEMPLATE.replace("{name}", patientName);
+  const trimmed = availability?.trim();
+  return trimmed
+    ? body.replace("\n\nThank you,", `\n\nClient's general availability: ${trimmed}\n\nThank you,`)
+    : body;
 }
 
 /**

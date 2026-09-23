@@ -58,7 +58,7 @@ export function DPReferralEmailDraft({ patientName, client }: DPReferralEmailDra
   const { data: session } = useSession();
   const { refreshClients } = useClients();
   const to = [EMAIL_ADDRESSES.ao];
-  const cc: string[] = [];
+  const cc = [EMAIL_ADDRESSES.aoHunter];
   const subject = getDPReferralSubjectLine(patientName);
   const body = formatDPReferralEmailBody(patientName);
 

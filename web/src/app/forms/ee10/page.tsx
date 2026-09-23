@@ -25,12 +25,12 @@ import { cn } from "@/lib/utils";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import { EmailDraft } from "@/components/email/EmailDraft";
-import { CoordinationChecklist } from "@/components/email/CoordinationChecklist";
+import { IRCoordinationCard } from "@/components/email/IRCoordinationCard";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
-import { detectClientStatus, isGHHCClient } from "@/lib/email-utils";
+import { detectClientStatus } from "@/lib/email-utils";
 
 // Whichever pre-IR tag is on the record when the EE-10 goes in — generic or
 // already doctor-specific — is superseded once the doctor is confirmed here.
@@ -207,7 +207,7 @@ export default function EE10Form() {
   // The claim type and doctor as they stood when the form was submitted, so
   // changing the pickers afterward can't log something else
   const [submittedClaim, setSubmittedClaim] = useState("");
-  const [submittedDoctor, setSubmittedDoctor] = useState("");
+  const [submittedDoctor, setSubmittedDoctor] = useState<EE10FormData["doctor"]>("La Plata");
   // Bumped per submission, and used as the log card's key so going round again
   // starts a fresh one
   const [submissionId, setSubmissionId] = useState(0);
@@ -852,7 +852,7 @@ export default function EE10Form() {
                         )}
                         {irRecord && (
                           <p className="text-sm text-success font-medium">
-                            IR record created — {form.watch("name")} / {form.watch("doctor")}
+                            IR record created — {form.watch("name")} / {submittedDoctor}
                           </p>
                         )}
                         {irError && (
@@ -892,7 +892,7 @@ export default function EE10Form() {
                 {/* Email Drafting */}
                 <EmailDraft
                   client={submittedClient}
-                  doctor={form.watch("doctor")}
+                  doctor={submittedDoctor}
                   formData={{
                     name: form.watch("name"),
                     caseId: form.watch("case_id"),
@@ -908,10 +908,22 @@ export default function EE10Form() {
                   }}
                 />
 
-                <CoordinationChecklist
-                  doctor={form.watch("doctor")}
+                <IRCoordinationCard
+                  key={submissionId}
+                  client={submittedClient}
+                  doctor={submittedDoctor}
                   clientStatus={detectClientStatus(submittedClient)}
                   clientState={form.watch("address_state")}
+                  patient={{
+                    name: form.watch("name"),
+                    phone: form.watch("phone"),
+                    dob: form.watch("dob"),
+                    caseId: form.watch("case_id"),
+                    addressMain: form.watch("address_main"),
+                    addressCity: form.watch("address_city"),
+                    addressState: form.watch("address_state"),
+                    addressZip: form.watch("address_zip"),
+                  }}
                 />
               </>
             )}
