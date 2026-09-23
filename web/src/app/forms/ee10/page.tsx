@@ -23,7 +23,6 @@ import {
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import { PortalAccess } from "@/components/portal/PortalAccess";
-import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import { EmailDraft } from "@/components/email/EmailDraft";
 import { IRCoordinationCard } from "@/components/email/IRCoordinationCard";
 import {
@@ -872,23 +871,6 @@ export default function EE10Form() {
               <>
                 <PortalAccess client={submittedClient} autoOpen={true} />
 
-                {/* Airtable update — after submitting in the portal, paste the
-                    reference number here to log the EE-10 on the client. The IR
-                    record above goes in its own table; this is the entry on the
-                    client's own log. */}
-                <AirtableLogCard
-                  key={submissionId}
-                  client={submittedClient}
-                  subject="the EE-10"
-                  action={(reference) =>
-                    `Submitted EE-10, ${submittedClaim} with ${submittedDoctor} (*${reference})`
-                  }
-                  autoStatus={{
-                    add: [DOCTOR_IR_TAG[submittedDoctor]],
-                    remove: IR_PRE_TAGS,
-                  }}
-                />
-
                 {/* Email Drafting */}
                 <EmailDraft
                   client={submittedClient}
@@ -908,9 +890,18 @@ export default function EE10Form() {
                   }}
                 />
 
+                {/* The one Airtable write for the EE-10: the portal reference
+                    number, the tag swap, and the coordination done after the
+                    email, logged as a single entry */}
                 <IRCoordinationCard
                   key={submissionId}
                   client={submittedClient}
+                  submission={{
+                    action: (reference) =>
+                      `Submitted EE-10, ${submittedClaim} with ${submittedDoctor} (*${reference})`,
+                    statusAdd: [DOCTOR_IR_TAG[submittedDoctor]],
+                    statusRemove: IR_PRE_TAGS,
+                  }}
                   doctor={submittedDoctor}
                   clientStatus={detectClientStatus(submittedClient)}
                   clientState={form.watch("address_state")}

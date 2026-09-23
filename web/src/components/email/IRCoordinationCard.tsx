@@ -50,8 +50,23 @@ const SECTIONS: { key: CoordinationItem['section']; title: string }[] = [
   { key: 'ovn', title: 'OVN' },
 ];
 
+/**
+ * The EE-10 portal submission, logged as the first part of the entry. Its
+ * reference number is required, so nothing is logged for an EE-10 that never
+ * made it into the portal.
+ */
+export interface EE10Submission {
+  /** The log text for the submission, e.g. `Submitted EE-10, ... (*12345)` */
+  action: (reference: string) => string;
+  /** Status tags added in the same write */
+  statusAdd: string[];
+  /** Status tags dropped in the same write, if the record holds them */
+  statusRemove: string[];
+}
+
 export interface IRCoordinationCardProps {
   client: Client;
+  submission: EE10Submission;
   doctor: 'La Plata' | 'Dr. Lewis';
   clientStatus: string;
   clientState?: string;
@@ -69,14 +84,16 @@ export interface IRCoordinationCardProps {
 }
 
 /**
- * The step after the IR request email: check off what was done for this
- * client's testing/OVN path — generating the Desert Pulmonary referral inline
- * when the path needs one — and log the checked items to the client's Airtable
- * Log in one entry. Give it a `key` that changes per submission so a new EE-10
- * starts it fresh.
+ * The EE-10's last step: paste the portal reference number, check off what
+ * was done for this client's testing/OVN path — generating the Desert
+ * Pulmonary referral inline when the path needs one — and log the submission
+ * and the checked items to the client's Airtable Log in one entry, with the
+ * IR tag swap in the same write. Give it a `key` that changes per submission
+ * so a new EE-10 starts it fresh.
  */
 export function IRCoordinationCard({
   client,
+  submission,
   doctor,
   clientStatus,
   clientState,
@@ -87,6 +104,7 @@ export function IRCoordinationCard({
   const items = getCoordinationItems(doctor, clientStatus, clientState);
   const dpItem = items.find((i) => i.dpReferral);
 
+  const [referenceNumber, setReferenceNumber] = useState('');
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [note, setNote] = useState('');
   const [logging, setLogging] = useState(false);
@@ -109,12 +127,13 @@ export function IRCoordinationCard({
   const checkedTexts = items
     .filter((i) => i.logText && checked.has(i.id))
     .map((i) => i.logText as string);
+  const reference = referenceNumber.trim();
   const trimmedNote = note.trim().replace(/\.+$/, '');
-  const actionParts = [checkedTexts.join('; '), trimmedNote].filter(Boolean);
-  const action = actionParts.length
-    ? actionParts.join('. ').replace(/^./, (c) => c.toUpperCase())
-    : '';
-  const ready = !!action;
+  const logAction = (ref: string) =>
+    [[submission.action(ref), ...checkedTexts].join('; '), trimmedNote]
+      .filter(Boolean)
+      .join('. ');
+  const ready = !!reference;
 
   const handleDpDownload = async () => {
     if (!conditions.length) {
@@ -181,7 +200,15 @@ export function IRCoordinationCard({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           recordId: client.id,
-          prepend: { Log: buildLogEntry(action, session?.user?.email) },
+          prepend: {
+            Log: buildLogEntry(logAction(reference), session?.user?.email),
+            // Merged ahead of the record's existing Status rather than replacing it
+            ...(submission.statusAdd.length ? { Status: submission.statusAdd } : {}),
+          },
+          // Resolved against the record's current Status in the same PATCH
+          ...(submission.statusRemove.length
+            ? { remove: { Status: submission.statusRemove } }
+            : {}),
         }),
       });
 
@@ -228,12 +255,29 @@ export function IRCoordinationCard({
           <CardTitle>Coordination Checklist</CardTitle>
         </div>
         <p className="text-sm text-muted-foreground">
-          Check off what you&apos;ve done for this client&apos;s testing and OVN path, then log it
-          to Airtable
+          Paste the EE-10 reference number, check off what you&apos;ve done for this client&apos;s
+          testing and OVN path, then log it all to Airtable in one entry
         </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
+          <div>
+            <h4 className="text-sm font-semibold text-foreground mb-3">EE-10 Submission</h4>
+            {logged ? (
+              <p className="text-sm text-foreground">Reference {reference}</p>
+            ) : (
+              <Input
+                label="Portal Reference Number"
+                required
+                placeholder="Paste the reference number from the portal"
+                value={referenceNumber}
+                onChange={(e) => setReferenceNumber(e.target.value)}
+                disabled={logging}
+                helperText="Shown by the portal after you upload the EE-10"
+              />
+            )}
+          </div>
+
           {SECTIONS.map(({ key, title }) => {
             const sectionItems = items.filter((i) => i.section === key);
             if (!sectionItems.length) return null;
@@ -361,6 +405,12 @@ export function IRCoordinationCard({
                   <h3 className="text-base font-medium text-foreground mb-1">Airtable updated</h3>
                   <p className="text-sm text-muted-foreground">
                     Logged on {client.fields.Name ?? 'the client'}&apos;s record.
+                    {submission.statusAdd.length > 0 && (
+                      <>
+                        {' '}
+                        The {submission.statusAdd.join(' and ')} tag was added to Status.
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
@@ -383,17 +433,21 @@ export function IRCoordinationCard({
                 )}
 
                 <div className="text-sm text-muted-foreground">
-                  {ready ? (
-                    <>
-                      Adds to {client.fields.Name ?? 'the client'}&apos;s log:{' '}
-                      <span className="font-medium text-foreground">
-                        {buildLogEntry(action, session?.user?.email)}
-                      </span>
-                    </>
-                  ) : (
-                    'Check what you did, or add a note, to log it.'
-                  )}
+                  Adds to {client.fields.Name ?? 'the client'}&apos;s log:{' '}
+                  <span className="font-medium text-foreground">
+                    {buildLogEntry(logAction(reference || 'REFERENCE'), session?.user?.email)}
+                  </span>
                 </div>
+
+                {submission.statusAdd.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Adds the {submission.statusAdd.join(' and ')} tag to the client&apos;s Status
+                    {submission.statusRemove.length > 0 && (
+                      <> and removes {submission.statusRemove.join(', ')} if present</>
+                    )}
+                    .
+                  </p>
+                )}
 
                 <Button
                   type="button"

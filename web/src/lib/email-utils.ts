@@ -425,7 +425,7 @@ export function getCoordinationItems(
     id: "email",
     section: "email",
     label: `Sent IR request email to ${doctor}${asking ? `, ${asking}` : ""}`,
-    logText: `Emailed IR request to ${sentTo}${asking ? `, ${asking}` : ""}`,
+    logText: `emailed IR request to ${sentTo}${asking ? `, ${asking}` : ""}`,
   });
 
   if (doctor === "Dr. Lewis") {
