@@ -29,7 +29,7 @@ const SUBJECT_PRESETS = [
   { label: "Whole claim", value: DEFAULT_STATUS_UPDATE_SUBJECT },
   {
     label: "Impairment report",
-    value: "the impairment report submitted on ",
+    value: "the most recent impairment report",
   },
   { label: "Specific claim", value: "the claim for " },
 ];
