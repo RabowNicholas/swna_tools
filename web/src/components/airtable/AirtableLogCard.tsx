@@ -66,6 +66,19 @@ export interface SubmissionField {
   helperText?: string;
 }
 
+/**
+ * A Status tag change applied on every write, independent of any picker — for
+ * a tag that's a deterministic consequence of something already chosen
+ * earlier in the form (e.g. the doctor) rather than a choice made at log
+ * time. Unlike `StatusPicker`, this offers no UI and can't be skipped.
+ */
+export interface AutoStatus {
+  /** Tags added to the record's Status in this write. */
+  add: string[];
+  /** Tags dropped from Status in this write, resolved against whichever of them the record currently holds. */
+  remove: string[];
+}
+
 interface AirtableLogCardProps {
   client: Client;
   /**
@@ -93,6 +106,8 @@ interface AirtableLogCardProps {
   extraFields?: () => ExtraFields;
   /** Offers a Status tag to add in the same write. Omit to show no picker. */
   statusPicker?: StatusPicker;
+  /** A Status change to apply automatically, on top of anything `statusPicker` adds. */
+  autoStatus?: AutoStatus;
   /**
    * Asks the user what was submitted before the write can go ahead. Omit for
    * tools that already know — the log line is fixed there.
@@ -119,6 +134,7 @@ export function AirtableLogCard({
   preview,
   extraFields,
   statusPicker,
+  autoStatus,
   submissionField,
 }: AirtableLogCardProps) {
   const { data: session } = useSession();
@@ -133,8 +149,11 @@ export function AirtableLogCard({
   const clientName = client.fields.Name;
   // Picking a tag is optional — a submission that warrants no tag still logs.
   const pickedOption = statusPicker?.options.find((o) => o.value === statusTag);
-  const statusTags = statusPicker && statusTag ? [statusTag] : [];
-  const removedTags = pickedOption?.removes ?? [];
+  const statusTags = [
+    ...(statusPicker && statusTag ? [statusTag] : []),
+    ...(autoStatus?.add ?? []),
+  ];
+  const removedTags = [...(pickedOption?.removes ?? []), ...(autoStatus?.remove ?? [])];
   const submitted = submission.trim();
   // A card that asks what was submitted can't log until it's been answered.
   const ready = !!referenceNumber.trim() && (!submissionField || !!submitted);
@@ -309,6 +328,16 @@ export function AirtableLogCard({
                     : "Optional — leave unpicked to log without changing Status."}
                 </p>
               </div>
+            )}
+
+            {autoStatus && autoStatus.add.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Adds the {autoStatus.add.join(" and ")} tag to the client&apos;s Status
+                {autoStatus.remove.length > 0 && (
+                  <> and removes {autoStatus.remove.join(", ")} if present</>
+                )}
+                .
+              </p>
             )}
 
             {error && (
