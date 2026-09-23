@@ -35,6 +35,18 @@ function requiresMobileTesting(doctor: string, clientStatus: string, clientState
     && clientState === "NV";
 }
 
+// Helper: out-of-state La Plata clients without GHHC test at a local facility,
+// and La Plata is asked first whether they know one and can write a referral
+function requiresLocalFacility(doctor: string, clientStatus: string, clientState?: string): boolean {
+  return doctor === "La Plata"
+    && clientStatus !== CLIENT_STATUS.GHHC_NV
+    && clientStatus !== CLIENT_STATUS.GHHC_TN
+    && clientState !== "NV";
+}
+
+// Added to the La Plata email for those clients, ahead of the sign-off
+const LOCAL_FACILITY_REQUEST = `The client lives outside Nevada. Do you know of a facility in their area that can perform the 6MWT and PFT (with DLCO and pre/post bronchodilator), and would you be able to write a referral for it?`;
+
 // Email templates
 const STANDARD_TEMPLATE = `Hello,
 
@@ -308,6 +320,13 @@ export function formatEmailBody(
     formattedBody = formattedBody.replace("{work_history_dates}", workHistoryDates);
   }
 
+  if (requiresLocalFacility(doctor, clientStatus ?? "", clientState)) {
+    formattedBody = formattedBody.replace(
+      "\n\nThank you, and please",
+      `\n\n${LOCAL_FACILITY_REQUEST}\n\nThank you, and please`
+    );
+  }
+
   return formattedBody;
 }
 
@@ -401,13 +420,16 @@ const OVN_INSTRUCTIONS_ITEM: CoordinationItem = {
   logText: "gave client OVN instructions",
 };
 
+// Nothing to do yet — the ask goes out in the IR email, and scheduling waits
+// on La Plata's reply
 const LOCAL_TESTING_ITEM: CoordinationItem = {
-  id: "testing-local",
+  id: "testing-info",
   section: "testing",
   label:
-    "Worked with client to find a local facility for the 6MWT (before the PFT) and sent the La Plata PFT/6MWT instructions",
-  logText: "worked with client on scheduling 6MWT and PFT locally",
+    "Asked La Plata for a local facility and referral (in the IR email). Once they reply, get the client scheduled (6MWT before the PFT) and send them the La Plata PFT/6MWT instructions",
 };
+
+const LOCAL_FACILITY_ASK = "La Plata for a local testing facility and referral";
 
 /**
  * The coordination checklist for the IR request, by doctor, client status, and
@@ -456,7 +478,7 @@ export function getCoordinationItems(
         aoOvn,
       ];
     }
-    return [emailItem("asking AO for the OVN"), LOCAL_TESTING_ITEM, aoOvn];
+    return [emailItem(`asking AO for the OVN and ${LOCAL_FACILITY_ASK}`), LOCAL_TESTING_ITEM, aoOvn];
   }
 
   // La Plata: GHHC coordinates testing and the OVN wherever the client lives
@@ -477,7 +499,7 @@ export function getCoordinationItems(
     ];
   }
 
-  return [emailItem(), LOCAL_TESTING_ITEM, OVN_INSTRUCTIONS_ITEM];
+  return [emailItem(`asking ${LOCAL_FACILITY_ASK}`), LOCAL_TESTING_ITEM, OVN_INSTRUCTIONS_ITEM];
 }
 
 // Desert Pulmonary referral email
