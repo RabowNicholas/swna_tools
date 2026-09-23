@@ -32,6 +32,16 @@ import {
 } from "@/components/form/ClientSelector";
 import { detectClientStatus, isGHHCClient } from "@/lib/email-utils";
 
+// Whichever pre-IR tag is on the record when the EE-10 goes in — generic or
+// already doctor-specific — is superseded once the doctor is confirmed here.
+const IR_PRE_TAGS = ["Pre-IR", "Pre-Dr. Lewis IR", "Pre-La Plata IR"];
+
+// The doctor-specific IR tag to add, keyed by the doctor chosen on this form.
+const DOCTOR_IR_TAG: Record<string, string> = {
+  "La Plata": "IR (La Plata)",
+  "Dr. Lewis": "IR (Dr. Lewis)",
+};
+
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
   Alabama: "AL",
@@ -873,6 +883,10 @@ export default function EE10Form() {
                   action={(reference) =>
                     `Submitted EE-10, ${submittedClaim} with ${submittedDoctor} (*${reference})`
                   }
+                  autoStatus={{
+                    add: [DOCTOR_IR_TAG[submittedDoctor]],
+                    remove: IR_PRE_TAGS,
+                  }}
                 />
 
                 {/* Email Drafting */}
