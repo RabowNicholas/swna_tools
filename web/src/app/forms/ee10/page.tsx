@@ -35,6 +35,9 @@ import { detectClientStatus } from "@/lib/email-utils";
 // already doctor-specific — is superseded once the doctor is confirmed here.
 const IR_PRE_TAGS = ["Pre-IR", "Pre-Dr. Lewis IR", "Pre-La Plata IR"];
 
+// Billing tags stay at the front of Status; the IR tag goes in behind them.
+const IR_TAG_AFTER = ["Needs Invoicing", "Payment Outstanding"];
+
 // The doctor-specific IR tag to add, keyed by the doctor chosen on this form.
 const DOCTOR_IR_TAG: Record<string, string> = {
   "La Plata": "IR (La Plata)",
@@ -901,6 +904,7 @@ export default function EE10Form() {
                       `Submitted EE-10, ${submittedClaim} with ${submittedDoctor} (*${reference})`,
                     statusAdd: [DOCTOR_IR_TAG[submittedDoctor]],
                     statusRemove: IR_PRE_TAGS,
+                    statusAfter: IR_TAG_AFTER,
                   }}
                   doctor={submittedDoctor}
                   clientStatus={detectClientStatus(submittedClient)}

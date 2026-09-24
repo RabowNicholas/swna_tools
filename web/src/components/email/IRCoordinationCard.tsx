@@ -62,6 +62,8 @@ export interface EE10Submission {
   statusAdd: string[];
   /** Status tags dropped in the same write, if the record holds them */
   statusRemove: string[];
+  /** Tags the added ones go after, when the record holds them; otherwise they go first */
+  statusAfter?: string[];
 }
 
 export interface IRCoordinationCardProps {
@@ -208,6 +210,9 @@ export function IRCoordinationCard({
           // Resolved against the record's current Status in the same PATCH
           ...(submission.statusRemove.length
             ? { remove: { Status: submission.statusRemove } }
+            : {}),
+          ...(submission.statusAfter?.length
+            ? { after: { Status: submission.statusAfter } }
             : {}),
         }),
       });

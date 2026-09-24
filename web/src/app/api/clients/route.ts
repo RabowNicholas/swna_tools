@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Require authentication
     await requireAuth();
 
-    const { recordId, fields, prepend, remove } = await request.json();
+    const { recordId, fields, prepend, remove, after } = await request.json();
 
     if (!recordId) {
       return NextResponse.json(
@@ -63,6 +63,11 @@ export async function POST(request: NextRequest) {
       const removedStatus: string[] = Array.isArray(remove?.Status)
         ? remove.Status
         : [];
+      // Tags the added ones should sit behind rather than in front of, when
+      // the record holds them — e.g. billing tags that must stay first
+      const afterStatus: string[] = Array.isArray(after?.Status)
+        ? after.Status
+        : [];
 
       if (addedStatus.length > 0 || removedStatus.length > 0) {
         const rawStatus = current.fields.Status;
@@ -71,11 +76,18 @@ export async function POST(request: NextRequest) {
           : rawStatus
             ? [String(rawStatus)]
             : [];
+        const keptStatus = currentStatus.filter(
+          (t) => !addedStatus.includes(t) && !removedStatus.includes(t)
+        );
+        // Just past the last of the `after` tags present, else at the front
+        let insertAt = 0;
+        keptStatus.forEach((t, i) => {
+          if (afterStatus.includes(t)) insertAt = i + 1;
+        });
         mergedFields.Status = [
+          ...keptStatus.slice(0, insertAt),
           ...addedStatus,
-          ...currentStatus.filter(
-            (t) => !addedStatus.includes(t) && !removedStatus.includes(t)
-          ),
+          ...keptStatus.slice(insertAt),
         ];
       }
 
