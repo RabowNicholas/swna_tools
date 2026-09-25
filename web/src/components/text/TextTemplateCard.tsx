@@ -22,6 +22,7 @@ import {
   formatAmount,
   getTemplatesForTool,
   renderTemplateText,
+  TEXT_TEMPLATES,
 } from "@/lib/text-templates";
 
 interface Client {
@@ -78,6 +79,11 @@ export interface TextTemplateCardProps {
    */
   tool?: string;
   /**
+   * Pins the card to one template by id, hiding the picker — for a page where
+   * what was just done already says which text goes out. Overrides `tool`.
+   */
+  templateId?: string;
+  /**
    * Client name as the form already parsed it ("First Last"). Only the first
    * name reaches the greeting — the card narrows it.
    */
@@ -87,12 +93,19 @@ export interface TextTemplateCardProps {
 export function TextTemplateCard({
   client,
   tool,
+  templateId: pinnedTemplateId,
   defaultClientName,
 }: TextTemplateCardProps) {
   const { data: session } = useSession();
   const { refreshClients } = useClients();
 
-  const templates = useMemo(() => getTemplatesForTool(tool), [tool]);
+  const templates = useMemo(
+    () =>
+      pinnedTemplateId
+        ? TEXT_TEMPLATES.filter((t) => t.id === pinnedTemplateId)
+        : getTemplatesForTool(tool),
+    [tool, pinnedTemplateId]
+  );
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? "");
   const [clientName, setClientName] = useState(firstNameOf(defaultClientName));
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});

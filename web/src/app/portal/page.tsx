@@ -18,8 +18,10 @@ import {
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   ClientSelector,
+  parseClientName,
 } from "@/components/form/ClientSelector";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
+import { TextTemplateCard } from "@/components/text/TextTemplateCard";
 
 // Tags a fresh IR Report submission supersedes — every stage a case can be at
 // while an IR is being scheduled or is out with a doctor, from pipeline-config.ts's
@@ -46,6 +48,12 @@ const COMMON_SUBMISSIONS = [
     removes: IR_IN_PROGRESS_TAGS,
   },
 ];
+
+// The client text that goes with a common submission, shown under the log
+// card once it's picked so the whole thing happens from this page
+const SUBMISSION_TEXT_TEMPLATE: Record<string, string> = {
+  "IR Submitted": "ir-report-submitted",
+};
 
 interface PortalData {
   caseId: string;
@@ -159,6 +167,7 @@ function PortalPageContent() {
     useClients();
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [pickedSubmission, setPickedSubmission] = useState<string | null>(null);
 
   const clientId = searchParams.get("clientId");
   const formType = searchParams.get("formType") || "form";
@@ -277,6 +286,8 @@ function PortalPageContent() {
         value={selectedClientId}
         onChange={(clientId) => {
           setSelectedClientId(clientId);
+          // The log card starts fresh for a new client, so its pick does too
+          setPickedSubmission(null);
         }}
         onRefresh={() => refreshClients(true)}
         error={undefined}
@@ -377,6 +388,7 @@ function PortalPageContent() {
                   label: "Common Submission (optional)",
                   options: COMMON_SUBMISSIONS,
                 }}
+                onStatusChange={setPickedSubmission}
                 description={
                   <>
                     Once you&apos;ve submitted in the portal, say what you sent
@@ -385,6 +397,15 @@ function PortalPageContent() {
                   </>
                 }
               />
+
+              {pickedSubmission && SUBMISSION_TEXT_TEMPLATE[pickedSubmission] && (
+                <TextTemplateCard
+                  key={selectedClientId}
+                  client={selectedClient as any}
+                  templateId={SUBMISSION_TEXT_TEMPLATE[pickedSubmission]}
+                  defaultClientName={parseClientName(selectedClient.fields.Name || "")}
+                />
+              )}
             </>
           ) : (
             <Card

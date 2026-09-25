@@ -106,6 +106,8 @@ interface AirtableLogCardProps {
   extraFields?: () => ExtraFields;
   /** Offers a Status tag to add in the same write. Omit to show no picker. */
   statusPicker?: StatusPicker;
+  /** Told whenever the picked Status tag changes, so the page can show what goes with it */
+  onStatusChange?: (tag: string | null) => void;
   /** A Status change to apply automatically, on top of anything `statusPicker` adds. */
   autoStatus?: AutoStatus;
   /**
@@ -134,6 +136,7 @@ export function AirtableLogCard({
   preview,
   extraFields,
   statusPicker,
+  onStatusChange,
   autoStatus,
   submissionField,
 }: AirtableLogCardProps) {
@@ -302,6 +305,7 @@ export function AirtableLogCard({
                   onChange={(e) => {
                     const value = e.target.value;
                     setStatusTag(value || null);
+                    onStatusChange?.(value || null);
                     const picked = statusPicker.options.find(
                       (o) => o.value === value
                     );
