@@ -49,8 +49,9 @@ const COMMON_SUBMISSIONS = [
   },
 ];
 
-// The client text that goes with a common submission, shown under the log
-// card once it's picked so the whole thing happens from this page
+// The client text that goes with a common submission, shown inside the log
+// card once it's picked and logged in the same entry, so the whole thing
+// happens from this page
 const SUBMISSION_TEXT_TEMPLATE: Record<string, string> = {
   "IR Submitted": "ir-report-submitted",
 };
@@ -168,6 +169,9 @@ function PortalPageContent() {
   const [selectedClientId, setSelectedClientId] = useState("");
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [pickedSubmission, setPickedSubmission] = useState<string | null>(null);
+  // What the client was texted, when the text is checked off as sent — goes
+  // into the same log entry as the submission
+  const [textSummary, setTextSummary] = useState<string | null>(null);
 
   const clientId = searchParams.get("clientId");
   const formType = searchParams.get("formType") || "form";
@@ -376,7 +380,8 @@ function PortalPageContent() {
                 client={selectedClient}
                 subject="the submission"
                 action={(reference, _statusTags, submission) =>
-                  `Submitted ${submission} (*${reference})`
+                  `Submitted ${submission} (*${reference})` +
+                  (textSummary ? `; texted client re: ${textSummary}` : "")
                 }
                 submissionField={{
                   label: "What was submitted",
@@ -396,16 +401,16 @@ function PortalPageContent() {
                     client&apos;s record.
                   </>
                 }
-              />
-
-              {pickedSubmission && SUBMISSION_TEXT_TEMPLATE[pickedSubmission] && (
-                <TextTemplateCard
-                  key={selectedClientId}
-                  client={selectedClient as any}
-                  templateId={SUBMISSION_TEXT_TEMPLATE[pickedSubmission]}
-                  defaultClientName={parseClientName(selectedClient.fields.Name || "")}
-                />
-              )}
+              >
+                {pickedSubmission && SUBMISSION_TEXT_TEMPLATE[pickedSubmission] && (
+                  <TextTemplateCard
+                    client={selectedClient as any}
+                    templateId={SUBMISSION_TEXT_TEMPLATE[pickedSubmission]}
+                    onLogSummaryChange={setTextSummary}
+                    defaultClientName={parseClientName(selectedClient.fields.Name || "")}
+                  />
+                )}
+              </AirtableLogCard>
             </>
           ) : (
             <Card

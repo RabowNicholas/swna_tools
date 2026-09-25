@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { Button } from "@/components/ui/Button";
@@ -84,6 +84,13 @@ export interface TextTemplateCardProps {
    */
   templateId?: string;
   /**
+   * Hands logging to the page instead: the card drops its own Log button and
+   * Card chrome for an "I've sent this text" checkbox, and reports the log
+   * summary here while it's checked (null otherwise) so the page can fold it
+   * into its own single log entry.
+   */
+  onLogSummaryChange?: (summary: string | null) => void;
+  /**
    * Client name as the form already parsed it ("First Last"). Only the first
    * name reaches the greeting — the card narrows it.
    */
@@ -94,6 +101,7 @@ export function TextTemplateCard({
   client,
   tool,
   templateId: pinnedTemplateId,
+  onLogSummaryChange,
   defaultClientName,
 }: TextTemplateCardProps) {
   const { data: session } = useSession();
@@ -113,6 +121,7 @@ export function TextTemplateCard({
   // changes, so a stale hand-edit can't outlive the values it was based on.
   const [edited, setEdited] = useState<string | null>(null);
 
+  const [textSent, setTextSent] = useState(false);
   const [logging, setLogging] = useState(false);
   const [logged, setLogged] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
@@ -160,13 +169,26 @@ export function TextTemplateCard({
     (field) => field.required && !fieldValues[field.key]?.trim()
   );
 
+  const logSummary = template
+    ? renderTemplateText(template.logSummary, tokenValues)
+    : "";
+  const reportedSummary =
+    textSent && !missingRequired && logSummary ? logSummary : null;
+
+  // Keep the page's log entry in step with the text; drop it when this card goes
+  useEffect(() => {
+    if (!onLogSummaryChange) return;
+    onLogSummaryChange(reportedSummary);
+    return () => onLogSummaryChange(null);
+  }, [onLogSummaryChange, reportedSummary]);
+
   const handleLog = async () => {
     if (!template || !message.trim() || missingRequired) return;
 
     setLogging(true);
     setLogError(null);
     try {
-      const summary = renderTemplateText(template.logSummary, tokenValues);
+      const summary = logSummary;
       const response = await fetch("/api/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -214,18 +236,7 @@ export function TextTemplateCard({
 
   if (!template) return null;
 
-  return (
-    <Card variant="elevated">
-      <CardHeader>
-        <div className="flex items-center space-x-2">
-          <MessageSquare className="h-5 w-5 text-primary" />
-          <CardTitle>Text the Client</CardTitle>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Copy the message below, then log it here once you&apos;ve sent it.
-        </p>
-      </CardHeader>
-      <CardContent>
+  const content = (
         <div className="space-y-6">
           {/* Template picker — hidden when a tool only offers one */}
           {templates.length > 1 && (
@@ -328,7 +339,18 @@ export function TextTemplateCard({
           <div className="flex flex-wrap items-center gap-3">
             <CopyButton value={message} label="Copy Message" />
 
-            {logged ? (
+            {onLogSummaryChange ? (
+              <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-border accent-primary"
+                  checked={textSent}
+                  onChange={(e) => setTextSent(e.target.checked)}
+                  disabled={missingRequired}
+                />
+                I&apos;ve sent this text — include it in the log
+              </label>
+            ) : logged ? (
               <div className="flex items-center text-sm text-success">
                 <CheckCircle className="h-5 w-5 flex-shrink-0" />
                 <span className="ml-2">
@@ -354,7 +376,33 @@ export function TextTemplateCard({
             </p>
           )}
         </div>
-      </CardContent>
+  );
+
+  // Logged by the page as part of its own entry — no card of its own
+  if (onLogSummaryChange) {
+    return (
+      <div className="rounded-lg border border-border p-4 space-y-4">
+        <div className="flex items-center space-x-2">
+          <MessageSquare className="h-5 w-5 text-primary" />
+          <h4 className="text-sm font-semibold text-foreground">Text the Client</h4>
+        </div>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Card variant="elevated">
+      <CardHeader>
+        <div className="flex items-center space-x-2">
+          <MessageSquare className="h-5 w-5 text-primary" />
+          <CardTitle>Text the Client</CardTitle>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Copy the message below, then log it here once you&apos;ve sent it.
+        </p>
+      </CardHeader>
+      <CardContent>{content}</CardContent>
     </Card>
   );
 }

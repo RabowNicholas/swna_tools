@@ -108,6 +108,8 @@ interface AirtableLogCardProps {
   statusPicker?: StatusPicker;
   /** Told whenever the picked Status tag changes, so the page can show what goes with it */
   onStatusChange?: (tag: string | null) => void;
+  /** Shown under the pickers, above the log preview — for work that goes into the same entry */
+  children?: ReactNode;
   /** A Status change to apply automatically, on top of anything `statusPicker` adds. */
   autoStatus?: AutoStatus;
   /**
@@ -139,6 +141,7 @@ export function AirtableLogCard({
   onStatusChange,
   autoStatus,
   submissionField,
+  children,
 }: AirtableLogCardProps) {
   const { data: session } = useSession();
   const { refreshClients } = useClients();
@@ -333,6 +336,8 @@ export function AirtableLogCard({
                 </p>
               </div>
             )}
+
+            {children}
 
             {autoStatus && autoStatus.add.length > 0 && (
               <p className="text-xs text-muted-foreground">
