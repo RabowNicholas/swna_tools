@@ -149,6 +149,13 @@ Roots, could you assist with coordinating the 6MWT and PFT for the client and se
 
 Thank you, and please let us know how we can further assist.`;
 
+// IR Notice email template
+const IR_NOTICE_TEMPLATE = `We received the attached letter authorizing {client_name}'s impairment evaluation with {provider}. Please let us know if there is anything we can assist with.
+
+As a side note: we've also informed the DOL that this client's impairment appointment would be completed by {appointment_date}, simply so that they do not continue calling the client, the client's home healthcare group, and our office with reminders to schedule an appointment in the meantime!
+
+Thank you,`;
+
 interface Client {
   id: string;
   fields: {
@@ -420,6 +427,20 @@ ${body}`;
 }
 
 /**
+ * Format IR Notice email body
+ */
+export function formatIRNoticeEmailBody(
+  clientName: string,
+  providerName: string,
+  appointmentDate: string
+): string {
+  return IR_NOTICE_TEMPLATE
+    .replace("{client_name}", clientName)
+    .replace("{provider}", providerName)
+    .replace("{appointment_date}", appointmentDate);
+}
+
+/**
  * One line of the post-email coordination checklist. Lines with `logText` are
  * checkable and, once checked, go into the Airtable log entry; lines without
  * it are information only (something already handled elsewhere).
@@ -561,5 +582,23 @@ export function getDPReferralSubjectLine(clientName: string): string {
     }
   } catch {
     return `DP Referral: ${clientName}`;
+  }
+}
+
+/**
+ * Generate subject line for IR Notice
+ */
+export function getIRNoticeSubjectLine(clientName: string): string {
+  try {
+    const nameParts = clientName.trim().split(" ");
+    if (nameParts.length >= 2) {
+      const firstInitial = nameParts[0][0].toUpperCase();
+      const lastName = nameParts[nameParts.length - 1];
+      return `IR Auth: ${firstInitial}. ${lastName}`;
+    } else {
+      return `IR Auth: ${clientName}`;
+    }
+  } catch (error) {
+    return `IR Auth: ${clientName}`;
   }
 }

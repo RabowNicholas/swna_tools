@@ -66,6 +66,7 @@ const navigationCategories: NavigationCategory[] = [
       { name: 'Phone Change Letter', href: '/forms/phone-change', icon: Phone, description: 'Phone number modification notification' },
       { name: 'RD Waiver', href: '/forms/rd-waiver', icon: FileText, description: 'Waiver for Recommended Decision (RD)' },
       { name: 'Status Update Letter', href: '/forms/dol-status-update', icon: Bell, description: 'Case status update notification' },
+      { name: 'IR Schedule Notice', href: '/forms/ir-notice', icon: FileText, description: 'Independent review notice' },
     ]
   },
   {

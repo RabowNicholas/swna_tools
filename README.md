@@ -102,6 +102,7 @@ The application supports generation of the following forms:
 - **EE-10**: Attending Physician's Statement
 - **EN-16**: Medical Records Request
 - **Address Change**: Notification form
+- **IR Notice**: Independent Review notice
 - **Desert Pulmonary**: Referral letter
 - **DOL Letters**: Department of Labor correspondence
 
