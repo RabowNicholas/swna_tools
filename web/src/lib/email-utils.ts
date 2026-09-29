@@ -17,6 +17,7 @@ export const EMAIL_ADDRESSES = {
   },
   laPlataCC: "cali.candelaria@lpmedx.com",
   laPlataZeke: "zkalcich@lpmedx.com",
+  roots: "juarezc1@rootshhc.com",
 } as const;
 
 // Client status tags
@@ -229,6 +230,16 @@ export function detectClientStatus(client: Client): string {
 }
 
 /**
+ * Whether the client is with Roots HHC. Checked on its own rather than as a
+ * client status, since Roots clients are often with AO too and need both CCs.
+ */
+export function isRootsClient(client: { fields: Record<string, unknown> }): boolean {
+  const companies = client.fields["Associated Companies"];
+  return Array.isArray(companies)
+    && companies.some((c) => c.toLowerCase().includes("roots"));
+}
+
+/**
  * Check if client is GHHC client
  */
 export function isGHHCClient(clientStatus: string): boolean {
@@ -248,7 +259,8 @@ export function isAOClient(clientStatus: string): boolean {
 export function getEmailRecipients(
   doctor: "La Plata" | "Dr. Lewis",
   clientStatus: string,
-  clientState?: string
+  clientState?: string,
+  roots = false
 ): { to: string[]; cc: string[] } {
   // TO recipient is always the selected doctor
   const to = [EMAIL_ADDRESSES.doctors[doctor]];
@@ -268,6 +280,11 @@ export function getEmailRecipients(
     cc.push(EMAIL_ADDRESSES.hhc.nv);
   } else if (clientStatus === CLIENT_STATUS.GHHC_TN) {
     cc.push(EMAIL_ADDRESSES.hhc.tn);
+  }
+
+  // Roots on top of any other HHC — see isRootsClient
+  if (roots) {
+    cc.push(EMAIL_ADDRESSES.roots);
   }
 
   // Add Zeke at La Plata for mobile testing cases (not AO, in NV)
@@ -439,9 +456,10 @@ const LOCAL_FACILITY_ASK = "La Plata for a local testing facility and referral";
 export function getCoordinationItems(
   doctor: "La Plata" | "Dr. Lewis",
   clientStatus: string,
-  clientState?: string
+  clientState?: string,
+  roots = false
 ): CoordinationItem[] {
-  const { to, cc } = getEmailRecipients(doctor, clientStatus, clientState);
+  const { to, cc } = getEmailRecipients(doctor, clientStatus, clientState, roots);
   const sentTo = `${to.join(", ")}${cc.length ? ` (cc ${cc.join(", ")})` : ""}`;
   const emailItem = (asking?: string): CoordinationItem => ({
     id: "email",

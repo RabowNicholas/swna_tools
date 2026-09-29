@@ -20,6 +20,7 @@ import {
   EMAIL_ADDRESSES,
   CoordinationItem,
   getCoordinationItems,
+  isRootsClient,
   formatDPReferralEmailBody,
   getDPReferralSubjectLine,
   createMailtoLink,
@@ -103,7 +104,7 @@ export function IRCoordinationCard({
 }: IRCoordinationCardProps) {
   const { data: session } = useSession();
   const { refreshClients } = useClients();
-  const items = getCoordinationItems(doctor, clientStatus, clientState);
+  const items = getCoordinationItems(doctor, clientStatus, clientState, isRootsClient(client));
   const dpItem = items.find((i) => i.dpReferral);
 
   const [referenceNumber, setReferenceNumber] = useState('');

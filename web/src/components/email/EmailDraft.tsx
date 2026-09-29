@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Mail, Copy, ExternalLink, CheckCircle } from 'lucide-react';
 import {
   detectClientStatus,
+  isRootsClient,
   getEmailRecipients,
   formatEmailBody,
   getSubjectLine,
@@ -67,7 +68,12 @@ export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
   const clientStatus = detectClientStatus(client);
 
   // Generate email data directly from props
-  const recipients = getEmailRecipients(doctor, clientStatus, formData.clientState);
+  const recipients = getEmailRecipients(
+    doctor,
+    clientStatus,
+    formData.clientState,
+    isRootsClient(client)
+  );
   const subject = getSubjectLine(formData.name);
   const body = formatEmailBody(
     doctor,
