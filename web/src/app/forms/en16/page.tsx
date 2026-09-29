@@ -60,6 +60,9 @@ export default function EN16Form() {
   // Bumped per generated form, and used as the log card's key so a regenerated
   // EN-16 starts a fresh submission
   const [submissionId, setSubmissionId] = useState(0);
+  // What the client was texted, once the text is checked off as sent — goes
+  // into the same log entry as the submission
+  const [textSummary, setTextSummary] = useState<string | null>(null);
 
   const form = useForm<EN16FormData>({
     resolver: zodResolver(en16Schema),
@@ -320,21 +323,26 @@ export default function EN16Form() {
           <PortalAccess client={submittedClient as any} autoOpen={true} />
 
           {/* Airtable update — after submitting in the portal, paste the
-              reference number here to log the EN-16 on the client */}
+              reference number here to log the EN-16 on the client, with the
+              client text in the same entry once it's sent */}
           <AirtableLogCard
             key={submissionId}
             client={submittedClient}
             subject="the EN-16"
-            action={(reference) => `Submitted EN-16 (*${reference})`}
-          />
-
-          {/* Canned client text letting them know we filled out and returned
-              the questionnaire that came with the DOL letter */}
-          <TextTemplateCard
-            client={submittedClient}
-            tool="en16"
-            defaultClientName={form.getValues("name")}
-          />
+            action={(reference) =>
+              `Submitted EN-16 (*${reference})` +
+              (textSummary ? `; texted client re: ${textSummary}` : "")
+            }
+          >
+            {/* Canned client text letting them know we filled out and
+                returned the questionnaire that came with the DOL letter */}
+            <TextTemplateCard
+              client={submittedClient}
+              tool="en16"
+              onLogSummaryChange={setTextSummary}
+              defaultClientName={form.getValues("name")}
+            />
+          </AirtableLogCard>
         </>
       )}
     </div>

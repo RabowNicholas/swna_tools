@@ -106,6 +106,9 @@ export default function RDWaiverForm() {
   // Bumped per generated waiver, and used as the log card's key so a
   // regenerated waiver starts a fresh submission
   const [submissionId, setSubmissionId] = useState(0);
+  // What the client was texted, once the text is checked off as sent — goes
+  // into the same log entry as the waiver
+  const [textSummary, setTextSummary] = useState<string | null>(null);
 
   const form = useForm<RDWaiverFormData>({
     resolver: zodResolver(rdWaiverSchema),
@@ -262,9 +265,10 @@ export default function RDWaiverForm() {
   const waiverLogAction = (reference: string, statusTags: string[]) => {
     const option = WAIVER_OPTIONS.find((o) => o.value === submittedOption);
     const act = `Submitted RD waiver, Option ${submittedOption} (${option?.summary}) (*${reference})`;
-    return statusTags.length
+    const logged = statusTags.length
       ? `${act}, ${statusTags.join(" and ")} tag added`
       : act;
+    return textSummary ? `${logged}; texted client re: ${textSummary}` : logged;
   };
 
   if (clientsLoading) {
@@ -525,16 +529,16 @@ export default function RDWaiverForm() {
                       }
                     : undefined
                 }
-              />
-            )}
-
-            {/* Canned client text for the acceptance */}
-            {submittedClient && (
-              <TextTemplateCard
-                client={submittedClient}
-                tool="rd-waiver"
-                defaultClientName={form.getValues("claimant_name")}
-              />
+              >
+                {/* Canned client text for the acceptance, logged in the same
+                    entry as the waiver once it's sent */}
+                <TextTemplateCard
+                  client={submittedClient}
+                  tool="rd-waiver"
+                  onLogSummaryChange={setTextSummary}
+                  defaultClientName={form.getValues("claimant_name")}
+                />
+              </AirtableLogCard>
             )}
           </>
         )}
