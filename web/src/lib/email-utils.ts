@@ -18,6 +18,8 @@ export const EMAIL_ADDRESSES = {
   laPlataCC: "cali.candelaria@lpmedx.com",
   laPlataZeke: "zkalcich@lpmedx.com",
   roots: "juarezc1@rootshhc.com",
+  // Nick at SWNA follows every Roots client's IR
+  rootsSwna: "NickSWNA@outlook.com",
 } as const;
 
 // Client status tags
@@ -25,6 +27,7 @@ export const CLIENT_STATUS = {
   AO: "AO Client",
   GHHC_NV: "GHHC NV",
   GHHC_TN: "GHHC TN",
+  ROOTS: "Roots Client",
 } as const;
 
 // Helper: mobile testing applies when La Plata, not AO, not GHHC, and client is in NV
@@ -33,6 +36,7 @@ function requiresMobileTesting(doctor: string, clientStatus: string, clientState
     && clientStatus !== CLIENT_STATUS.AO
     && clientStatus !== CLIENT_STATUS.GHHC_NV
     && clientStatus !== CLIENT_STATUS.GHHC_TN
+    && clientStatus !== CLIENT_STATUS.ROOTS
     && clientState === "NV";
 }
 
@@ -42,6 +46,7 @@ function requiresLocalFacility(doctor: string, clientStatus: string, clientState
   return doctor === "La Plata"
     && clientStatus !== CLIENT_STATUS.GHHC_NV
     && clientStatus !== CLIENT_STATUS.GHHC_TN
+    && clientStatus !== CLIENT_STATUS.ROOTS
     && clientState !== "NV";
 }
 
@@ -127,6 +132,20 @@ Case ID: {case_id}
 Address: {address}
 
 Giving, could you assist with coordinating the 6MWT and PFT for the client and send us a recent office visit note?
+
+Thank you, and please let us know how we can further assist.`;
+
+const ROOTS_TEMPLATE = `Hello,
+
+Our client has elected to have {doctor} perform their impairment evaluation. I have attached their causation and contact information here.
+
+Name: {name}
+Phone: {phone}
+DOB: {dob}
+Case ID: {case_id}
+Address: {address}
+
+Roots, could you assist with coordinating the 6MWT and PFT for the client and send us a recent office visit note?
 
 Thank you, and please let us know how we can further assist.`;
 
@@ -223,6 +242,10 @@ export function detectClientStatus(client: Client): string {
       }
     }
 
+    // Roots only decides the path when nothing above did — a client with AO
+    // too goes AO's way, and still gets Roots CC'd (see isRootsClient)
+    if (isRootsClient(client)) return CLIENT_STATUS.ROOTS;
+
     return ""; // No status found
   } catch (error) {
     return ""; // Error reading status
@@ -284,7 +307,7 @@ export function getEmailRecipients(
 
   // Roots on top of any other HHC — see isRootsClient
   if (roots) {
-    cc.push(EMAIL_ADDRESSES.roots);
+    cc.push(EMAIL_ADDRESSES.roots, EMAIL_ADDRESSES.rootsSwna);
   }
 
   // Add Zeke at La Plata for mobile testing cases (not AO, in NV)
@@ -318,6 +341,8 @@ export function formatEmailBody(
     template = GHHC_NV_TEMPLATE;
   } else if (clientStatus === CLIENT_STATUS.GHHC_TN) {
     template = GHHC_TN_TEMPLATE;
+  } else if (clientStatus === CLIENT_STATUS.ROOTS) {
+    template = ROOTS_TEMPLATE;
   } else if (requiresMobileTesting(doctor, clientStatus ?? "", clientState)) {
     template = MOBILE_TESTING_TEMPLATE;
   } else {
@@ -499,12 +524,18 @@ export function getCoordinationItems(
     return [emailItem(`asking AO for the OVN and ${LOCAL_FACILITY_ASK}`), LOCAL_TESTING_ITEM, aoOvn];
   }
 
-  // La Plata: GHHC coordinates testing and the OVN wherever the client lives
-  if (isGHHCClient(clientStatus)) {
+  // La Plata: the HHC (GHHC or Roots) coordinates testing and the OVN
+  // wherever the client lives
+  const hhc = isGHHCClient(clientStatus)
+    ? "GHHC"
+    : clientStatus === CLIENT_STATUS.ROOTS
+      ? "Roots"
+      : null;
+  if (hhc) {
     return [
-      emailItem("asking GHHC to coordinate the 6MWT/PFT and OVN"),
-      { id: "testing-info", section: "testing", label: "GHHC coordinating the 6MWT and PFT (asked in the IR email)" },
-      { id: "ovn-info", section: "ovn", label: "GHHC obtaining the OV note (asked in the IR email)" },
+      emailItem(`asking ${hhc} to coordinate the 6MWT/PFT and OVN`),
+      { id: "testing-info", section: "testing", label: `${hhc} coordinating the 6MWT and PFT (asked in the IR email)` },
+      { id: "ovn-info", section: "ovn", label: `${hhc} obtaining the OV note (asked in the IR email)` },
     ];
   }
 
