@@ -11,7 +11,7 @@ This application now includes **Mixpanel** analytics tracking to monitor user ac
 
 2. **`form_viewed`** - When a user opens any form page
    - Properties: form_type, user_id
-   - Tracked forms: ee1, ee1a, ee3, ee10, en16, address-change, withdrawal, ir-notice, desert-pulm, invoice
+   - Tracked forms: ee1, ee1a, ee3, ee10, en16, address-change, withdrawal, desert-pulm, invoice
 
 3. **`pdf_generated`** - When a user successfully generates a PDF
    - Properties: form_type, user_id, client_id

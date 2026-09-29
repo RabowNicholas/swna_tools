@@ -127,12 +127,6 @@ export default function Home() {
       href: "/forms/dol-status-update",
     },
     {
-      id: "ir-notice",
-      name: "IR Schedule Notice",
-      description: "",
-      href: "/forms/ir-notice",
-    },
-    {
       id: "change-of-ar",
       name: "Change of AR Letter",
       description: "",
@@ -208,7 +202,7 @@ export default function Home() {
       ["ee3", "ee1", "ee1a", "ee10", "en16"].includes(tool.id)
     ),
     dolLetters: allTools.filter((tool) =>
-      ["dol-letter", "withdrawal", "address-change", "phone-change", "rd-waiver", "dol-status-update", "ir-notice", "change-of-ar"].includes(tool.id)
+      ["dol-letter", "withdrawal", "address-change", "phone-change", "rd-waiver", "dol-status-update", "change-of-ar"].includes(tool.id)
     ),
     guides: allTools.filter((tool) => ["ir-process"].includes(tool.id)),
     medical: allTools.filter((tool) =>
