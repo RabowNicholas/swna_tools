@@ -333,6 +333,8 @@ export default function EN16Form() {
               `Submitted EN-16 (*${reference})` +
               (textSummary ? `; texted client re: ${textSummary}` : "")
             }
+            // Answering the DOL's questionnaire means the claim is in development
+            autoStatus={{ add: ["Claim Developed"], remove: ["Claim Submitted"] }}
           >
             {/* Canned client text letting them know we filled out and
                 returned the questionnaire that came with the DOL letter */}
