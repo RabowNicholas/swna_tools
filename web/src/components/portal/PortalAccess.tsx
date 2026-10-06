@@ -47,7 +47,7 @@ function extractPortalData(client: Client): PortalData {
   };
 }
 
-function CopyField({
+export function CopyField({
   label,
   value,
 }: {

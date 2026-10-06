@@ -117,6 +117,11 @@ interface AirtableLogCardProps {
    * tools that already know — the log line is fixed there.
    */
   submissionField?: SubmissionField;
+  /**
+   * False holds the write back until the page's own required step is done,
+   * e.g. a checkbox in `children`. Defaults to true.
+   */
+  ready?: boolean;
 }
 
 /**
@@ -142,6 +147,7 @@ export function AirtableLogCard({
   autoStatus,
   submissionField,
   children,
+  ready: pageReady = true,
 }: AirtableLogCardProps) {
   const { data: session } = useSession();
   const { refreshClients } = useClients();
@@ -162,7 +168,8 @@ export function AirtableLogCard({
   const removedTags = [...(pickedOption?.removes ?? []), ...(autoStatus?.remove ?? [])];
   const submitted = submission.trim();
   // A card that asks what was submitted can't log until it's been answered.
-  const ready = !!referenceNumber.trim() && (!submissionField || !!submitted);
+  const ready =
+    pageReady && !!referenceNumber.trim() && (!submissionField || !!submitted);
   const logEntry = (reference: string) =>
     buildLogEntry(action(reference, statusTags, submitted), session?.user?.email);
 

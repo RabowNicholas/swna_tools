@@ -11,14 +11,17 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { FileText, CheckCircle, X } from "lucide-react";
+import { FileText, CheckCircle, X, ExternalLink } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { PortalAccess } from "@/components/portal/PortalAccess";
+import { PortalAccess, CopyField } from "@/components/portal/PortalAccess";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+
+// ECOMP, where the full case file is downloaded before the claim closes out
+const ECOMP_URL = "https://owcp.industrypartners.dol.gov/#/";
 
 // Zod schema for form validation
 const withdrawalSchema = z.object({
@@ -61,6 +64,10 @@ export default function WithdrawalForm() {
   // The condition as it was written into the letter, so a later edit to the
   // form can't log a condition different from the one withdrawn
   const [submittedCondition, setSubmittedCondition] = useState("");
+  // The case ID the letter went out under, for looking the case up in ECOMP
+  const [submittedCaseId, setSubmittedCaseId] = useState("");
+  // Required before the withdrawal can be logged
+  const [caseFileDownloaded, setCaseFileDownloaded] = useState(false);
   // Bumped per generated letter, and used as the log card's key so a
   // regenerated letter starts a fresh submission
   const [submissionId, setSubmissionId] = useState(0);
@@ -146,6 +153,8 @@ export default function WithdrawalForm() {
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
         setSubmittedCondition(data.claimed_condition);
+        setSubmittedCaseId(data.case_id);
+        setCaseFileDownloaded(false);
         setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
@@ -349,19 +358,57 @@ export default function WithdrawalForm() {
           <PortalAccess client={submittedClient as any} autoOpen={true} />
 
           {/* Airtable update — after submitting in the portal, paste the
-              reference number here to log the withdrawal on the client */}
+              reference number and download the full case file from ECOMP,
+              then log both on the client in one entry */}
           <AirtableLogCard
             key={submissionId}
             client={submittedClient}
             subject="the withdrawal"
             action={(reference) =>
-              `Submitted withdrawal of claim for ${submittedCondition} (*${reference})`
+              `Submitted withdrawal of claim for ${submittedCondition} (*${reference}); Downloaded full case file`
             }
             autoStatus={{
               add: ["Withdrawn"],
               remove: [],
             }}
-          />
+            ready={caseFileDownloaded}
+          >
+            <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Download the full case file from ECOMP
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Open ECOMP, look the case up by its case ID, and download the
+                  entire case file.
+                </p>
+              </div>
+              <CopyField label="Case ID" value={submittedCaseId} />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                icon={<ExternalLink className="h-4 w-4" />}
+                onClick={() =>
+                  window.open(ECOMP_URL, "_blank", "noopener,noreferrer")
+                }
+              >
+                Open ECOMP
+              </Button>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary flex-shrink-0"
+                  checked={caseFileDownloaded}
+                  onChange={(e) => setCaseFileDownloaded(e.target.checked)}
+                />
+                <span className="text-sm text-foreground">
+                  Downloaded the full case file
+                  <span className="text-destructive"> *</span>
+                </span>
+              </label>
+            </div>
+          </AirtableLogCard>
         </>
       )}
     </div>
