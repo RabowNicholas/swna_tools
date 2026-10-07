@@ -11,10 +11,10 @@ export default function Home() {
   return (
     <div className="mx-auto max-w-5xl space-y-10">
       <header className="space-y-1">
-        <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-foreground">
+        <h1 className="text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground">
           What do you need to do?
         </h1>
-        <p className="text-[15px] text-muted-foreground">
+        <p className="text-[0.9375rem] text-muted-foreground">
           Pick the situation, then the tool. Press ⌘K to find a tool by name.
         </p>
       </header>
@@ -50,10 +50,10 @@ function SectionCard({ section }: { section: (typeof TOOL_SECTIONS)[number] }) {
           <Icon className="h-[18px] w-[18px]" aria-hidden />
         </div>
         <div className="min-w-0">
-          <h2 id={`${section.id}-title`} className="text-[15px] font-semibold text-card-foreground">
+          <h2 id={`${section.id}-title`} className="text-[0.9375rem] font-semibold text-card-foreground">
             {section.title}
           </h2>
-          <p className="text-[13px] text-muted-foreground">{section.summary}</p>
+          <p className="text-[0.8125rem] text-muted-foreground">{section.summary}</p>
         </div>
       </div>
       <ul className="border-t border-border">
@@ -61,11 +61,11 @@ function SectionCard({ section }: { section: (typeof TOOL_SECTIONS)[number] }) {
           <li key={tool.href} className="border-b border-border last:border-b-0">
             <Link
               href={tool.href}
-              className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+              className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             >
               <div className="min-w-0 flex-1">
-                <div className="text-[14px] text-card-foreground">{tool.name}</div>
-                <div className="text-[13px] text-muted-foreground">{tool.description}</div>
+                <div className="text-[0.875rem] text-card-foreground">{tool.name}</div>
+                <div className="text-[0.8125rem] text-muted-foreground">{tool.description}</div>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             </Link>

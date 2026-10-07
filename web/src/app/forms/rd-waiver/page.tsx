@@ -12,12 +12,10 @@ import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
   FileDown,
-  AlertCircle,
   CheckCircle,
   FileText,
   User,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import { TextTemplateCard } from "@/components/text/TextTemplateCard";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
@@ -26,6 +24,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // Zod schema for form validation
 const rdWaiverSchema = z.object({
@@ -273,27 +272,11 @@ export default function RDWaiverForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -315,7 +298,6 @@ export default function RDWaiverForm() {
               ? form.formState.errors.client_id?.message
               : undefined
           }
-          label="Choose which client you're preparing this waiver for"
         />
 
         {/* Client Information */}
@@ -326,7 +308,7 @@ export default function RDWaiverForm() {
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Client's information as it appears in their records
+              Check these match the client&apos;s official documents.
             </p>
           </CardHeader>
           <CardContent>
@@ -340,7 +322,6 @@ export default function RDWaiverForm() {
                       ? form.formState.errors.claimant_name?.message
                       : undefined
                   }
-                  helperText="Full name of the claimant as it appears on official documents"
                   {...form.register("claimant_name")}
                 />
 
@@ -352,7 +333,7 @@ export default function RDWaiverForm() {
                       ? form.formState.errors.employee_name?.message
                       : undefined
                   }
-                  helperText="Employee name (typically same as claimant unless different)"
+                  helperText="Usually the same as the claimant"
                   {...form.register("employee_name")}
                 />
               </div>
@@ -382,12 +363,11 @@ export default function RDWaiverForm() {
                       ? form.formState.errors.case_id?.message
                       : undefined
                   }
-                  helperText="The case identification number assigned to this client"
                   {...form.register("case_id")}
                 />
 
                 <Input
-                  label="RD Decision Date"
+                  label="Recommended Decision Date"
                   type="date"
                   required
                   error={
@@ -395,7 +375,6 @@ export default function RDWaiverForm() {
                       ? form.formState.errors.rd_decision_date?.message
                       : undefined
                   }
-                  helperText="Date when the Recommended Decision was issued"
                   {...form.register("rd_decision_date")}
                 />
               </div>

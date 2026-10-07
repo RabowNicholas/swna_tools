@@ -45,7 +45,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           >
             {label}
             {required && (
-              <span className="text-red-500 ml-1" aria-label="required">*</span>
+              <span className="text-muted-foreground ml-0.5" aria-label="required">*</span>
             )}
           </label>
         )}
@@ -65,7 +65,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
               "px-3.5 py-2.5 pr-10",
               
               // Default state
-              "border-border hover:border-ring/50",
+              "border-input-border hover:border-ring/50",
               "focus:border-ring focus:ring-ring/20",
               
               // Error state

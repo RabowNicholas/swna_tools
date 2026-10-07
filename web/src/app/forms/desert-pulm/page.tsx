@@ -16,16 +16,15 @@ import {
   User,
   Home,
   Stethoscope,
-  AlertCircle,
   CheckCircle,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { DPReferralEmailDraft } from "@/components/email/DPReferralEmailDraft";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -327,27 +326,11 @@ export default function DesertPulmForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -369,7 +352,6 @@ export default function DesertPulmForm() {
               ? form.formState.errors.client_id?.message
               : undefined
           }
-          label="Choose which client you're preparing this referral for"
         />
 
         {/* Patient Information */}
@@ -380,21 +362,20 @@ export default function DesertPulmForm() {
               <CardTitle>Patient Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Enter the patient's information as it appears in their records
+              Check these match the client&apos;s official documents.
             </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="Patient's Full Name"
+                  label="Full Name"
                   required
                   error={
                     attemptedSubmit
                       ? form.formState.errors.patient_name?.message
                       : undefined
                   }
-                  helperText="Patient's full legal name as it appears on their official documents"
                   {...form.register("patient_name")}
                 />
 
@@ -406,21 +387,20 @@ export default function DesertPulmForm() {
                       ? form.formState.errors.case_id?.message
                       : undefined
                   }
-                  helperText="The case identification number assigned to this patient"
                   {...form.register("case_id")}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="Patient's Phone Number"
+                  label="Phone Number"
                   placeholder="e.g. 555.123.4567"
                   error={
                     attemptedSubmit
                       ? form.formState.errors.phone_number?.message
                       : undefined
                   }
-                  helperText="Patient's phone number in format: XXX.XXX.XXXX"
+                  helperText="Format: 555.123.4567"
                   {...form.register("phone_number")}
                 />
 
@@ -433,7 +413,6 @@ export default function DesertPulmForm() {
                       ? form.formState.errors.dob?.message
                       : undefined
                   }
-                  helperText="Enter the patient's date of birth"
                   {...form.register("dob")}
                 />
               </div>
@@ -455,7 +434,7 @@ export default function DesertPulmForm() {
           <CardContent>
             <div className="space-y-6">
               <Input
-                label="Patient's Street Address"
+                label="Street Address"
                 required
                 placeholder="e.g. 123 Main St"
                 error={
@@ -463,14 +442,14 @@ export default function DesertPulmForm() {
                     ? form.formState.errors.address_main?.message
                     : undefined
                 }
-                helperText="Patient's street address (include apartment/unit number if applicable)"
+                helperText="Include the apartment or unit number"
                 {...form.register("address_main")}
               />
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2">
                   <Input
-                    label="Patient's City"
+                    label="City"
                     required
                     placeholder="e.g. Albuquerque"
                     error={
@@ -497,7 +476,7 @@ export default function DesertPulmForm() {
               </div>
 
               <Input
-                label="Patient's ZIP Code"
+                label="ZIP Code"
                 required
                 placeholder="e.g. 87101"
                 maxLength={5}
@@ -506,7 +485,6 @@ export default function DesertPulmForm() {
                     ? form.formState.errors.address_zip?.message
                     : undefined
                 }
-                helperText="Patient's 5-digit ZIP code"
                 {...form.register("address_zip")}
               />
             </div>
@@ -526,14 +504,14 @@ export default function DesertPulmForm() {
           </CardHeader>
           <CardContent>
             <Select
-              label="DX (Diagnosis)"
+              label="Diagnosis"
               required
               error={
                 attemptedSubmit
                   ? form.formState.errors.dx_code?.message
                   : undefined
               }
-              helperText="Select the diagnosis from the final decision"
+              helperText="As listed on the Final Decision"
               {...form.register("dx_code")}
             >
               <option value="">Select diagnosis...</option>

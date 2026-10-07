@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import { Check, ChevronDown, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +39,7 @@ export function Combobox({
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -110,9 +111,9 @@ export function Combobox({
   return (
     <div className={cn("relative", className)}>
       {label && (
-        <label className="block text-sm font-medium text-foreground mb-2">
+        <label htmlFor={inputId} className="block text-sm font-medium text-foreground mb-2">
           {label}
-          {required && <span className="text-destructive ml-1">*</span>}
+          {required && <span className="text-muted-foreground ml-0.5" aria-label="required">*</span>}
         </label>
       )}
       
@@ -121,7 +122,12 @@ export function Combobox({
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             ref={inputRef}
+            id={inputId}
             type="text"
+            role="combobox"
+            aria-expanded={isOpen}
+            aria-autocomplete="list"
+            aria-label={label ? undefined : placeholder}
             className={cn(
               "w-full rounded-lg border bg-input pl-10 pr-10 py-2 text-sm",
               "placeholder:text-placeholder text-foreground",
@@ -129,7 +135,7 @@ export function Combobox({
               "disabled:cursor-not-allowed disabled:opacity-50",
               error
                 ? "border-destructive focus:border-destructive focus:ring-destructive"
-                : "border-border focus:border-ring"
+                : "border-input-border focus:border-ring"
             )}
             placeholder={query === '' && selectedOption ? selectedOption.name : placeholder}
             value={query}
@@ -146,6 +152,7 @@ export function Combobox({
           <button
             type="button"
             className="absolute inset-y-0 right-0 flex items-center pr-3"
+            aria-label={isOpen ? "Hide options" : "Show options"}
             onClick={() => setIsOpen(!isOpen)}
             disabled={disabled}
           >

@@ -18,6 +18,7 @@ module.exports = {
           foreground: 'var(--primary-foreground)',
           hover: 'var(--primary-hover)',
           active: 'var(--primary-active)',
+          fill: 'var(--primary-fill)',
         },
         secondary: {
           DEFAULT: 'var(--secondary)',
@@ -38,6 +39,7 @@ module.exports = {
         },
         border: 'var(--border)',
         placeholder: 'var(--placeholder)',
+        'input-border': 'var(--input-border)',
         sidebar: 'var(--sidebar)',
         input: 'var(--input)',
         ring: 'var(--ring)',

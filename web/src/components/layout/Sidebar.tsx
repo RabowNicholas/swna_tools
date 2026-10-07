@@ -26,10 +26,10 @@ function NavLink({
       onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'block rounded-md px-2.5 py-1.5 text-[14px] transition-colors',
+        'block rounded-md px-2.5 py-1.5 text-[0.875rem] transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         active
-          ? 'bg-primary text-primary-foreground font-medium'
+          ? 'bg-primary-fill text-primary-foreground font-medium'
           : 'text-foreground hover:bg-accent'
       )}
     >
@@ -124,7 +124,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <Link
           href="/"
           onClick={onNavigate}
-          className="block px-1 text-[15px] font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+          className="block px-1 text-[0.9375rem] font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
         >
           SWNA Tools
         </Link>
@@ -142,10 +142,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             onKeyDown={onSearchKey}
             placeholder="Find a tool"
             aria-label="Find a tool"
-            className="w-full rounded-lg border border-border bg-input py-1.5 pl-8 pr-10 text-[14px] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-input-border bg-input py-1.5 pl-8 pr-10 text-[0.875rem] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
           {!query && (
-            <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-border px-1 text-[11px] text-muted-foreground">
+            <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-border px-1 text-[0.6875rem] text-muted-foreground">
               ⌘K
             </kbd>
           )}
@@ -164,10 +164,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                     onMouseEnter={() => setHighlight(i)}
                     className={cn(
                       'w-full rounded-md px-2.5 py-1.5 text-left transition-colors',
-                      i === highlight ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-accent'
+                      i === highlight ? 'bg-primary-fill text-primary-foreground' : 'text-foreground hover:bg-accent'
                     )}
                   >
-                    <div className="text-[14px]">{tool.name}</div>
+                    <div className="text-[0.875rem]">{tool.name}</div>
                     <div className={cn('text-xs', i === highlight ? 'text-primary-foreground/80' : 'text-muted-foreground')}>
                       {section.title}
                     </div>
@@ -193,8 +193,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 </div>
               </div>
             ))}
-            {manage.map((section) => (
-              <div key={section.id} className="mt-6 border-t border-border pt-4">
+            {manage.map((section, i) => (
+              <div key={section.id} className={i === 0 ? 'mt-6 border-t border-border pt-4' : 'mt-5'}>
                 <h2 className="px-2.5 pb-1 text-xs font-semibold text-muted-foreground">{section.title}</h2>
                 <div className="space-y-0.5">
                   {section.tools.map((tool) => (

@@ -44,13 +44,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           
           // Size variants
           size === 'sm' && 'h-9 px-3.5 text-sm gap-1.5',
-          size === 'default' && 'h-10 px-4 text-[15px] gap-2',
-          size === 'lg' && 'h-11 px-5 text-[15px] gap-2',
+          size === 'default' && 'h-10 px-4 text-[0.9375rem] gap-2',
+          size === 'lg' && 'h-11 px-5 text-[0.9375rem] gap-2',
           size === 'xl' && 'h-12 px-6 text-base gap-2.5',
 
           // Flat, calm fills. Color carries meaning: blue = the main action,
           // red = destructive, green = success. No gradients, glows or scaling.
-          variant === 'primary' && 'bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-active focus-visible:ring-primary',
+          variant === 'primary' && 'bg-primary-fill text-primary-foreground hover:bg-primary-hover active:bg-primary-active focus-visible:ring-primary',
           variant === 'secondary' && 'bg-secondary text-secondary-foreground border border-border hover:bg-accent focus-visible:ring-ring',
           variant === 'tertiary' && 'text-primary bg-transparent hover:bg-primary/10 focus-visible:ring-primary',
           variant === 'destructive' && 'bg-destructive text-destructive-foreground hover:bg-destructive-hover focus-visible:ring-destructive',

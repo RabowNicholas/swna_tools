@@ -39,7 +39,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           >
             {label}
             {required && (
-              <span className="text-destructive ml-1" aria-label="required">*</span>
+              <span className="text-muted-foreground ml-0.5" aria-label="required">*</span>
             )}
           </label>
         )}
@@ -75,14 +75,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
               // Variants (only apply if no error)
               !error && variant === 'default' && [
-                "bg-input border-border",
-                "hover:border-border/80",
+                "bg-input border-input-border",
+                "hover:border-muted-foreground",
                 "focus:border-ring focus:ring-ring/20"
               ],
 
               !error && variant === 'filled' && [
-                "bg-muted border-border",
-                "hover:bg-accent hover:border-border/80",
+                "bg-muted border-input-border",
+                "hover:bg-accent hover:border-muted-foreground",
                 "focus:bg-input focus:border-ring focus:ring-ring/20"
               ],
 

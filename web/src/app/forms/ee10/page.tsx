@@ -31,6 +31,7 @@ import {
 } from "@/components/form/ClientSelector";
 import { detectClientStatus } from "@/lib/email-utils";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // Whichever pre-IR tag is on the record when the EE-10 goes in — generic or
 // already doctor-specific — is superseded once the doctor is confirmed here.
@@ -466,27 +467,11 @@ export default function EE10Form() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -534,7 +519,6 @@ export default function EE10Form() {
               ? form.formState.errors.client_id?.message
               : undefined
           }
-          label="Choose which client you're preparing this form for"
         />
 
         {/* Doctor Selection */}
@@ -607,7 +591,7 @@ export default function EE10Form() {
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Enter the client's information as it appears in their records
+              Check these match the client&apos;s official documents.
             </p>
           </CardHeader>
           <CardContent>
@@ -615,14 +599,13 @@ export default function EE10Form() {
               {/* Name and Case ID */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
-                  label="Client's Full Name"
+                  label="Full Name"
                   required
                   error={
                     attemptedSubmit
                       ? form.formState.errors.name?.message
                       : undefined
                   }
-                  helperText="Client's full legal name"
                   {...form.register("name")}
                 />
 
@@ -634,7 +617,6 @@ export default function EE10Form() {
                       ? form.formState.errors.case_id?.message
                       : undefined
                   }
-                  helperText="The case identification number"
                   {...form.register("case_id")}
                 />
               </div>
@@ -649,7 +631,6 @@ export default function EE10Form() {
                     ? form.formState.errors.dob?.message
                     : undefined
                 }
-                helperText="Client's date of birth for medical records"
                 {...form.register("dob")}
               />
 
@@ -662,7 +643,7 @@ export default function EE10Form() {
                     ? form.formState.errors.address_main?.message
                     : undefined
                 }
-                helperText="Client's street address (include apartment/unit number if applicable)"
+                helperText="Include the apartment or unit number"
                 {...form.register("address_main")}
               />
 
@@ -703,7 +684,7 @@ export default function EE10Form() {
                       ? form.formState.errors.address_zip?.message
                       : undefined
                   }
-                  helperText="5 or 9 digit ZIP code"
+                  helperText="5 or 9 digits"
                   {...form.register("address_zip")}
                 />
 
@@ -716,7 +697,7 @@ export default function EE10Form() {
                       ? form.formState.errors.phone?.message
                       : undefined
                   }
-                  helperText="Format: 123.123.1234"
+                  helperText="Format: 555.123.4567"
                   {...form.register("phone")}
                 />
               </div>
@@ -762,7 +743,7 @@ export default function EE10Form() {
                   ? form.formState.errors.claim_type?.message
                   : undefined
               }
-              helperText="Select whether this is the client's first impairment claim or a repeat claim"
+              helperText="The client's first impairment claim, or a repeat claim"
               {...form.register("claim_type")}
             >
               <option value="Initial Impairment Claim">

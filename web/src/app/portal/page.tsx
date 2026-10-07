@@ -15,7 +15,6 @@ import {
   AlertCircle,
   ArrowLeft,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   ClientSelector,
   parseClientName,
@@ -23,6 +22,7 @@ import {
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import { TextTemplateCard } from "@/components/text/TextTemplateCard";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // Tags a fresh IR Report submission supersedes — every stage a case can be at
 // while an IR is being scheduled or is out with a doctor, from pipeline-config.ts's
@@ -237,28 +237,11 @@ function PortalPageContent() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={() => refreshClients(true)}>Try Again</Button>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={error} onRetry={() => refreshClients(true)} />;
   }
 
   // Calculate completion progress
@@ -285,7 +268,6 @@ function PortalPageContent() {
         }}
         onRefresh={() => refreshClients(true)}
         error={undefined}
-        label="Choose which client you're preparing portal access for"
       />
 
       {selectedClient && (
@@ -436,14 +418,7 @@ function PortalPageContent() {
 export default function PortalPage() {
   return (
     <Suspense
-      fallback={
-        <div className="min-h-[400px] bg-background flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">Loading portal...</p>
-          </div>
-        </div>
-      }
+      fallback={<PageLoading />}
     >
       <PortalPageContent />
     </Suspense>

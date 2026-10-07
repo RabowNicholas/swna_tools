@@ -418,7 +418,7 @@ export function EmploymentHistorySection({
                       maxLength={2}
                       placeholder="e.g. NM"
                       required
-                      helperText="Two letter state code"
+                      helperText="2-letter code"
                       error={recordErrors?.state?.message}
                       {...form.register(`employment_history.${index}.state`)}
                     />
@@ -448,7 +448,7 @@ export function EmploymentHistorySection({
                         rows={3}
                         showCharCount
                         maxLength={500}
-                        helperText="Describe your primary job responsibilities"
+                        helperText="Main job responsibilities"
                         error={recordErrors?.work_duties?.message}
                         {...form.register(
                           `employment_history.${index}.work_duties`

@@ -22,13 +22,13 @@ import {
   MapPin,
   Receipt,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // Invoice item options
 const INVOICE_ITEMS = [
@@ -398,27 +398,11 @@ export default function InvoiceForm() {
       : 0;
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -589,7 +573,7 @@ export default function InvoiceForm() {
                   label="Amount Awarded"
                   type="number"
                   placeholder="e.g. 2000"
-                  helperText="Enter the awarded amount in dollars"
+                  helperText="In dollars"
                   error={form.formState.errors.awarded_amount?.message}
                   {...form.register("awarded_amount")}
                 />

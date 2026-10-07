@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   FileStack,
   AlertCircle,
@@ -68,6 +67,7 @@ import {
 } from "@/lib/claims/assemble";
 import { formatSSN, generateEE1, generateEE3 } from "@/lib/claims/generate";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 const CLAIM_TYPES = [
   { value: "primary", label: "Primary" },
@@ -543,25 +543,11 @@ export default function ClaimsAssemblyPage() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-2">
-          <AlertCircle className="h-10 w-10 mx-auto text-destructive" />
-          <h3 className="text-lg font-medium text-foreground">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -578,7 +564,6 @@ export default function ClaimsAssemblyPage() {
         }}
         onRefresh={() => refreshClients(true)}
         error={form.formState.errors.client_id?.message}
-        label="Choose the client this claim is for"
       />
 
       {/* Claim setup */}
@@ -712,7 +697,7 @@ export default function ClaimsAssemblyPage() {
                     maxLength={9}
                     required
                     error={form.formState.errors.ssn?.message}
-                    helperText="Enter 9 digits only (dashes will be added automatically)"
+                    helperText="9 digits; dashes are added for you"
                     {...form.register("ssn")}
                   />
 
@@ -726,7 +711,7 @@ export default function ClaimsAssemblyPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-2">
-                      Sex *
+                      Sex<span className="text-muted-foreground ml-0.5" aria-label="required">*</span>
                     </label>
                     <div className="flex space-x-4">
                       <label className="flex items-center space-x-2">
@@ -797,7 +782,7 @@ export default function ClaimsAssemblyPage() {
                     required
                     placeholder="e.g. 555.123.4567"
                     error={form.formState.errors.phone?.message}
-                    helperText="Phone number in format: 123.123.1234"
+                    helperText="Format: 555.123.4567"
                     {...form.register("phone")}
                   />
                 </div>

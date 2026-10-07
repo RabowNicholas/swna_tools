@@ -11,8 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { FileEdit, CheckCircle, X } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { FileEdit, CheckCircle } from "lucide-react";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import {
@@ -20,6 +19,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // Zod schema for form validation
 const dolLetterSchema = z.object({
@@ -165,29 +165,11 @@ export default function DolLetterForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card variant="elevated" className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <div className="text-destructive mb-4">
-              <X className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              Error Loading Clients
-            </h3>
-            <p className="text-muted-foreground">{clientsError}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -227,7 +209,6 @@ export default function DolLetterForm() {
                       label="Claimant Name"
                       required
                       error={form.formState.errors.claimant_name?.message}
-                      helperText="Client's full name"
                       {...form.register("claimant_name")}
                     />
 
@@ -235,7 +216,6 @@ export default function DolLetterForm() {
                       label="Case ID"
                       required
                       error={form.formState.errors.case_id?.message}
-                      helperText="Case ID from Airtable"
                       {...form.register("case_id")}
                       readOnly
                       className="bg-muted/30"
@@ -247,7 +227,6 @@ export default function DolLetterForm() {
                     type="date"
                     required
                     error={form.formState.errors.letter_date?.message}
-                    helperText="Date for the letter"
                     {...form.register("letter_date")}
                   />
                 </div>

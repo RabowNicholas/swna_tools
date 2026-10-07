@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { FileDown, CheckCircle, AlertCircle, User } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   ClientSelector,
   parseClientName,
@@ -25,6 +24,7 @@ import { ee3Schema, type EE3FormValues } from "@/lib/schemas/ee3";
 import { formatSSN, generateEE3 } from "@/lib/claims/generate";
 import { trackEvent } from "@/lib/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 
 
@@ -223,39 +223,11 @@ export default function EE3Form() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">
-            <svg
-              className="h-12 w-12 mx-auto"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -273,7 +245,6 @@ export default function EE3Form() {
           }}
           onRefresh={() => refreshClients(true)}
           error={form.formState.errors.client_id?.message}
-          label="Select Client"
         />
 
         {/* Personal Information */}
@@ -319,7 +290,7 @@ export default function EE3Form() {
                 maxLength={9}
                 required
                 error={form.formState.errors.ssn?.message}
-                helperText="Enter 9 digits only (no dashes)"
+                helperText="9 digits, no dashes"
                 {...form.register("ssn")}
               />
             </div>

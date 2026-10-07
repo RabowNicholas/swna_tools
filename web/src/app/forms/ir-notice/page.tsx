@@ -16,13 +16,11 @@ import {
   FileDown,
   User,
   FileText,
-  AlertCircle,
   CheckCircle,
   Calendar,
   Scale,
   Stethoscope,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
@@ -32,6 +30,7 @@ import {
 } from "@/components/form/ClientSelector";
 import { IRNoticeEmailDraft } from "@/components/email/IRNoticeEmailDraft";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -319,27 +318,11 @@ export default function IRNoticeForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -361,7 +344,6 @@ export default function IRNoticeForm() {
               ? form.formState.errors.client_id?.message
               : undefined
           }
-          label="Choose which client you're scheduling an IR notice for"
         />
 
         {/* Client Information and Appointment in 2 columns - matching Streamlit layout */}
@@ -377,14 +359,13 @@ export default function IRNoticeForm() {
             <CardContent>
               <div className="space-y-6">
                 <Input
-                  label="Client's Full Name"
+                  label="Full Name"
                   required
                   error={
                     attemptedSubmit
                       ? form.formState.errors.client_name?.message
                       : undefined
                   }
-                  helperText="Client's full legal name as it appears on their official documents"
                   disabled={!form.watch("client_id")}
                   {...form.register("client_name")}
                 />
@@ -397,7 +378,6 @@ export default function IRNoticeForm() {
                       ? form.formState.errors.case_id?.message
                       : undefined
                   }
-                  helperText="The case identification number assigned to this client"
                   disabled={!form.watch("client_id")}
                   {...form.register("case_id")}
                 />
@@ -423,7 +403,6 @@ export default function IRNoticeForm() {
                       ? form.formState.errors.provider_name?.message
                       : undefined
                   }
-                  helperText="Select the medical provider for the IR appointment"
                   {...form.register("provider_name")}
                 >
                   {PROVIDER_OPTIONS.map((option) => (
@@ -442,7 +421,6 @@ export default function IRNoticeForm() {
                       ? form.formState.errors.appointment_date?.message
                       : undefined
                   }
-                  helperText="Select the date when the client's Independent Review is scheduled"
                   {...form.register("appointment_date")}
                 />
               </div>

@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { FileText, CheckCircle, Zap } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import { TextTemplateCard } from "@/components/text/TextTemplateCard";
@@ -20,6 +19,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // Zod schema for form validation
 const en16Schema = z.object({
@@ -166,29 +166,11 @@ export default function EN16Form() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card variant="elevated" className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <div className="text-destructive mb-4">
-              <Zap className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              Error Loading Clients
-            </h3>
-            <p className="text-muted-foreground">{clientsError}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -206,8 +188,6 @@ export default function EN16Form() {
           }}
           onRefresh={() => refreshClients(true)}
           error={form.formState.errors.client_id?.message}
-          label="Select Client"
-          cardTitle="Client Selection"
         />
 
         {/* Client Information (Auto-filled) */}
@@ -225,10 +205,9 @@ export default function EN16Form() {
             <CardContent>
               <div className="space-y-6">
                 <Input
-                  label="Client's Full Name"
+                  label="Full Name"
                   required
                   error={form.formState.errors.name?.message}
-                  helperText="Client's full legal name as it appears on their official documents"
                   {...form.register("name")}
                 />
 
@@ -236,7 +215,6 @@ export default function EN16Form() {
                   label="Case ID"
                   required
                   error={form.formState.errors.case_id?.message}
-                  helperText="The case identification number assigned to this client"
                   {...form.register("case_id")}
                   readOnly
                   className="bg-muted/30"
@@ -265,7 +243,7 @@ export default function EN16Form() {
                 >
                   {loading
                     ? "Generating EN-16..."
-                    : "Generate Client's EN-16 Form"}
+                    : "Generate EN-16"}
                 </Button>
               </div>
 

@@ -1,8 +1,9 @@
+import { PageHeader } from "@/components/layout/PageHeader";
+
 export default function IRProcessPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
         .ir-flowchart {
           --bg:#f5f4f0;--ink:#1a1a1a;--line:#c8c4bc;
           --blue-dark:#1d3557;--blue-mid:#2e5f8a;--blue-light:#d6e8f7;
@@ -10,13 +11,20 @@ export default function IRProcessPage() {
           --green:#2d6a4f;--green-light:#d8f0e6;
           --red:#c0392b;--red-light:#fde8e6;
           --purple:#5b3fa6;--purple-light:#ede8fb;
-          --gray:#6b7280;--radius:6px;
-          --font:'IBM Plex Sans',sans-serif;--mono:'IBM Plex Mono',monospace;
+          --gray:#6b7280;--radius:10px;--node-bg:#fff;--warn-bg:#fff3cd;--warn-ink:#856404;
+          --font:var(--font-sans);--mono:var(--font-mono);
           font-family:var(--font);
-          background:var(--bg);
           color:var(--ink);
-          padding:40px 20px 80px;
-          min-height:100vh;
+          padding:32px 0 48px;
+        }
+        .dark .ir-flowchart {
+          --ink:#f5f5f7;--line:#48484a;
+          --blue-dark:#2b4a75;--blue-mid:#3a6a96;--blue-light:#1d2c3f;
+          --gold:#ff9f0a;--gold-light:#3a2c12;
+          --green:#2f8f5f;--green-light:#16301f;
+          --red:#ff6961;--red-light:#3b1a18;
+          --purple:#a78bfa;--purple-light:#272040;
+          --gray:#98989f;--node-bg:#222224;--warn-bg:#3a2f0b;--warn-ink:#ffd60a;
         }
         .ir-flowchart *{box-sizing:border-box;margin:0;padding:0;}
         .ir-flowchart h1{text-align:center;font-size:22px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--blue-dark);margin-bottom:6px;}
@@ -28,7 +36,7 @@ export default function IRProcessPage() {
         .ir-flowchart .node{width:100%;border-radius:var(--radius);padding:14px 18px;font-size:13px;line-height:1.55;border:1.5px solid transparent;}
         .ir-flowchart .node.trigger{background:var(--blue-dark);color:#fff;max-width:580px;text-align:center;font-weight:600;font-size:14px;}
         .ir-flowchart .node.trigger.end{background:var(--green);}
-        .ir-flowchart .node.action{background:#fff;border-color:var(--line);max-width:580px;}
+        .ir-flowchart .node.action{background:var(--node-bg);border-color:var(--line);max-width:580px;}
         .ir-flowchart .step-num{display:inline-block;background:var(--blue-dark);color:#fff;font-size:10px;font-family:var(--mono);font-weight:600;padding:1px 7px;border-radius:3px;margin-bottom:6px;letter-spacing:.06em;}
         .ir-flowchart .node.golden{background:var(--green-light);border-color:var(--green);}
         .ir-flowchart .node.golden .step-num{background:var(--green);}
@@ -38,8 +46,8 @@ export default function IRProcessPage() {
         .ir-flowchart .node.section-hdr{background:var(--blue-mid);color:#fff;text-align:center;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:8px 18px;}
         .ir-flowchart .node ul{margin-top:6px;padding-left:16px;}
         .ir-flowchart .node ul li{margin-bottom:4px;}
-        .ir-flowchart .tag{display:block;background:var(--blue-light);color:var(--blue-dark);font-family:var(--mono);font-size:10px;padding:5px 8px;border-radius:3px;font-weight:600;margin-top:8px;line-height:1.7;}
-        .ir-flowchart .warn{display:block;background:#fff3cd;color:#856404;font-size:11px;padding:4px 8px;border-radius:3px;margin-top:8px;font-weight:500;line-height:1.5;}
+        .ir-flowchart .tag{display:block;background:var(--blue-light);color:var(--ink);font-family:var(--mono);font-size:10px;padding:5px 8px;border-radius:3px;font-weight:600;margin-top:8px;line-height:1.7;}
+        .ir-flowchart .warn{display:block;background:var(--warn-bg);color:var(--warn-ink);font-size:11px;padding:4px 8px;border-radius:3px;margin-top:8px;font-weight:500;line-height:1.5;}
         .ir-flowchart .alert{display:block;background:var(--red-light);color:var(--red);font-size:11px;padding:4px 8px;border-radius:3px;margin-top:8px;font-weight:600;line-height:1.5;}
         .ir-flowchart .arrow{width:2px;height:28px;background:var(--line);margin:0 auto;position:relative;flex-shrink:0;}
         .ir-flowchart .arrow::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid var(--line);}
@@ -66,22 +74,23 @@ export default function IRProcessPage() {
         @media(max-width:700px){.ir-flowchart .split,.ir-flowchart .split3{grid-template-columns:1fr;}}
       `}</style>
 
+      <div className="mx-auto max-w-5xl">
+        <PageHeader />
+      </div>
       <div className="ir-flowchart">
-        <h1>IR Testing Coordination</h1>
-        <div className="subtitle">From Final Decision Letter &rarr; Testing Complete</div>
 
         <div className="legend">
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#1d3557' }}></div>Trigger</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#fff', border: '1.5px solid #c8c4bc' }}></div>Action</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#fef3dc', border: '1.5px solid #e8a020' }}></div>Decision</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#d8f0e6', border: '1.5px solid #2d6a4f' }}></div>Golden Path</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#fde8e6', border: '1.5px solid #c0392b' }}></div>Exception</div>
-          <div className="legend-item"><div className="legend-dot" style={{ background: '#ede8fb', border: '1.5px solid #5b3fa6' }}></div>Note</div>
+          <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--blue-dark)' }}></div>Trigger</div>
+          <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--node-bg)', border: '1.5px solid var(--line)' }}></div>Action</div>
+          <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--gold-light)', border: '1.5px solid var(--gold)' }}></div>Decision</div>
+          <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--green-light)', border: '1.5px solid var(--green)' }}></div>Golden Path</div>
+          <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--red-light)', border: '1.5px solid var(--red)' }}></div>Exception</div>
+          <div className="legend-item"><div className="legend-dot" style={{ background: 'var(--purple-light)', border: '1.5px solid var(--purple)' }}></div>Note</div>
         </div>
 
         <div className="flow">
 
-          <div className="node trigger">&#x1F4CB; FD Letter Received &mdash; Client is IR Eligible</div>
+          <div className="node trigger">FD Letter Received &mdash; Client is IR Eligible</div>
           <div className="arrow"></div>
 
           <div className="node action">
@@ -91,7 +100,7 @@ export default function IRProcessPage() {
               <li><strong>Dr. Lewis</strong> &mdash; slightly higher ratings; handles all testing himself; in-person eval in Kennewick, WA or Idaho Falls, ID; travel reimbursement available</li>
               <li><strong>La Plata Medical Examiners</strong> &mdash; high ratings; phone evaluation; mobile testing team available; typically serves NV, AZ, NM and surrounding area</li>
             </ul>
-            <div className="warn">&#x26A0;&#xFE0F; If client chooses Dr. Lewis: confirm they understand they must book their own travel AND call their state&rsquo;s DOL Resource Center to pre-authorize it before traveling.</div>
+            <div className="warn">If client chooses Dr. Lewis: confirm they understand they must book their own travel AND call their state&rsquo;s DOL Resource Center to pre-authorize it before traveling.</div>
           </div>
           <div className="arrow"></div>
 
@@ -108,15 +117,15 @@ export default function IRProcessPage() {
 
             {/* DR. LEWIS */}
             <div className="split-col">
-              <div className="col-header">&#x1F3D4; Dr. Lewis</div>
+              <div className="col-header">Dr. Lewis</div>
               <div className="arrow"></div>
 
               <div className="node golden">
                 <div className="step-num">STEP 2 &mdash; EMAIL DR. LEWIS&rsquo;S OFFICE</div>
                 Send the client&rsquo;s contact info and causation records (diagnosis letters / medical records for all approved conditions).<br /><br />
                 Use the SWNA Tools EE-10 email template and attach causation records.
-                <div className="tag">&#x1F4E7; admin [at] drlewis.org &mdash; Carolyn &amp; Emilee</div>
-                <div className="warn">&#x2705; Dr. Smith B-reads CAN be attached for Dr. Lewis.<br />&#x1F6AB; Do NOT CC any HHC group &mdash; Dr. Lewis coordinates everything himself.</div>
+                <div className="tag">admin [at] drlewis.org &mdash; Carolyn &amp; Emilee</div>
+                <div className="warn">Dr. Smith B-reads CAN be attached for Dr. Lewis.<br />Do NOT CC any HHC group &mdash; Dr. Lewis coordinates everything himself.</div>
               </div>
               <div className="arrow"></div>
 
@@ -155,21 +164,21 @@ export default function IRProcessPage() {
               <div className="node golden">
                 <div className="step-num">STEP 7 &mdash; UPDATE IR TRACKING SHEET</div>
                 Add client and note how testing is being handled.
-                <div className="warn">&#x1F534; RED = action still needed &nbsp;&#x1F535; BLUE = note for AO &nbsp;&#x1F7E2; GREEN = AO&rsquo;s notes to us</div>
+                <div className="warn">RED = action still needed &nbsp;BLUE = note for AO &nbsp;GREEN = AO&rsquo;s notes to us</div>
               </div>
             </div>
 
             {/* LA PLATA */}
             <div className="split-col">
-              <div className="col-header">&#x1F3E5; La Plata Medical Examiners</div>
+              <div className="col-header">La Plata Medical Examiners</div>
               <div className="arrow"></div>
 
               <div className="node golden">
                 <div className="step-num">STEP 2 &mdash; EMAIL LA PLATA</div>
                 Send the client&rsquo;s contact info and causation records (diagnosis letters / medical records for all approved conditions).<br /><br />
                 Use the SWNA Tools EE-10 email template. <strong>CC the client&rsquo;s HHC group</strong> (AO or GHHC only) on this same email &mdash; you can also use it to request an OV note and ADL from them.
-                <div className="tag">&#x1F4E7; impairments [at] lpmedx.com<br />cali.candelaria [at] lpmedx.com</div>
-                <div className="alert">&#x1F6AB; DO NOT attach Dr. Smith B-reads to La Plata emails. Klepper B-reads are OK.<br />Check CS letters &mdash; many now auto-attach a B-read at the end. DELETE it before sending and save the B-read separately in the client&rsquo;s file.</div>
+                <div className="tag">impairments [at] lpmedx.com<br />cali.candelaria [at] lpmedx.com</div>
+                <div className="alert">DO NOT attach Dr. Smith B-reads to La Plata emails. Klepper B-reads are OK.<br />Check CS letters &mdash; many now auto-attach a B-read at the end. DELETE it before sending and save the B-read separately in the client&rsquo;s file.</div>
               </div>
               <div className="arrow"></div>
 
@@ -194,7 +203,7 @@ export default function IRProcessPage() {
                     CC AO on the La Plata email.<br /><br />
                     Request <strong>mobile testing</strong> in the La Plata email (bold the request). CC Zeke. La Plata coordinates with Infinity Medical &mdash; Brock or Daniel will call the client.<br /><br />
                     Also send client availability + Desert Pulmonary referral form to Roxy &amp; Hunter at AO.
-                    <div className="tag">&#x1F4E7; roxy [at] aomedicalgroup.com<br />hunter [at] aomedicalgroup.com<br />zkalcich [at] lpmedx.com (CC Zeke &mdash; mobile only)</div>
+                    <div className="tag">roxy [at] aomedicalgroup.com<br />hunter [at] aomedicalgroup.com<br />zkalcich [at] lpmedx.com (CC Zeke &mdash; mobile only)</div>
                   </div>
                   <div className="arrow"></div>
                   <div className="node golden">
@@ -218,7 +227,7 @@ export default function IRProcessPage() {
                     CC GHHC on the La Plata email.<br /><br />
                     Send a <strong>separate email to GHHC</strong> asking them to coordinate the 6MWT and PFT (with DLCO and pre/post bronchodilator).<br /><br />
                     <strong>If client is in NV or nearby:</strong> also request mobile testing in the La Plata email (bold the request). CC Zeke.
-                    <div className="tag">&#x1F4E7; ar.nv [at] givinghhc.com (NV only)<br />stephv [at] givinghhc.com<br />bradyp [at] givinghhc.com<br />cache [at] givinghhc.com (TN only)<br />zkalcich [at] lpmedx.com (CC Zeke &mdash; mobile only)</div>
+                    <div className="tag">ar.nv [at] givinghhc.com (NV only)<br />stephv [at] givinghhc.com<br />bradyp [at] givinghhc.com<br />cache [at] givinghhc.com (TN only)<br />zkalcich [at] lpmedx.com (CC Zeke &mdash; mobile only)</div>
                   </div>
                   <div className="arrow"></div>
                   <div className="node golden">
@@ -238,7 +247,7 @@ export default function IRProcessPage() {
                     <strong>Mobile testing available (NV/nearby):</strong> request it in the La Plata email (bold). CC Zeke.<br /><br />
                     <strong>Client has a pulmonologist:</strong> get their office info, send to La Plata, ask them to send a referral.<br /><br />
                     <strong>No pulmonologist:</strong> refer to Desert Pulmonary &mdash; fill out La Plata&rsquo;s referral form and send to Roxy &amp; Hunter at AO.
-                    <div className="tag">&#x1F4E7; zkalcich [at] lpmedx.com (CC Zeke &mdash; mobile only)<br />roxy [at] aomedicalgroup.com (Desert Pulm referral)</div>
+                    <div className="tag">zkalcich [at] lpmedx.com (CC Zeke &mdash; mobile only)<br />roxy [at] aomedicalgroup.com (Desert Pulm referral)</div>
                   </div>
                   <div className="arrow"></div>
                   <div className="node exception">
@@ -288,7 +297,7 @@ export default function IRProcessPage() {
               <div className="node golden">
                 <div className="step-num">STEP 5 &mdash; UPDATE IR TRACKING SHEET</div>
                 Add client and note how testing is being handled.
-                <div className="warn">&#x1F534; RED = action still needed &nbsp;&#x1F535; BLUE = note for AO &nbsp;&#x1F7E2; GREEN = AO&rsquo;s notes to us</div>
+                <div className="warn">RED = action still needed &nbsp;BLUE = note for AO &nbsp;GREEN = AO&rsquo;s notes to us</div>
               </div>
 
             </div>{/* end La Plata col */}
@@ -316,7 +325,7 @@ export default function IRProcessPage() {
             <div className="node exception">
               <strong>Client wants reimbursement for PFT/6MWT</strong><br />
               If approved for a pulmonary condition on ECOMP, they can submit their bill + Medical Reimbursement form to the LV Resource Center.<br />
-              &#x1F4DE; 702-697-0841
+              702-697-0841
             </div>
           </div>
 

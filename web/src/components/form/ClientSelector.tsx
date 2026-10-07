@@ -146,11 +146,11 @@ export function ClientSelector({
   error,
   required = true,
   variant = "combobox",
-  label = "Select Client",
+  label = "Name",
   placeholder,
   showCard = true,
   showConfirmation = true,
-  cardTitle = "Client Selection",
+  cardTitle = "Client",
   className,
   disabled = false,
   onRefresh,
@@ -181,7 +181,7 @@ export function ClientSelector({
       {variant === "combobox" ? (
         <Combobox
           label={label}
-          placeholder={placeholder || "Type to search clients..."}
+          placeholder={placeholder || "Search by name"}
           required={required}
           error={error}
           value={value}

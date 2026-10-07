@@ -25,7 +25,6 @@ import {
   Trash2,
   Lock,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { buildLogEntry } from "@/lib/airtable-log";
 import {
   ClientSelector,
@@ -41,6 +40,7 @@ import {
 } from "@/lib/generators/letter-templates";
 import { assembleClaim, formatPageRange } from "@/lib/claims/assemble";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 const CONDITIONS = letterConditions();
 
@@ -501,27 +501,11 @@ export default function DoctorLetterForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   const err = (field: keyof DoctorLetterFormData) =>
@@ -543,7 +527,6 @@ export default function DoctorLetterForm() {
           }}
           onRefresh={() => refreshClients(true)}
           error={err("client_id")}
-          label="Choose which client this letter is for"
         />
 
         {/* Which letter */}
@@ -639,7 +622,7 @@ export default function DoctorLetterForm() {
               <div>
                 <span className="block text-sm font-medium mb-2 text-foreground">
                   Sex
-                  <span className="text-red-500 ml-1" aria-label="required">
+                  <span className="text-muted-foreground ml-0.5" aria-label="required">
                     *
                   </span>
                 </span>
@@ -726,7 +709,7 @@ export default function DoctorLetterForm() {
               <div>
                 <span className="block text-sm font-medium mb-2 text-foreground">
                   Where the Dates Come From
-                  <span className="text-red-500 ml-1" aria-label="required">
+                  <span className="text-muted-foreground ml-0.5" aria-label="required">
                     *
                   </span>
                 </span>
@@ -798,7 +781,7 @@ export default function DoctorLetterForm() {
               <div>
                 <span className="block text-sm font-medium mb-2 text-foreground">
                   Employment Dates
-                  <span className="text-red-500 ml-1" aria-label="required">
+                  <span className="text-muted-foreground ml-0.5" aria-label="required">
                     *
                   </span>
                 </span>
@@ -956,7 +939,7 @@ export default function DoctorLetterForm() {
                     />
                     <span className="text-sm text-foreground">
                       I compared this impression against the B-read word for word.
-                      <span className="text-red-500 ml-1" aria-label="required">
+                      <span className="text-muted-foreground ml-0.5" aria-label="required">
                         *
                       </span>
                     </span>
@@ -1009,6 +992,7 @@ export default function DoctorLetterForm() {
                     key={`b-read-${uploadGeneration}`}
                     type="file"
                     accept="application/pdf,.pdf"
+                    aria-label="B-read PDF"
                     onChange={(e) => {
                       setBReadFile(e.target.files?.[0] ?? null);
                       setError(null);

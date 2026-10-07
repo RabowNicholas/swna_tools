@@ -42,7 +42,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           >
             {label}
             {required && (
-              <span className="text-red-500 ml-1" aria-label="required">*</span>
+              <span className="text-muted-foreground ml-0.5" aria-label="required">*</span>
             )}
           </label>
         )}
@@ -65,13 +65,13 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
               
               // Variants
               variant === 'default' && [
-                "bg-input border-border",
+                "bg-input border-input-border",
                 "hover:border-ring/50",
                 "focus:border-ring focus:ring-ring/20"
               ],
               
               variant === 'filled' && [
-                "bg-muted border-border",
+                "bg-muted border-input-border",
                 "hover:bg-muted/80 hover:border-ring/50",
                 "focus:bg-input focus:border-ring focus:ring-ring/20"
               ],

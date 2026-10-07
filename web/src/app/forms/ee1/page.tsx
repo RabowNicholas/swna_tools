@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { FileDown, AlertCircle, CheckCircle, User } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import {
   ClientSelector,
   parseClientName,
@@ -29,6 +28,7 @@ import { formatSSN, generateEE1 } from "@/lib/claims/generate";
 import { getStateAbbreviation } from "@/lib/states";
 import { trackEvent } from "@/lib/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 interface Client {
   id: string;
@@ -309,39 +309,11 @@ export default function EE1Form() {
 
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-red-600 mb-4">
-            <svg
-              className="h-12 w-12 mx-auto"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.732 15.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -359,7 +331,6 @@ export default function EE1Form() {
           }}
           onRefresh={() => refreshClients(true)}
           error={form.formState.errors.client_id?.message}
-          label="Choose which client you're preparing this form for"
         />
 
         {/* Personal Information */}
@@ -370,8 +341,7 @@ export default function EE1Form() {
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Enter the client&apos;s personal information as it appears on
-              their official documents
+              Check these match the client&apos;s official documents.
             </p>
           </CardHeader>
           <CardContent>
@@ -383,52 +353,50 @@ export default function EE1Form() {
                 </h4>
 
                 <Input
-                  label="Client's First Name"
+                  label="First Name"
                   required
                   error={form.formState.errors.first_name?.message}
-                  helperText="Client's legal first name as it appears on their official documents"
+                  helperText="As it appears on official documents"
                   {...form.register("first_name")}
                 />
 
                 <Input
-                  label="Client's Middle Initial"
+                  label="Middle Initial"
                   maxLength={1}
                   placeholder="e.g. Q"
                   error={form.formState.errors.middle_initial?.message}
-                  helperText="Optional - Enter middle initial only (single letter)"
+                  helperText="Optional"
                   {...form.register("middle_initial")}
                 />
 
                 <Input
-                  label="Client's Last Name"
+                  label="Last Name"
                   required
                   error={form.formState.errors.last_name?.message}
-                  helperText="Client's legal last name as it appears on their official documents"
                   {...form.register("last_name")}
                 />
 
                 <Input
-                  label="Client's Social Security Number"
+                  label="Social Security Number"
                   placeholder="e.g. 123456789"
                   maxLength={9}
                   required
                   error={form.formState.errors.ssn?.message}
-                  helperText="Enter 9 digits only (dashes will be added automatically)"
+                  helperText="9 digits; dashes are added for you"
                   {...form.register("ssn")}
                 />
 
                 <Input
-                  label="Client's Date of Birth"
+                  label="Date of Birth"
                   type="date"
                   required
                   error={form.formState.errors.dob?.message}
-                  helperText="Select the client's date of birth"
                   {...form.register("dob")}
                 />
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Client&apos;s Sex *
+                    Sex<span className="text-muted-foreground ml-0.5" aria-label="required">*</span>
                   </label>
                   <div className="flex space-x-4">
                     <label className="flex items-center space-x-2">
@@ -460,17 +428,17 @@ export default function EE1Form() {
                 </h4>
 
                 <Input
-                  label="Client's Street Address"
+                  label="Street Address"
                   required
                   error={form.formState.errors.address_main?.message}
-                  helperText="Client's street address (include apartment/unit number if applicable)"
+                  helperText="Include the apartment or unit number"
                   {...form.register("address_main")}
                 />
 
                 <div className="grid grid-cols-3 gap-4">
                   <div className="col-span-2">
                     <Input
-                      label="Client's City"
+                      label="City"
                       required
                       error={form.formState.errors.address_city?.message}
                       {...form.register("address_city")}
@@ -488,21 +456,21 @@ export default function EE1Form() {
                 </div>
 
                 <Input
-                  label="Client's ZIP Code"
+                  label="ZIP Code"
                   required
                   maxLength={10}
                   placeholder="e.g. 87101"
                   error={form.formState.errors.address_zip?.message}
-                  helperText="5-digit ZIP code (e.g., 12345 or 12345-6789)"
+                  helperText="5 or 9 digits"
                   {...form.register("address_zip")}
                 />
 
                 <Input
-                  label="Client's Phone Number"
+                  label="Phone Number"
                   required
                   placeholder="e.g. 555.123.4567"
                   error={form.formState.errors.phone?.message}
-                  helperText="Phone number in format: 123.123.1234"
+                  helperText="Format: 555.123.4567"
                   {...form.register("phone")}
                 />
               </div>

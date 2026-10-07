@@ -154,7 +154,7 @@ export const TextHierarchy = {
   FormLabel: ({ children, className, required, ...props }: TypographyProps & { required?: boolean }) => (
     <Typography.Label className={cn("mb-2 block", className)} {...props}>
       {children}
-      {required && <span className="text-destructive ml-1" aria-label="required">*</span>}
+      {required && <span className="text-muted-foreground ml-0.5" aria-label="required">*</span>}
     </Typography.Label>
   ),
 

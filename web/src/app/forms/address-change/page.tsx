@@ -15,13 +15,11 @@ import { Progress } from "@/components/ui/Progress";
 import {
   FileDown,
   MapPin,
-  AlertCircle,
   CheckCircle,
   Calendar,
   Home,
   User,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import { toAirtableStateName } from "@/lib/states";
 import {
@@ -34,6 +32,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // Zod schema for form validation (simplified to match Streamlit version)
 const addressChangeSchema = z.object({
@@ -253,27 +252,11 @@ export default function AddressChangeForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -295,7 +278,6 @@ export default function AddressChangeForm() {
               ? form.formState.errors.client_id?.message
               : undefined
           }
-          label="Choose which client you're preparing this address change letter for"
         />
 
         {/* Client Information */}
@@ -306,7 +288,7 @@ export default function AddressChangeForm() {
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Client's information as it appears in their records
+              Check these match the client&apos;s official documents.
             </p>
           </CardHeader>
           <CardContent>
@@ -320,7 +302,7 @@ export default function AddressChangeForm() {
                       ? form.formState.errors.claimant_name?.message
                       : undefined
                   }
-                  helperText="Client's full name as it should appear in the letter"
+                  helperText="As it should appear in the letter"
                   {...form.register("claimant_name")}
                 />
 
@@ -332,7 +314,6 @@ export default function AddressChangeForm() {
                       ? form.formState.errors.case_id?.message
                       : undefined
                   }
-                  helperText="Case ID from Airtable client record"
                   {...form.register("case_id")}
                 />
               </div>
@@ -362,7 +343,7 @@ export default function AddressChangeForm() {
                     ? form.formState.errors.street_address?.message
                     : undefined
                 }
-                helperText="New street address for the client"
+                helperText="Include the apartment or unit number"
                 {...form.register("street_address")}
               />
 
@@ -405,7 +386,6 @@ export default function AddressChangeForm() {
                     ? form.formState.errors.zip_code?.message
                     : undefined
                 }
-                helperText="5-digit ZIP code"
                 {...form.register("zip_code")}
               />
             </div>

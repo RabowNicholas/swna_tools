@@ -76,8 +76,8 @@ export const ProgressSteps: React.FC<ProgressStepsProps> = ({
                 {/* Step indicator */}
                 <div className={cn(
                   'flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all',
-                  status === 'completed' && 'bg-primary text-primary-foreground',
-                  status === 'current' && 'bg-primary text-primary-foreground ring-4 ring-primary/20',
+                  status === 'completed' && 'bg-primary-fill text-primary-foreground',
+                  status === 'current' && 'bg-primary-fill text-primary-foreground ring-4 ring-primary/20',
                   status === 'upcoming' && 'bg-muted border-2 border-border text-muted-foreground'
                 )}>
                   {status === 'completed' ? (
@@ -138,8 +138,8 @@ export const ProgressSteps: React.FC<ProgressStepsProps> = ({
                   size === 'sm' && 'w-8 h-8',
                   size === 'md' && 'w-10 h-10',
                   size === 'lg' && 'w-12 h-12',
-                  status === 'completed' && 'bg-primary text-primary-foreground',
-                  status === 'current' && 'bg-primary text-primary-foreground ring-4 ring-primary/20',
+                  status === 'completed' && 'bg-primary-fill text-primary-foreground',
+                  status === 'current' && 'bg-primary-fill text-primary-foreground ring-4 ring-primary/20',
                   status === 'upcoming' && 'bg-muted border-2 border-border text-muted-foreground',
                   clickable && 'group-hover:scale-105'
                 )}>

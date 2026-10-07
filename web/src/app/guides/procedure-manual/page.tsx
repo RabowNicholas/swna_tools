@@ -13,6 +13,7 @@ import { buildIndex, type ManualIndex } from "@/lib/manual/search";
 import { loadEmbedder } from "@/lib/manual/embedder";
 import type { AskResponse, ManualData, ManualEmbeddings, ManualUnit } from "@/lib/manual/types";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageError } from "@/components/ui/PageStatus";
 
 type Tab = "ask" | "quote";
 
@@ -131,13 +132,7 @@ export default function ProcedureManualPage() {
   }
 
   if (loadError) {
-    return (
-      <div className="max-w-4xl mx-auto">
-        <Card variant="elevated">
-          <CardContent className="p-6 text-center text-destructive">Couldn’t load the Procedure Manual: {loadError}</CardContent>
-        </Card>
-      </div>
-    );
+    return <PageError title="Couldn’t load the Procedure Manual" message={loadError} />;
   }
 
   return (
@@ -188,10 +183,11 @@ export default function ProcedureManualPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 disabled={!index}
+                aria-label={tab === "ask" ? "Your question" : "Search the manual"}
                 placeholder={
                   tab === "ask" ? "Ask a question about the claims process…" : "Search words, a topic, or a cite like 21.4c(1)…"
                 }
-                className="h-12 w-full rounded-md border border-border bg-background pl-9 pr-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="h-11 w-full rounded-lg border border-input-border bg-input pl-9 pr-3 text-base text-foreground placeholder:text-placeholder focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
             {tab === "ask" && (

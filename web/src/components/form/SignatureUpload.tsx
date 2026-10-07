@@ -103,10 +103,10 @@ export function SignatureUpload({ file, onChange }: SignatureUploadProps) {
 
           <Input
             type="file"
-            label="Upload Client's Signature (Optional)"
+            label="Client Signature (optional)"
             accept="image/png,image/jpeg,image/jpg"
             onChange={handleUpload}
-            helperText="Upload a clear image file of the client's signature (PNG, JPG, or JPEG format). This field is optional."
+            helperText="A clear photo or scan, PNG or JPG"
           />
 
           {file && (
@@ -135,7 +135,7 @@ export function SignatureUpload({ file, onChange }: SignatureUploadProps) {
                 <Card variant="outlined">
                   <CardContent className="p-4">
                     <p className="text-sm font-medium mb-2">
-                      Client&apos;s Signature Preview:
+                      Preview
                     </p>
                     <Image
                       src={preview}

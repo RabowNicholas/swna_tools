@@ -15,10 +15,8 @@ import {
   Eye,
   EyeOff,
   CheckCircle,
-  X,
   UserX,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import Image from "next/image";
 import {
   ClientSelector,
@@ -26,6 +24,7 @@ import {
 } from "@/components/form/ClientSelector";
 import { trackEvent } from "@/lib/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 const changeOfARSchema = z.object({
   client_id: z.string().min(1, "Please select a client"),
@@ -189,29 +188,11 @@ export default function ChangeOfARForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card variant="elevated" className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <div className="text-destructive mb-4">
-              <X className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              Error Loading Clients
-            </h3>
-            <p className="text-muted-foreground">{clientsError}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -251,7 +232,6 @@ export default function ChangeOfARForm() {
                       label="Claimant Name"
                       required
                       error={form.formState.errors.claimant_name?.message}
-                      helperText="Client's full name"
                       {...form.register("claimant_name")}
                       readOnly
                       className="bg-muted/30"
@@ -261,7 +241,6 @@ export default function ChangeOfARForm() {
                       label="Phone Number"
                       required
                       error={form.formState.errors.phone?.message}
-                      helperText="Client's phone number"
                       {...form.register("phone")}
                       readOnly
                       className="bg-muted/30"
@@ -273,15 +252,13 @@ export default function ChangeOfARForm() {
                     type="date"
                     required
                     error={form.formState.errors.letter_date?.message}
-                    helperText="Date for the letter"
                     {...form.register("letter_date")}
                   />
 
                   <Input
-                    label="Previous Representative Name"
+                    label="Previous Representative"
                     required
                     error={form.formState.errors.prev_rep_name?.message}
-                    helperText="Name of the previous authorized representative"
                     placeholder="Enter previous representative's name"
                     {...form.register("prev_rep_name")}
                   />

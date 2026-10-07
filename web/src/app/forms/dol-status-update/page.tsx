@@ -10,8 +10,7 @@ import { useClientContext } from "@/contexts/ClientContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { FileText, CheckCircle, X } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { FileText, CheckCircle } from "lucide-react";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import {
   ClientSelector,
@@ -23,6 +22,7 @@ import {
   STATUS_UPDATE_SUBJECT_MAX_LENGTH,
 } from "@/lib/status-update-subject";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // Fill the subject and leave the cursor at the end so the blank can be typed in
 const SUBJECT_PRESETS = [
@@ -190,29 +190,11 @@ export default function DolStatusUpdateForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card variant="elevated" className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <div className="text-destructive mb-4">
-              <X className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              Error Loading Clients
-            </h3>
-            <p className="text-muted-foreground">{clientsError}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -251,7 +233,7 @@ export default function DolStatusUpdateForm() {
                     label="Claimant Name"
                     required
                     error={form.formState.errors.claimant_name?.message}
-                    helperText="Client's full name as it should appear in the letter"
+                    helperText="As it should appear in the letter"
                     {...form.register("claimant_name")}
                   />
 
@@ -259,7 +241,6 @@ export default function DolStatusUpdateForm() {
                     label="Case ID"
                     required
                     error={form.formState.errors.case_id?.message}
-                    helperText="Case ID from Airtable client record"
                     {...form.register("case_id")}
                     readOnly
                     className="bg-muted/30"
@@ -300,7 +281,6 @@ export default function DolStatusUpdateForm() {
                   type="date"
                   required
                   error={form.formState.errors.letter_date?.message}
-                  helperText="Date for the status update letter"
                   {...form.register("letter_date")}
                 />
               </div>

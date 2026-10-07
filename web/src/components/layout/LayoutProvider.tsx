@@ -60,7 +60,7 @@ export function LayoutProvider({ children }: LayoutProviderProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-[15px] font-semibold">SWNA Tools</span>
+          <span className="text-[0.9375rem] font-semibold">SWNA Tools</span>
         </div>
 
         <main id="main-content" className="flex-1 px-4 py-8 sm:px-8 lg:px-12 lg:py-10">

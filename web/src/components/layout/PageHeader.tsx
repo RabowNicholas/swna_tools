@@ -29,11 +29,11 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
             {found.section.title}
           </Link>
         )}
-        <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-foreground">
+        <h1 className="text-[1.75rem] font-semibold leading-tight tracking-tight text-foreground">
           {title ?? found?.tool.name}
         </h1>
         {(description ?? found?.tool.description) && (
-          <p className="text-[15px] text-muted-foreground">{description ?? found?.tool.description}</p>
+          <p className="text-[0.9375rem] text-muted-foreground">{description ?? found?.tool.description}</p>
         )}
       </div>
       {actions && <div className="shrink-0">{actions}</div>}

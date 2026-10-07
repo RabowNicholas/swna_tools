@@ -22,13 +22,13 @@ import {
   User,
   Info,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { cn } from "@/lib/utils";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -457,27 +457,11 @@ export default function EE1AForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   const hasAnyDiagnosisError = diagnosisErrors.some(
@@ -503,7 +487,6 @@ export default function EE1AForm() {
               ? form.formState.errors.client_id?.message
               : undefined
           }
-          label="Choose which client you're preparing this form for"
         />
 
         {/* Client Information */}
@@ -554,7 +537,7 @@ export default function EE1AForm() {
                     ? form.formState.errors.case_id?.message
                     : undefined
                 }
-                helperText="Enter your existing accepted illness case ID"
+                helperText="The case ID of the already-accepted illness"
                 {...form.register("case_id")}
               />
 
@@ -607,7 +590,7 @@ export default function EE1AForm() {
                       ? form.formState.errors.address_zip?.message
                       : undefined
                   }
-                  helperText="5 or 9 digit ZIP code"
+                  helperText="5 or 9 digits"
                   {...form.register("address_zip")}
                 />
 
@@ -620,7 +603,7 @@ export default function EE1AForm() {
                       ? form.formState.errors.phone?.message
                       : undefined
                   }
-                  helperText="Format: 123.123.1234"
+                  helperText="Format: 555.123.4567"
                   {...form.register("phone")}
                 />
               </div>
@@ -752,7 +735,6 @@ export default function EE1AForm() {
                             ? diagnosisErrors[index]?.diagnosis_date
                             : undefined
                         }
-                        helperText="Date this condition was diagnosed"
                         {...form.register(`diagnoses.${index}.diagnosis_date`)}
                       />
                     </div>

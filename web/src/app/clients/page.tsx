@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useClients } from '@/hooks/useClients';
-import { Users, Edit, AlertCircle, RefreshCw, Save, X } from 'lucide-react';
+import { Users, Edit, Save, X } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import {
   validateClientData,
@@ -17,6 +16,7 @@ import { ClientSelector } from '@/components/form/ClientSelector';
 // Using Client interface from centralized storage
 import { Client } from '@/lib/clientStorage';
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 export default function ClientsPage() {
   const { clients, loading, error, refreshClients, getCacheInfo } = useClients();
@@ -183,31 +183,11 @@ export default function ClientsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center space-y-4">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">Error Loading Clients</h3>
-          <p className="text-muted-foreground mb-4">{error}</p>
-          <Button
-            onClick={() => refreshClients(true)}
-            icon={<RefreshCw className="h-4 w-4" />}
-          >
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={error} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -222,7 +202,6 @@ export default function ClientsPage() {
           value={selectedClientId}
           onChange={handleClientChange}
           onRefresh={() => refreshClients(true)}
-          label="Select Client"
         />
 
         {/* Client Details */}

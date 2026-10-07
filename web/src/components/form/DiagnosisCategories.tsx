@@ -268,8 +268,8 @@ export function DiagnosisCategoriesSection({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Heart className="h-5 w-5 text-error" />
-            <CardTitle>Client&apos;s Medical Diagnoses</CardTitle>
+            <Heart className="h-5 w-5 text-primary" />
+            <CardTitle>Diagnoses</CardTitle>
           </div>
           {attemptedSubmit && errorCount > 0 && (
             <Badge variant="error" size="sm">
@@ -278,7 +278,7 @@ export function DiagnosisCategoriesSection({
           )}
         </div>
         <p className="text-sm text-muted-foreground">
-          Client&apos;s Diagnosed Condition(s) Being Claimed as Work-Related
+          The conditions being claimed as work-related.
         </p>
         {attemptedSubmit && errors.general.length > 0 && (
           <div
@@ -370,7 +370,6 @@ export function DiagnosisCategoriesSection({
                               e.target.value ? new Date(e.target.value) : null
                             )
                           }
-                          helperText="Date when the client was diagnosed with this cancer"
                         />
                       )}
                     </div>
@@ -556,7 +555,6 @@ export function DiagnosisCategoriesSection({
                               e.target.value ? new Date(e.target.value) : null
                             )
                           }
-                          helperText="Date when the client was diagnosed with this condition"
                         />
                       )}
                     </div>

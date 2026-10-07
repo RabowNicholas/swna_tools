@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 interface Client {
   id: string;
@@ -56,28 +57,11 @@ export default function PipelinePage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-lg text-muted-foreground">Loading pipeline data...</div>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoading label="Loading the pipeline…" />;
   }
 
   if (error || !data) {
-    return (
-      <div className="min-h-screen bg-background p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
-            <h3 className="text-destructive font-semibold">Error Loading Pipeline Data</h3>
-            <p className="text-destructive/80 mt-2">{error || 'Unknown error occurred'}</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load the pipeline" message={error || 'Unknown error occurred'} />;
   }
 
   const chartData = data.stages.map(stage => ({

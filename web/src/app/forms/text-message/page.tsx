@@ -4,15 +4,13 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { trackEvent } from "@/lib/analytics";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Zap } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { TextTemplateCard } from "@/components/text/TextTemplateCard";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 interface Client {
   id: string;
@@ -43,29 +41,11 @@ export default function TextMessageForm() {
     | undefined;
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Card variant="elevated" className="max-w-md">
-          <CardContent className="p-6 text-center">
-            <div className="text-destructive mb-4">
-              <Zap className="h-12 w-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
-              Error Loading Clients
-            </h3>
-            <p className="text-muted-foreground">{clientsError}</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -78,8 +58,6 @@ export default function TextMessageForm() {
         value={clientId}
         onChange={(id) => setClientId(id)}
         onRefresh={() => refreshClients(true)}
-        label="Select Client"
-        cardTitle="Client Selection"
       />
 
       {/* Template picker, message preview, and Airtable logging — keyed by

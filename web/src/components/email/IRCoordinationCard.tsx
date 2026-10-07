@@ -334,7 +334,7 @@ export function IRCoordinationCard({
                           </div>
 
                           <Input
-                            label="Client's general availability"
+                            label="General availability"
                             placeholder="e.g. Weekday mornings, not Fridays"
                             value={availability}
                             onChange={(e) => setAvailability(e.target.value)}

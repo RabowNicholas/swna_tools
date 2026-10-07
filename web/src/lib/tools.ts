@@ -6,11 +6,12 @@ import {
   FilePlus2,
   UserPen,
   Inbox,
-  Stethoscope,
+  PenLine,
   Gauge,
   MessageSquare,
   BookOpen,
   ChartColumn,
+  Receipt,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,24 +37,24 @@ export const TOOL_SECTIONS: ToolSection[] = [
   {
     id: "new-claim",
     title: "Start a new claim",
-    summary: "File the forms for a new claim.",
+    summary: "The forms for a new claim.",
     icon: FilePlus2,
     tools: [
       { name: "Claims Assembly", href: "/forms/claims-assembly", description: "Build the full claim package: EE-1, EE-3 and your documents, merged and named." },
       { name: "EE-1", href: "/forms/ee1", description: "The worker's claim for benefits." },
       { name: "EE-1a", href: "/forms/ee1a", description: "A claim for a new condition caused by an illness DOL already accepted." },
       { name: "EE-3", href: "/forms/ee3", description: "The client's employment history." },
+      { name: "Change of AR", href: "/forms/change-of-ar", description: "Change the client's authorized representative." },
     ],
   },
   {
     id: "client-changed",
     title: "Client info changed",
-    summary: "Tell DOL about a new address, phone or representative.",
+    summary: "Tell DOL about a new address or phone number.",
     icon: UserPen,
     tools: [
       { name: "Address Change", href: "/forms/address-change", description: "Tell DOL the client has a new address." },
       { name: "Phone Change", href: "/forms/phone-change", description: "Tell DOL the client has a new phone number." },
-      { name: "Change of AR", href: "/forms/change-of-ar", description: "Change the client's authorized representative." },
     ],
   },
   {
@@ -72,23 +73,24 @@ export const TOOL_SECTIONS: ToolSection[] = [
     ],
   },
   {
-    id: "medical",
-    title: "Medical & testing",
-    summary: "Referrals, doctor letters and IR scheduling.",
-    icon: Stethoscope,
+    id: "drafting",
+    title: "Drafting",
+    summary: "Draft letters for a doctor to review and sign.",
+    icon: PenLine,
     tools: [
-      { name: "Desert Pulmonary Referral", href: "/forms/desert-pulm", description: "Refer a client to Desert Pulmonary Rehab & Diagnostics." },
       { name: "Doctor Letter", href: "/forms/doctor-letter", description: "Draft a causation letter for a physician to review and sign." },
-      { name: "IR Schedule Notice", href: "/forms/ir-notice", description: "Create the notice for a client's scheduled Independent Review." },
     ],
   },
   {
     id: "impairment",
     title: "Impairment",
-    summary: "Impairment evaluation paperwork.",
+    summary: "Everything for an impairment rating: the EE-10, referrals, scheduling and the IR guide.",
     icon: Gauge,
     tools: [
       { name: "EE-10", href: "/forms/ee10", description: "Request approval of the doctor who will do the impairment evaluation." },
+      { name: "Desert Pulmonary Referral", href: "/forms/desert-pulm", description: "Refer a client to Desert Pulmonary Rehab & Diagnostics." },
+      { name: "IR Schedule Notice", href: "/forms/ir-notice", description: "Create the notice for a client's scheduled Independent Review." },
+      { name: "IR Process Guide", href: "/guides/ir-process", description: "Step by step, from the Final Decision letter to IR testing complete." },
     ],
   },
   {
@@ -103,22 +105,30 @@ export const TOOL_SECTIONS: ToolSection[] = [
   {
     id: "lookup",
     title: "Look something up",
-    summary: "The Procedure Manual and how-to guides.",
+    summary: "Search the Procedure Manual.",
     icon: BookOpen,
     tools: [
       { name: "Procedure Manual", href: "/guides/procedure-manual", description: "Ask a question or find an exact quote from the Procedure Manual." },
-      { name: "IR Process Guide", href: "/guides/ir-process", description: "Step by step, from the Final Decision letter to IR testing complete." },
     ],
   },
   {
     id: "manage",
     title: "Manage",
-    summary: "Pipeline, reports and billing.",
+    summary: "The claims pipeline and weekly reports.",
     icon: ChartColumn,
     manage: true,
     tools: [
       { name: "Claims Pipeline", href: "/pipeline", description: "See where every claim stands and what needs follow-up." },
       { name: "AO Weekly Report", href: "/reports/ao-weekly", description: "Find AO clients with recent claim activity to report." },
+    ],
+  },
+  {
+    id: "billing",
+    title: "Billing",
+    summary: "Invoice clients after an award.",
+    icon: Receipt,
+    manage: true,
+    tools: [
       { name: "Invoice", href: "/forms/invoice", description: "Create an invoice for a client." },
     ],
   },

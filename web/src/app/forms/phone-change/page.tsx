@@ -12,12 +12,10 @@ import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
   FileDown,
-  AlertCircle,
   CheckCircle,
   Phone,
   User,
 } from "lucide-react";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import {
   AirtableLogCard,
@@ -28,6 +26,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 // Zod schema for form validation
 const phoneChangeSchema = z.object({
@@ -221,27 +220,11 @@ export default function PhoneChangeForm() {
   };
 
   if (clientsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" label="Loading clients..." />
-      </div>
-    );
+    return <PageLoading label="Loading clients…" />;
   }
 
   if (clientsError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-destructive mb-4">
-            <AlertCircle className="h-12 w-12 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-foreground mb-2">
-            Error Loading Clients
-          </h3>
-          <p className="text-muted-foreground">{clientsError}</p>
-        </div>
-      </div>
-    );
+    return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
 
   return (
@@ -263,7 +246,6 @@ export default function PhoneChangeForm() {
               ? form.formState.errors.client_id?.message
               : undefined
           }
-          label="Choose which client you're preparing this phone change letter for"
         />
 
         {/* Client Information */}
@@ -274,7 +256,7 @@ export default function PhoneChangeForm() {
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
-              Client's information as it appears in their records
+              Check these match the client&apos;s official documents.
             </p>
           </CardHeader>
           <CardContent>
@@ -288,7 +270,7 @@ export default function PhoneChangeForm() {
                       ? form.formState.errors.claimant_name?.message
                       : undefined
                   }
-                  helperText="Client's full name as it should appear in the letter"
+                  helperText="As it should appear in the letter"
                   {...form.register("claimant_name")}
                 />
 
@@ -300,7 +282,6 @@ export default function PhoneChangeForm() {
                       ? form.formState.errors.case_id?.message
                       : undefined
                   }
-                  helperText="Case ID from Airtable client record"
                   {...form.register("case_id")}
                 />
               </div>
@@ -330,7 +311,6 @@ export default function PhoneChangeForm() {
                     ? form.formState.errors.phone_number?.message
                     : undefined
                 }
-                helperText="New phone number for the client"
                 {...form.register("phone_number")}
               />
             </div>
