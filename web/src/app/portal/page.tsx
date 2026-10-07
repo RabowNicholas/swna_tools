@@ -22,6 +22,7 @@ import {
 } from "@/components/form/ClientSelector";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import { TextTemplateCard } from "@/components/text/TextTemplateCard";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Tags a fresh IR Report submission supersedes — every stage a case can be at
 // while an IR is being scheduled or is out with a doctor, from pipeline-config.ts's
@@ -269,20 +270,9 @@ function PortalPageContent() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              🌐 DOL Portal Helper
-            </h1>
-            <p className="text-muted-foreground">
-              Submit your {formType} to the Department of Labor portal with
-              pre-filled client information
-            </p>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        description={`Submit your ${formType} to the Department of Labor portal with the client's details ready to paste.`}
+      />
 
       {/* Client Selection */}
       <ClientSelector
@@ -309,7 +299,7 @@ function PortalPageContent() {
               >
                 <CardHeader>
                   <div className="flex items-center space-x-2">
-                    <Globe className="h-5 w-5 text-success" />
+                    <Globe className="h-5 w-5 text-primary" />
                     <CardTitle className="text-success">
                       DOL Portal Status
                     </CardTitle>
@@ -447,10 +437,10 @@ export default function PortalPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-[400px] bg-background flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading portal...</p>
+            <p className="mt-4 text-muted-foreground">Loading portal...</p>
           </div>
         </div>
       }

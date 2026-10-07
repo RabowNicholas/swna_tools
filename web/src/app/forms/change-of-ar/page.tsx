@@ -9,7 +9,6 @@ import { useClientContext } from "@/contexts/ClientContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import {
   FileDown,
   Upload,
@@ -26,6 +25,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { trackEvent } from "@/lib/analytics";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const changeOfARSchema = z.object({
   client_id: z.string().min(1, "Please select a client"),
@@ -216,27 +216,7 @@ export default function ChangeOfARForm() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <Card variant="elevated">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <UserX className="h-6 w-6 text-primary" />
-              <div>
-                <CardTitle className="text-2xl">
-                  Change of Authorized Representative
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Generate a Change of AR letter to fax to OWCP-DEEOIC
-                </p>
-              </div>
-            </div>
-            <Badge variant="default" size="lg">
-              Change of AR
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
+      <PageHeader />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
@@ -398,7 +378,6 @@ export default function ChangeOfARForm() {
         {/* Generate Button */}
         <Card
           variant="elevated"
-          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
         >
           <CardContent className="p-8">
             <div className="text-center space-y-6">

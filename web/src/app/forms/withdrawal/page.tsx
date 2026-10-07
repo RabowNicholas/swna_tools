@@ -10,7 +10,6 @@ import { useClientContext } from "@/contexts/ClientContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { FileText, CheckCircle, X, ExternalLink } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess, CopyField } from "@/components/portal/PortalAccess";
@@ -19,6 +18,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // ECOMP, where the full case file is downloaded before the claim closes out
 const ECOMP_URL = "https://owcp.industrypartners.dol.gov/#/";
@@ -202,27 +202,7 @@ export default function WithdrawalForm() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <Card variant="elevated">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <X className="h-6 w-6 text-destructive" />
-              <div>
-                <CardTitle className="text-2xl">
-                  Withdrawal Letter Generator
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Generate withdrawal letter for client's claim
-                </p>
-              </div>
-            </div>
-            <Badge variant="error" size="lg">
-              DOL Letter
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
+      <PageHeader />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
@@ -242,7 +222,7 @@ export default function WithdrawalForm() {
           <Card variant="elevated">
             <CardHeader>
               <div className="flex items-center space-x-2">
-                <FileText className="h-5 w-5 text-warning" />
+                <FileText className="h-5 w-5 text-primary" />
                 <CardTitle>Withdrawal Letter Details</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -286,7 +266,7 @@ export default function WithdrawalForm() {
                   label="Claimed Condition"
                   required
                   error={form.formState.errors.claimed_condition?.message}
-                  placeholder="e.g., Lung cancer, Beryllium sensitivity, etc."
+                  placeholder="e.g. Lung cancer, Beryllium sensitivity, etc."
                   helperText="The specific condition being withdrawn from the claim"
                   {...form.register("claimed_condition")}
                 />
@@ -298,7 +278,6 @@ export default function WithdrawalForm() {
         {/* Generate Button */}
         <Card
           variant="elevated"
-          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
         >
           <CardContent className="p-8">
             <div className="text-center space-y-6">
@@ -344,7 +323,7 @@ export default function WithdrawalForm() {
                 </div>
                 <div>
                   <h3 className="text-lg font-medium text-foreground mb-2">
-                    🎉 Withdrawal letter generated successfully!
+                    Withdrawal letter generated
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Your formal withdrawal letter has been downloaded and is

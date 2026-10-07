@@ -326,7 +326,7 @@ export function DiagnosisCategoriesSection({
                     className="rounded border-border text-primary focus:ring-primary"
                   />
                   <CardTitle className="text-lg">
-                    🎗️ Cancer (List Specific Diagnosis Below)
+                    Cancer (List Specific Diagnosis Below)
                   </CardTitle>
                 </label>
               </div>
@@ -347,7 +347,7 @@ export function DiagnosisCategoriesSection({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
                         label={`Cancer diagnosis ${String.fromCharCode(65 + i)}`}
-                        placeholder="e.g., Lung cancer, Mesothelioma, etc."
+                        placeholder="e.g. Lung cancer, Mesothelioma, etc."
                         value={diagnosis.text}
                         onChange={(e) =>
                           updateEntry("cancer", i, "text", e.target.value)
@@ -398,26 +398,23 @@ export function DiagnosisCategoriesSection({
         {/* Individual Conditions */}
         <div className="space-y-4">
           <h4 className="font-medium text-foreground">
-            🔬 Specific Occupational Conditions
+            Specific Occupational Conditions
           </h4>
 
           {[
             {
               key: "beryllium_sensitivity",
               label: "Beryllium Sensitivity",
-              icon: "🟡",
             },
             {
               key: "chronic_beryllium_disease",
               label: "Chronic Beryllium Disease (CBD)",
-              icon: "🔴",
             },
             {
               key: "chronic_silicosis",
               label: "Chronic Silicosis",
-              icon: "⚫",
             },
-          ].map(({ key, label, icon }) => {
+          ].map(({ key, label }) => {
             const category = value[key as keyof DiagnosisCategories] as {
               selected: boolean;
               date: Date | null;
@@ -449,7 +446,7 @@ export function DiagnosisCategoriesSection({
                         className="rounded border-border text-primary focus:ring-primary"
                       />
                       <span className="font-medium">
-                        {icon} {label}
+                        {label}
                       </span>
                     </label>
                     {category.selected && (
@@ -515,7 +512,7 @@ export function DiagnosisCategoriesSection({
                     className="rounded border-border text-primary focus:ring-primary"
                   />
                   <CardTitle className="text-lg">
-                    ⚕️ Other Work-Related Conditions
+                    Other Work-Related Conditions
                   </CardTitle>
                 </label>
               </div>
@@ -536,7 +533,7 @@ export function DiagnosisCategoriesSection({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Input
                         label={`Other condition ${String.fromCharCode(65 + i)}`}
-                        placeholder="e.g., Pulmonary fibrosis, Respiratory disease, etc."
+                        placeholder="e.g. Pulmonary fibrosis, Respiratory disease, etc."
                         value={diagnosis.text}
                         onChange={(e) =>
                           updateEntry("other", i, "text", e.target.value)

@@ -123,8 +123,8 @@ export function Combobox({
             ref={inputRef}
             type="text"
             className={cn(
-              "w-full rounded-lg border bg-white dark:bg-[#292524] pl-10 pr-10 py-2 text-sm",
-              "placeholder:text-muted-foreground text-foreground",
+              "w-full rounded-lg border bg-input pl-10 pr-10 py-2 text-sm",
+              "placeholder:text-placeholder text-foreground",
               "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
               "disabled:cursor-not-allowed disabled:opacity-50",
               error
@@ -166,7 +166,7 @@ export function Combobox({
             />
             <ul
               ref={listRef}
-              className="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-[#292524] border border-border py-1 shadow-lg"
+              className="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-input border border-border py-1 shadow-lg"
             >
               {filteredOptions.length === 0 ? (
                 <li className="px-3 py-2 text-sm text-muted-foreground">

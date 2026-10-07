@@ -37,6 +37,8 @@ module.exports = {
           hover: 'var(--destructive-hover)',
         },
         border: 'var(--border)',
+        placeholder: 'var(--placeholder)',
+        sidebar: 'var(--sidebar)',
         input: 'var(--input)',
         ring: 'var(--ring)',
         success: {

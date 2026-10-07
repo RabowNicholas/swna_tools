@@ -93,7 +93,7 @@ export const PaperSurface = React.forwardRef<HTMLDivElement, Omit<SurfaceProps, 
       ref={ref}
       elevation="raised"
       bordered
-      className={cn('bg-white dark:bg-gray-900', className)}
+      className={cn('bg-card', className)}
       {...props}
     />
   )

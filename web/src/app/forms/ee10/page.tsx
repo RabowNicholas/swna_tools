@@ -30,6 +30,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { detectClientStatus } from "@/lib/email-utils";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Whichever pre-IR tag is on the record when the EE-10 goes in — generic or
 // already doctor-specific — is superseded once the doctor is confirmed here.
@@ -490,15 +491,7 @@ export default function EE10Form() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">
-          EE-10 Form Generator
-        </h1>
-        <p className="text-muted-foreground">
-          Request for approval of evaluating doctor for impairment evaluation
-        </p>
-      </div>
+      <PageHeader />
 
       {/* Mode Toggle */}
       <Card variant="elevated">
@@ -510,9 +503,6 @@ export default function EE10Form() {
               onClick={() => handleModeChange('generate')}
               size="lg"
               icon={<FileDown className="h-5 w-5" />}
-              className={cn(
-                mode === 'generate' && "bg-purple-600 hover:bg-purple-700 text-white"
-              )}
             >
               Generate New Form
             </Button>
@@ -522,9 +512,6 @@ export default function EE10Form() {
               onClick={() => handleModeChange('skip')}
               size="lg"
               icon={<Mail className="h-5 w-5" />}
-              className={cn(
-                mode === 'skip' && "bg-blue-600 hover:bg-blue-700 text-white"
-              )}
             >
               Skip to Email
             </Button>
@@ -581,10 +568,10 @@ export default function EE10Form() {
 
         {/* Skip Mode: Info Card */}
         {mode === 'skip' && (
-          <Card variant="elevated" className="bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800">
+          <Card variant="elevated" className="bg-primary/10 border-primary/30">
             <CardHeader>
               <div className="flex items-center space-x-2">
-                <AlertCircle className="h-5 w-5 text-blue-600" />
+                <AlertCircle className="h-5 w-5 text-primary" />
                 <CardTitle>Skip Generation Mode</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -616,7 +603,7 @@ export default function EE10Form() {
             <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-success" />
+              <User className="h-5 w-5 text-primary" />
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -695,7 +682,7 @@ export default function EE10Form() {
                 <Input
                   label="State"
                   maxLength={2}
-                  placeholder="NY"
+                  placeholder="e.g. NM"
                   required
                   helperText="2-letter code"
                   error={
@@ -722,7 +709,7 @@ export default function EE10Form() {
 
                 <Input
                   label="Phone Number"
-                  placeholder="555.123.4567"
+                  placeholder="e.g. 555.123.4567"
                   required
                   error={
                     attemptedSubmit
@@ -802,12 +789,7 @@ export default function EE10Form() {
             type="button"
             onClick={handleSubmitClick}
             disabled={loading}
-            className={cn(
-              mode === 'generate'
-                ? "bg-purple-600 hover:bg-purple-700"
-                : "bg-blue-600 hover:bg-blue-700",
-              "text-white shadow-lg min-w-[200px]"
-            )}
+            className="min-w-[200px]"
             size="xl"
             loading={loading}
             icon={mode === 'generate' ? <FileDown className="h-5 w-5" /> : <Mail className="h-5 w-5" />}

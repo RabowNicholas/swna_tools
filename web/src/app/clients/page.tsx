@@ -16,6 +16,7 @@ import { ClientSelector } from '@/components/form/ClientSelector';
 
 // Using Client interface from centralized storage
 import { Client } from '@/lib/clientStorage';
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default function ClientsPage() {
   const { clients, loading, error, refreshClients, getCacheInfo } = useClients();
@@ -213,19 +214,7 @@ export default function ClientsPage() {
     <>
       <Toaster position="top-right" richColors />
       <div className="max-w-5xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                Client Data Manager
-              </h1>
-              <p className="text-muted-foreground">
-                Manage client information and contact details
-              </p>
-            </div>
-          </div>
-        </div>
+        <PageHeader />
 
         {/* Client Selection */}
         <ClientSelector
@@ -318,7 +307,7 @@ export default function ClientsPage() {
                               type="tel"
                               value={editedFields.Phone || ''}
                               onChange={(e) => handleFieldChange('Phone', e.target.value)}
-                              placeholder="(555) 123-4567"
+                              placeholder="e.g. (555) 123-4567"
                               className={validationErrors.Phone ? 'border-destructive' : ''}
                             />
                             {validationErrors.Phone && (
@@ -343,7 +332,7 @@ export default function ClientsPage() {
                               type="email"
                               value={editedFields.Email || ''}
                               onChange={(e) => handleFieldChange('Email', e.target.value)}
-                              placeholder="client@example.com"
+                              placeholder="e.g. name@example.com"
                               className={validationErrors.Email ? 'border-destructive' : ''}
                             />
                             {validationErrors.Email && (
@@ -376,7 +365,7 @@ export default function ClientsPage() {
                               type="text"
                               value={editedFields['Street Address'] || ''}
                               onChange={(e) => handleFieldChange('Street Address', e.target.value)}
-                              placeholder="123 Main St"
+                              placeholder="e.g. 123 Main St"
                               className={validationErrors['Street Address'] ? 'border-destructive' : ''}
                             />
                             {validationErrors['Street Address'] && (
@@ -401,7 +390,7 @@ export default function ClientsPage() {
                               type="text"
                               value={editedFields.City || ''}
                               onChange={(e) => handleFieldChange('City', e.target.value)}
-                              placeholder="Albuquerque"
+                              placeholder="e.g. Albuquerque"
                               className={validationErrors.City ? 'border-destructive' : ''}
                             />
                             {validationErrors.City && (
@@ -426,7 +415,7 @@ export default function ClientsPage() {
                               type="text"
                               value={editedFields.State || ''}
                               onChange={(e) => handleFieldChange('State', e.target.value)}
-                              placeholder="NM"
+                              placeholder="e.g. NM"
                               className={validationErrors.State ? 'border-destructive' : ''}
                             />
                             {validationErrors.State && (
@@ -451,7 +440,7 @@ export default function ClientsPage() {
                               type="text"
                               value={editedFields['ZIP Code'] || ''}
                               onChange={(e) => handleFieldChange('ZIP Code', e.target.value)}
-                              placeholder="87101"
+                              placeholder="e.g. 87101"
                               maxLength={5}
                               className={validationErrors['ZIP Code'] ? 'border-destructive' : ''}
                             />

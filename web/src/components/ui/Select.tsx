@@ -62,7 +62,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
               "appearance-none cursor-pointer",
               
               // Size and spacing
-              "px-4 py-3 pr-10",
+              "px-3.5 py-2.5 pr-10",
               
               // Default state
               "border-border hover:border-ring/50",

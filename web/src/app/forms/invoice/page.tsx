@@ -28,6 +28,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Invoice item options
 const INVOICE_ITEMS = [
@@ -422,20 +423,7 @@ export default function InvoiceForm() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header with Progress */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Generate Invoice
-            </h1>
-            <p className="text-muted-foreground">
-              Professional billing and invoicing with automatic calculations
-            </p>
-          </div>
-        </div>
-
-      </div>
+      <PageHeader />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
@@ -454,7 +442,7 @@ export default function InvoiceForm() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <Receipt className="h-5 w-5 text-success" />
+              <Receipt className="h-5 w-5 text-primary" />
               <CardTitle>Invoice Details</CardTitle>
             </div>
           </CardHeader>
@@ -547,7 +535,7 @@ export default function InvoiceForm() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5 text-success" />
+              <DollarSign className="h-5 w-5 text-primary" />
               <CardTitle>Award Information</CardTitle>
             </div>
           </CardHeader>
@@ -600,7 +588,7 @@ export default function InvoiceForm() {
                 <Input
                   label="Amount Awarded"
                   type="number"
-                  placeholder="e.g., 2000"
+                  placeholder="e.g. 2000"
                   helperText="Enter the awarded amount in dollars"
                   error={form.formState.errors.awarded_amount?.message}
                   {...form.register("awarded_amount")}
@@ -690,7 +678,6 @@ export default function InvoiceForm() {
         {/* Action Buttons */}
         <Card
           variant="elevated"
-          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
         >
           <CardContent className="p-8">
             <div className="text-center space-y-6">
@@ -753,7 +740,7 @@ export default function InvoiceForm() {
               {/* Additional context when ready */}
               {progressPercentage === 100 && !loading && (
                 <div className="text-xs text-muted-foreground bg-success/10 border border-success/20 rounded-lg p-3 max-w-md mx-auto">
-                  ✓ Ready to generate your Excel invoice with automatic
+                  Ready to generate your Excel invoice with automatic
                   calculations
                 </div>
               )}

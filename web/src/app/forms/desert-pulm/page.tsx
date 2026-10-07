@@ -25,6 +25,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { DPReferralEmailDraft } from "@/components/email/DPReferralEmailDraft";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -351,15 +352,7 @@ export default function DesertPulmForm() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">
-          🫁 Desert Pulmonary Referral Form Generator
-        </h1>
-        <p className="text-muted-foreground">
-          Generate Referral Form for Desert Pulmonary Rehab & Diagnostics
-        </p>
-      </div>
+      <PageHeader />
 
       <form className="space-y-8">
         {/* Client Selection */}
@@ -383,7 +376,7 @@ export default function DesertPulmForm() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-success" />
+              <User className="h-5 w-5 text-primary" />
               <CardTitle>Patient Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -421,7 +414,7 @@ export default function DesertPulmForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Patient's Phone Number"
-                  placeholder="555.123.4567"
+                  placeholder="e.g. 555.123.4567"
                   error={
                     attemptedSubmit
                       ? form.formState.errors.phone_number?.message
@@ -464,7 +457,7 @@ export default function DesertPulmForm() {
               <Input
                 label="Patient's Street Address"
                 required
-                placeholder="123 Main Street"
+                placeholder="e.g. 123 Main St"
                 error={
                   attemptedSubmit
                     ? form.formState.errors.address_main?.message
@@ -479,7 +472,7 @@ export default function DesertPulmForm() {
                   <Input
                     label="Patient's City"
                     required
-                    placeholder="Anytown"
+                    placeholder="e.g. Albuquerque"
                     error={
                       attemptedSubmit
                         ? form.formState.errors.address_city?.message
@@ -491,7 +484,7 @@ export default function DesertPulmForm() {
                 <Input
                   label="State"
                   required
-                  placeholder="NY"
+                  placeholder="e.g. NM"
                   maxLength={2}
                   error={
                     attemptedSubmit
@@ -506,7 +499,7 @@ export default function DesertPulmForm() {
               <Input
                 label="Patient's ZIP Code"
                 required
-                placeholder="12345"
+                placeholder="e.g. 87101"
                 maxLength={5}
                 error={
                   attemptedSubmit
@@ -524,7 +517,7 @@ export default function DesertPulmForm() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <Stethoscope className="h-5 w-5 text-info" />
+              <Stethoscope className="h-5 w-5 text-primary" />
               <CardTitle>Medical Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -566,7 +559,7 @@ export default function DesertPulmForm() {
             type="button"
             onClick={handleSubmitClick}
             disabled={loading}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50 min-w-[200px]"
+            className="min-w-[200px]"
             size="xl"
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}

@@ -24,6 +24,7 @@ import {
 import { ee3Schema, type EE3FormValues } from "@/lib/schemas/ee3";
 import { formatSSN, generateEE3 } from "@/lib/claims/generate";
 import { trackEvent } from "@/lib/analytics";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 
 
@@ -248,10 +249,10 @@ export default function EE3Form() {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Error Loading Clients
           </h3>
-          <p className="text-gray-600">{clientsError}</p>
+          <p className="text-muted-foreground">{clientsError}</p>
         </div>
       </div>
     );
@@ -259,20 +260,7 @@ export default function EE3Form() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header with Progress */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Generate EE-3 Form
-            </h1>
-            <p className="text-muted-foreground">
-              Employee employment history documentation
-            </p>
-          </div>
-        </div>
-
-      </div>
+      <PageHeader />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
@@ -292,7 +280,7 @@ export default function EE3Form() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-success" />
+              <User className="h-5 w-5 text-primary" />
               <CardTitle>Personal Information</CardTitle>
             </div>
           </CardHeader>
@@ -327,7 +315,7 @@ export default function EE3Form() {
 
               <Input
                 label="Social Security Number"
-                placeholder="123456789"
+                placeholder="e.g. 123456789"
                 maxLength={9}
                 required
                 error={form.formState.errors.ssn?.message}
@@ -356,7 +344,6 @@ export default function EE3Form() {
             size="lg"
             loading={loading}
             icon={<FileDown className="h-4 w-4" />}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50"
           >
             {loading ? "Generating..." : "Generate EE-3"}
           </Button>

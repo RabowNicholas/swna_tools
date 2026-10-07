@@ -28,6 +28,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -485,16 +486,7 @@ export default function EE1AForm() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">
-          EE-1a Form Generator
-        </h1>
-        <p className="text-muted-foreground">
-          Consequential Illness Claim - For conditions resulting from an
-          already-accepted illness
-        </p>
-      </div>
+      <PageHeader />
 
       <form className="space-y-8">
         {/* Client Selection */}
@@ -518,7 +510,7 @@ export default function EE1AForm() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-success" />
+              <User className="h-5 w-5 text-primary" />
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -594,7 +586,7 @@ export default function EE1AForm() {
                 <Input
                   label="State"
                   maxLength={2}
-                  placeholder="NY"
+                  placeholder="e.g. NM"
                   required
                   helperText="2-letter code"
                   error={
@@ -621,7 +613,7 @@ export default function EE1AForm() {
 
                 <Input
                   label="Phone Number"
-                  placeholder="555.123.4567"
+                  placeholder="e.g. 555.123.4567"
                   required
                   error={
                     attemptedSubmit
@@ -861,7 +853,7 @@ export default function EE1AForm() {
             type="button"
             onClick={handleSubmitClick}
             disabled={loading}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50 min-w-[200px]"
+            className="min-w-[200px]"
             size="xl"
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}

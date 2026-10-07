@@ -1,582 +1,77 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-import { Heart, Star, ExternalLink, Globe } from "lucide-react";
-import { useClientContext } from "@/contexts/ClientContext";
-import { Card, CardContent } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Typography, TextHierarchy } from "@/components/ui/Typography";
-import { VStack, HStack, Spacer } from "@/components/ui/Spacing";
-import {
-  AnimatedContainer,
-  StaggeredContainer,
-  InteractiveCard,
-  animations,
-} from "@/components/ui/Animations";
-
-interface Tool {
-  name: string;
-  description: string;
-  href: string;
-  id: string;
-}
+import { ChevronRight } from "lucide-react";
+import { TOOL_SECTIONS } from "@/lib/tools";
 
 export default function Home() {
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [hasMounted, setHasMounted] = useState(false);
-
-  // Load favorites from localStorage on mount
-  useEffect(() => {
-    setHasMounted(true);
-    const savedFavorites = localStorage.getItem("swna-favorites");
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
-  }, []);
-
-  // Save favorites to localStorage whenever it changes (only after mount)
-  useEffect(() => {
-    if (hasMounted) {
-      localStorage.setItem("swna-favorites", JSON.stringify(favorites));
-    }
-  }, [favorites, hasMounted]);
-
-  const toggleFavorite = (toolId: string) => {
-    setFavorites((prev) =>
-      prev.includes(toolId)
-        ? prev.filter((id) => id !== toolId)
-        : [...prev, toolId]
-    );
-  };
-
-  const allTools: Tool[] = [
-    // Claims Assembly
-    {
-      id: "claims-assembly",
-      name: "Claims Assembly",
-      description: "",
-      href: "/forms/claims-assembly",
-    },
-    // Forms
-    {
-      id: "ee3",
-      name: "EE-3 Form",
-      description: "",
-      href: "/forms/ee3",
-    },
-    {
-      id: "ee1",
-      name: "EE-1 Form",
-      description: "",
-      href: "/forms/ee1",
-    },
-    {
-      id: "ee1a",
-      name: "EE-1a Form",
-      description: "",
-      href: "/forms/ee1a",
-    },
-    {
-      id: "ee10",
-      name: "EE-10 Form",
-      description: "",
-      href: "/forms/ee10",
-    },
-    {
-      id: "en16",
-      name: "EN-16 Form",
-      description: "",
-      href: "/forms/en16",
-    },
-    // DOL Letters
-    {
-      id: "dol-letter",
-      name: "Draft Custom Letter",
-      description: "",
-      href: "/forms/dol-letter",
-    },
-    {
-      id: "withdrawal",
-      name: "Withdrawal Letter",
-      description: "",
-      href: "/forms/withdrawal",
-    },
-    {
-      id: "address-change",
-      name: "Address Change Letter",
-      description: "",
-      href: "/forms/address-change",
-    },
-    {
-      id: "phone-change",
-      name: "Phone Change Letter",
-      description: "",
-      href: "/forms/phone-change",
-    },
-    {
-      id: "rd-waiver",
-      name: "RD Waiver",
-      description: "",
-      href: "/forms/rd-waiver",
-    },
-    {
-      id: "dol-status-update",
-      name: "Status Update Letter",
-      description: "",
-      href: "/forms/dol-status-update",
-    },
-    {
-      id: "ir-notice",
-      name: "IR Schedule Notice",
-      description: "",
-      href: "/forms/ir-notice",
-    },
-    {
-      id: "change-of-ar",
-      name: "Change of AR Letter",
-      description: "",
-      href: "/forms/change-of-ar",
-    },
-    // Guides
-    {
-      id: "procedure-manual",
-      name: "Procedure Manual",
-      description: "Ask questions and find exact quotes from the EEOICPA Procedure Manual",
-      href: "/guides/procedure-manual",
-    },
-    {
-      id: "ir-process",
-      name: "IR Process Guide",
-      description: "Step-by-step IR testing coordination flowchart from FD letter to testing complete",
-      href: "/guides/ir-process",
-    },
-    // Medical
-    {
-      id: "desert-pulm",
-      name: "Desert Pulmonary Referral",
-      description: "",
-      href: "/forms/desert-pulm",
-    },
-    {
-      id: "doctor-letter",
-      name: "Doctor Letter Drafting",
-      description: "Draft a causation letter for a physician to review and sign",
-      href: "/forms/doctor-letter",
-    },
-    // Billing
-    {
-      id: "invoice",
-      name: "Invoice Generator",
-      description: "",
-      href: "/forms/invoice",
-    },
-    // Client Management
-    {
-      id: "clients",
-      name: "Client Manager",
-      description: "",
-      href: "/clients",
-    },
-    {
-      id: "text-message",
-      name: "Text a Client",
-      description: "Send a canned text and log it to the client's record",
-      href: "/forms/text-message",
-    },
-    // Analytics
-    {
-      id: "pipeline",
-      name: "Claims Pipeline Dashboard",
-      description: "Management view - identify bottlenecks and prioritize follow-ups by responsibility",
-      href: "/pipeline",
-    },
-    {
-      id: "ao-weekly-report",
-      name: "AO Weekly Report",
-      description: "Find AO clients with recent claim activity to report weekly",
-      href: "/reports/ao-weekly",
-    },
-    // Portal Access
-    {
-      id: "portal",
-      name: "DOL Portal Access",
-      description: "",
-      href: "/portal",
-    },
-  ];
-
-  const toolCategories = {
-    claimsAssembly: allTools.filter((tool) =>
-      ["claims-assembly"].includes(tool.id)
-    ),
-    forms: allTools.filter((tool) =>
-      ["ee3", "ee1", "ee1a", "ee10", "en16"].includes(tool.id)
-    ),
-    dolLetters: allTools.filter((tool) =>
-      ["dol-letter", "withdrawal", "address-change", "phone-change", "rd-waiver", "dol-status-update", "ir-notice", "change-of-ar"].includes(tool.id)
-    ),
-    guides: allTools.filter((tool) => ["procedure-manual", "ir-process"].includes(tool.id)),
-    medical: allTools.filter((tool) =>
-      ["desert-pulm", "doctor-letter"].includes(tool.id)
-    ),
-    billing: allTools.filter((tool) => ["invoice"].includes(tool.id)),
-    analytics: allTools.filter((tool) => ["pipeline", "ao-weekly-report"].includes(tool.id)),
-    clientManagement: allTools.filter((tool) =>
-      ["clients", "text-message", "portal"].includes(tool.id)
-    ),
-    portalAccess: allTools.filter((tool) => ["portal"].includes(tool.id)),
-  };
-
-  const favoriteTools = hasMounted
-    ? allTools.filter((tool) => favorites.includes(tool.id))
-    : [];
-
-  const ToolCard = ({
-    tool,
-    showFavoriteButton = true,
-  }: {
-    tool: Tool;
-    showFavoriteButton?: boolean;
-  }) => {
-    const isFavorite = hasMounted && favorites.includes(tool.id);
-
-    return (
-      <InteractiveCard
-        className="h-full relative group"
-        glowColor="rgba(59,130,246,0.2)"
-      >
-        <Card
-          hover
-          className="h-full bg-card border-2 border-border hover:border-primary hover:bg-accent/30 shadow-sm hover:shadow-md relative group"
-        >
-          {showFavoriteButton && hasMounted && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                toggleFavorite(tool.id);
-              }}
-              className={`absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 h-8 w-8 ${animations.hoverScale}`}
-              aria-label={
-                isFavorite
-                  ? `Remove ${tool.name} from favorites`
-                  : `Add ${tool.name} to favorites`
-              }
-            >
-              {isFavorite ? (
-                <svg
-                  className="h-4 w-4 text-destructive"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-              ) : (
-                <Heart className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-              )}
-            </Button>
-          )}
-
-          <Link href={tool.href} className="block">
-            <CardContent>
-              <VStack size="sm">
-                <TextHierarchy.CardTitle className="group-hover:text-primary transition-colors pr-8">
-                  {tool.name}
-                </TextHierarchy.CardTitle>
-                <Typography.Body size="small" className="line-clamp-2">
-                  {tool.description}
-                </Typography.Body>
-              </VStack>
-            </CardContent>
-          </Link>
-        </Card>
-      </InteractiveCard>
-    );
-  };
+  const everyday = TOOL_SECTIONS.filter((s) => !s.manage);
+  const manage = TOOL_SECTIONS.filter((s) => s.manage);
 
   return (
-    <div className="space-y-8">
-      {/* Skip link for accessibility */}
-      <a href="#main-content" className="skip-link" tabIndex={0}>
-        Skip to main content
-      </a>
+    <div className="mx-auto max-w-5xl space-y-10">
+      <header className="space-y-1">
+        <h1 className="text-[28px] font-semibold leading-tight tracking-tight text-foreground">
+          What do you need to do?
+        </h1>
+        <p className="text-[15px] text-muted-foreground">
+          Pick the situation, then the tool. Press ⌘K to find a tool by name.
+        </p>
+      </header>
 
-      {/* Header */}
-      <AnimatedContainer animation="fadeIn" delay={100}>
-        <header className="text-center">
-          <TextHierarchy.PageTitle>SWNA Tools</TextHierarchy.PageTitle>
-        </header>
-      </AnimatedContainer>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {everyday.map((section) => (
+          <SectionCard key={section.id} section={section} />
+        ))}
+      </div>
 
-      {/* Main content */}
-      <main id="main-content" className="space-y-12">
-        {/* Favorites Section */}
-        {hasMounted && favoriteTools.length > 0 && (
-          <AnimatedContainer animation="fadeIn" delay={300} trigger="inView">
-            <section aria-labelledby="favorites-heading">
-              <VStack size="lg" className="mb-6">
-                <HStack size="sm" className="justify-start">
-                  <Star className="h-6 w-6 text-warning fill-warning" />
-                  <TextHierarchy.SectionTitle id="favorites-heading">
-                    Your Favorites
-                  </TextHierarchy.SectionTitle>
-                </HStack>
-                <Typography.Body className="text-muted-foreground">
-                  Quick access to your most frequently used tools
-                </Typography.Body>
-              </VStack>
-
-              <StaggeredContainer
-                staggerDelay={100}
-                baseAnimation="slideInFromLeft"
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              >
-                {favoriteTools.map((tool) => (
-                  <ToolCard
-                    key={tool.id}
-                    tool={tool}
-                    showFavoriteButton={false}
-                  />
-                ))}
-              </StaggeredContainer>
-            </section>
-          </AnimatedContainer>
-        )}
-
-        {/* Empty favorites state */}
-        {hasMounted && favoriteTools.length === 0 && (
-          <section
-            aria-labelledby="favorites-empty-heading"
-            className="text-center py-8"
-          >
-            <div className="max-w-md mx-auto">
-              <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h2
-                id="favorites-empty-heading"
-                className="text-lg font-semibold text-foreground mb-2"
-              >
-                No favorites yet
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Click the heart icon on any tool below to add it to your
-                favorites for quick access.
-              </p>
-            </div>
-          </section>
-        )}
-
-        {/* Claims Assembly Section */}
-        <AnimatedContainer animation="fadeIn" trigger="inView">
-          <section aria-labelledby="claims-assembly-heading">
-            <VStack size="lg" className="mb-6">
-              <TextHierarchy.SectionTitle id="claims-assembly-heading">
-                Claims Assembly
-              </TextHierarchy.SectionTitle>
-              <Typography.Body className="text-muted-foreground">
-                Build and assemble a complete claim package
-              </Typography.Body>
-            </VStack>
-
-            <StaggeredContainer
-              staggerDelay={80}
-              baseAnimation="slideInFromBottom"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {toolCategories.claimsAssembly.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
-              ))}
-            </StaggeredContainer>
-          </section>
-        </AnimatedContainer>
-
-        {/* Forms Section */}
-        <AnimatedContainer animation="fadeIn" trigger="inView">
-          <section aria-labelledby="forms-heading">
-            <VStack size="lg" className="mb-6">
-              <TextHierarchy.SectionTitle id="forms-heading">
-                Forms
-              </TextHierarchy.SectionTitle>
-              <Typography.Body className="text-muted-foreground">
-                Employment and legal forms for case documentation
-              </Typography.Body>
-            </VStack>
-
-            <StaggeredContainer
-              staggerDelay={80}
-              baseAnimation="slideInFromBottom"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {toolCategories.forms.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
-              ))}
-            </StaggeredContainer>
-          </section>
-        </AnimatedContainer>
-
-        {/* DOL Letters Section */}
-        <AnimatedContainer animation="fadeIn" trigger="inView">
-          <section aria-labelledby="dol-letters-heading">
-            <div className="mb-6">
-              <h2
-                id="dol-letters-heading"
-                className="text-2xl font-bold text-foreground mb-2"
-              >
-                DOL Letters
-              </h2>
-              <p className="text-muted-foreground">
-                Department of Labor correspondence and notifications
-              </p>
-            </div>
-
-            <StaggeredContainer
-              staggerDelay={80}
-              baseAnimation="slideInFromRight"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {toolCategories.dolLetters.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
-              ))}
-            </StaggeredContainer>
-          </section>
-        </AnimatedContainer>
-
-        {/* Medical Section */}
-        <AnimatedContainer animation="fadeIn" trigger="inView">
-          <section aria-labelledby="medical-heading">
-            <div className="mb-6">
-              <h2
-                id="medical-heading"
-                className="text-2xl font-bold text-foreground mb-2"
-              >
-                Medical
-              </h2>
-              <p className="text-muted-foreground">
-                Medical referrals and healthcare documentation
-              </p>
-            </div>
-
-            <StaggeredContainer
-              staggerDelay={80}
-              baseAnimation="slideInFromLeft"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {toolCategories.medical.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
-              ))}
-            </StaggeredContainer>
-          </section>
-        </AnimatedContainer>
-
-        {/* Guides Section */}
-        <AnimatedContainer animation="fadeIn" trigger="inView">
-          <section aria-labelledby="guides-heading">
-            <div className="mb-6">
-              <h2
-                id="guides-heading"
-                className="text-2xl font-bold text-foreground mb-2"
-              >
-                Guides
-              </h2>
-              <p className="text-muted-foreground">
-                Process reference guides and coordination flowcharts
-              </p>
-            </div>
-
-            <StaggeredContainer
-              staggerDelay={80}
-              baseAnimation="slideInFromLeft"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {toolCategories.guides.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
-              ))}
-            </StaggeredContainer>
-          </section>
-        </AnimatedContainer>
-
-        {/* Billing Section */}
-        <AnimatedContainer animation="fadeIn" trigger="inView">
-          <section aria-labelledby="billing-heading">
-            <div className="mb-6">
-              <h2
-                id="billing-heading"
-                className="text-2xl font-bold text-foreground mb-2"
-              >
-                Billing
-              </h2>
-              <p className="text-muted-foreground">
-                Invoice generation and billing management
-              </p>
-            </div>
-
-            <StaggeredContainer
-              staggerDelay={80}
-              baseAnimation="slideInFromBottom"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {toolCategories.billing.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
-              ))}
-            </StaggeredContainer>
-          </section>
-        </AnimatedContainer>
-
-        {/* Analytics Section */}
-        <AnimatedContainer animation="fadeIn" trigger="inView">
-          <section aria-labelledby="analytics-heading">
-            <div className="mb-6">
-              <h2
-                id="analytics-heading"
-                className="text-2xl font-bold text-foreground mb-2"
-              >
-                Analytics & Reporting
-              </h2>
-              <p className="text-muted-foreground">
-                Visualizations and insights into your claims pipeline
-              </p>
-            </div>
-
-            <StaggeredContainer
-              staggerDelay={80}
-              baseAnimation="slideInFromLeft"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {toolCategories.analytics.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
-              ))}
-            </StaggeredContainer>
-          </section>
-        </AnimatedContainer>
-
-        {/* Client Management Section */}
-        <AnimatedContainer animation="fadeIn" trigger="inView">
-          <section aria-labelledby="client-management-heading">
-            <div className="mb-6">
-              <h2
-                id="client-management-heading"
-                className="text-2xl font-bold text-foreground mb-2"
-              >
-                Client Management
-              </h2>
-              <p className="text-muted-foreground">
-                Client data management and organization tools
-              </p>
-            </div>
-
-            <StaggeredContainer
-              staggerDelay={80}
-              baseAnimation="slideInFromRight"
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-            >
-              {toolCategories.clientManagement.map((tool) => (
-                <ToolCard key={tool.id} tool={tool} />
-              ))}
-            </StaggeredContainer>
-          </section>
-        </AnimatedContainer>
-      </main>
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground">Back office</h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {manage.map((section) => (
+            <SectionCard key={section.id} section={section} />
+          ))}
+        </div>
+      </div>
     </div>
+  );
+}
+
+function SectionCard({ section }: { section: (typeof TOOL_SECTIONS)[number] }) {
+  const Icon = section.icon;
+  return (
+    <section
+      id={section.id}
+      aria-labelledby={`${section.id}-title`}
+      className="scroll-mt-8 overflow-hidden rounded-xl border border-border bg-card"
+    >
+      <div className="flex items-start gap-3 px-4 pt-4 pb-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+          <Icon className="h-[18px] w-[18px]" aria-hidden />
+        </div>
+        <div className="min-w-0">
+          <h2 id={`${section.id}-title`} className="text-[15px] font-semibold text-card-foreground">
+            {section.title}
+          </h2>
+          <p className="text-[13px] text-muted-foreground">{section.summary}</p>
+        </div>
+      </div>
+      <ul className="border-t border-border">
+        {section.tools.map((tool) => (
+          <li key={tool.href} className="border-b border-border last:border-b-0">
+            <Link
+              href={tool.href}
+              className="group flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] text-card-foreground">{tool.name}</div>
+                <div className="text-[13px] text-muted-foreground">{tool.description}</div>
+              </div>
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

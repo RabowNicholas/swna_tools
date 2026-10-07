@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { DEFAULT_ON_TAGS, ALL_CANDIDATE_TAGS } from '@/lib/reports/ao-weekly-config';
+import { PageHeader } from "@/components/layout/PageHeader";
 
 interface AOWeeklyMatch {
   id: string;
@@ -160,15 +161,9 @@ export default function AOWeeklyReportPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <div>
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">AO Weekly Report</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            AO clients whose status looks like it changed in the selected window.
-            This is a first-pass filter — review each row before sending.
-          </p>
-        </div>
+        <PageHeader description="AO clients whose status looks like it changed in the selected window. This is a first-pass filter — review each row before sending." />
 
         <Card variant="elevated">
           <CardHeader>

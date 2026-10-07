@@ -67,6 +67,7 @@ import {
   type PageRange,
 } from "@/lib/claims/assemble";
 import { formatSSN, generateEE1, generateEE3 } from "@/lib/claims/generate";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const CLAIM_TYPES = [
   { value: "primary", label: "Primary" },
@@ -565,14 +566,7 @@ export default function ClaimsAssemblyPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">📑 Claims Assembly</h1>
-        <p className="text-muted-foreground">
-          Pick the client and the condition, fill in the claim once, and this
-          builds the EE-1 and EE-3, merges them with the documents you supply,
-          and names the finished claim.
-        </p>
-      </div>
+      <PageHeader description="Pick the client and the condition, fill in the claim once, and this builds the EE-1 and EE-3, merges them with the documents you supply, and names the finished claim." />
 
       {/* Client */}
       <ClientSelector
@@ -591,7 +585,7 @@ export default function ClaimsAssemblyPage() {
       <Card variant="elevated">
         <CardHeader>
           <div className="flex items-center space-x-2">
-            <ClipboardList className="h-5 w-5 text-success" />
+            <ClipboardList className="h-5 w-5 text-primary" />
             <CardTitle>Claim Details</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -668,7 +662,7 @@ export default function ClaimsAssemblyPage() {
           <Card variant="elevated">
             <CardHeader>
               <div className="flex items-center space-x-2">
-                <User className="h-5 w-5 text-success" />
+                <User className="h-5 w-5 text-primary" />
                 <CardTitle>Claimant Details</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -680,7 +674,7 @@ export default function ClaimsAssemblyPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-6">
                   <h4 className="font-medium text-foreground">
-                    👤 Personal Details
+                    Personal Details
                   </h4>
 
                   <Input
@@ -693,7 +687,7 @@ export default function ClaimsAssemblyPage() {
                   <Input
                     label="Middle Initial"
                     maxLength={1}
-                    placeholder="Q"
+                    placeholder="e.g. Q"
                     error={form.formState.errors.middle_initial?.message}
                     helperText="Optional"
                     {...form.register("middle_initial")}
@@ -714,7 +708,7 @@ export default function ClaimsAssemblyPage() {
 
                   <Input
                     label="Social Security Number"
-                    placeholder="123456789"
+                    placeholder="e.g. 123456789"
                     maxLength={9}
                     required
                     error={form.formState.errors.ssn?.message}
@@ -759,7 +753,7 @@ export default function ClaimsAssemblyPage() {
 
                 <div className="space-y-6">
                   <h4 className="font-medium text-foreground">
-                    🏠 Contact Information
+                    Contact Information
                   </h4>
 
                   <Input
@@ -782,7 +776,7 @@ export default function ClaimsAssemblyPage() {
                       label="State"
                       required
                       maxLength={2}
-                      placeholder="NM"
+                      placeholder="e.g. NM"
                       error={form.formState.errors.address_state?.message}
                       helperText="2-letter code"
                       {...form.register("address_state")}
@@ -793,7 +787,7 @@ export default function ClaimsAssemblyPage() {
                     label="ZIP Code"
                     required
                     maxLength={10}
-                    placeholder="12345"
+                    placeholder="e.g. 87101"
                     error={form.formState.errors.address_zip?.message}
                     {...form.register("address_zip")}
                   />
@@ -801,7 +795,7 @@ export default function ClaimsAssemblyPage() {
                   <Input
                     label="Phone Number"
                     required
-                    placeholder="555.123.4567"
+                    placeholder="e.g. 555.123.4567"
                     error={form.formState.errors.phone?.message}
                     helperText="Phone number in format: 123.123.1234"
                     {...form.register("phone")}
@@ -987,7 +981,7 @@ export default function ClaimsAssemblyPage() {
               disabled={assembling}
               loading={assembling}
               size="xl"
-              className="min-w-[220px] bg-purple-600 text-white shadow-lg shadow-purple-500/50 hover:bg-purple-700"
+              className="min-w-[220px]"
               icon={<Upload className="h-5 w-5" />}
             >
               {assembling ? "Assembling..." : "Assemble Claim"}

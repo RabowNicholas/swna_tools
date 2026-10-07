@@ -104,7 +104,7 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       {
         key: "amount",
         label: "Award Amount",
-        placeholder: "150,000",
+        placeholder: "e.g. 150,000",
         helperText:
           "The accepted amount from the Recommended Decision, without the $",
         required: true,
@@ -163,7 +163,7 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       {
         key: "previous_percentage",
         label: "Previous Impairment Rating (%)",
-        placeholder: "15",
+        placeholder: "e.g. 15",
         helperText:
           "The rating from their last impairment report — leave blank if " +
           "this is their first",
@@ -171,7 +171,7 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       {
         key: "percentage",
         label: "Impairment Rating (%)",
-        placeholder: "25",
+        placeholder: "e.g. 25",
         helperText: "The rating from the new impairment report",
         required: true,
       },

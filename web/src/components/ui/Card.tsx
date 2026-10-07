@@ -14,12 +14,12 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         className={cn(
           // Base styles
-          "rounded-lg transition-all duration-200",
+          "rounded-xl transition-colors duration-150",
           
           // Variants
           variant === 'default' && "bg-card border border-border",
-          variant === 'elevated' && "bg-card shadow-md border border-border",
-          variant === 'outlined' && "bg-card border-2 border-border",
+          variant === 'elevated' && "bg-card border border-border shadow-sm",
+          variant === 'outlined' && "bg-card border border-border",
           variant === 'ghost' && "bg-muted border border-transparent",
           
           // Padding
@@ -30,10 +30,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
           padding === 'xl' && "p-10",
           
           // Hover effects
-          hover && [
-            "hover:shadow-lg hover:border-border/80",
-            "cursor-pointer transform hover:-translate-y-0.5"
-          ],
+          hover && "cursor-pointer hover:bg-accent",
           
           className
         )}
@@ -61,7 +58,7 @@ const CardTitle = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLHeadingEle
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn("text-xl font-semibold leading-none tracking-tight text-card-foreground", className)}
+      className={cn("text-lg font-semibold leading-tight text-card-foreground", className)}
       {...props}
     />
   )

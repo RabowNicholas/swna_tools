@@ -31,6 +31,7 @@ import {
   parseClientName,
 } from "@/components/form/ClientSelector";
 import { IRNoticeEmailDraft } from "@/components/email/IRNoticeEmailDraft";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -343,15 +344,7 @@ export default function IRNoticeForm() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">
-          🏥 IR Schedule Notice Generator
-        </h1>
-        <p className="text-muted-foreground">
-          Generate Independent Review (IR) Schedule Notice
-        </p>
-      </div>
+      <PageHeader />
 
       <form className="space-y-8">
         {/* Client Selection */}
@@ -377,7 +370,7 @@ export default function IRNoticeForm() {
           <Card variant="elevated">
             <CardHeader>
               <div className="flex items-center space-x-2">
-                <User className="h-5 w-5 text-info" />
+                <User className="h-5 w-5 text-primary" />
                 <CardTitle>Personal Details</CardTitle>
               </div>
             </CardHeader>
@@ -416,7 +409,7 @@ export default function IRNoticeForm() {
           <Card variant="elevated">
             <CardHeader>
               <div className="flex items-center space-x-2">
-                <Calendar className="h-5 w-5 text-success" />
+                <Calendar className="h-5 w-5 text-primary" />
                 <CardTitle>Appointment Information</CardTitle>
               </div>
             </CardHeader>
@@ -469,7 +462,7 @@ export default function IRNoticeForm() {
             type="button"
             onClick={handleSubmitClick}
             disabled={loading}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50 min-w-[200px]"
+            className="min-w-[200px]"
             size="xl"
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { PageHeader } from "@/components/layout/PageHeader";
 
 interface Client {
   id: string;
@@ -108,13 +109,10 @@ export default function PipelinePage() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-8">
+    <div>
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Claims Pipeline Dashboard</h1>
-          <p className="text-muted-foreground">
-            Management view organized by responsibility - identify bottlenecks and prioritize follow-ups
-          </p>
+          <PageHeader />
         </div>
 
         {/* Summary Cards */}
@@ -125,7 +123,7 @@ export default function PipelinePage() {
           </div>
           <div className="bg-card rounded-lg shadow border border-border p-6">
             <h3 className="text-sm font-medium text-muted-foreground">Clients with Status</h3>
-            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{data.summary.clientsWithStatus}</p>
+            <p className="text-3xl font-bold text-primary mt-2">{data.summary.clientsWithStatus}</p>
           </div>
           <div className="bg-card rounded-lg shadow border border-border p-6">
             <h3 className="text-sm font-medium text-muted-foreground">Clients without Status</h3>

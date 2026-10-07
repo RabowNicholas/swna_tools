@@ -10,8 +10,7 @@ import { useClientContext } from "@/contexts/ClientContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { FileText, CheckCircle, X, Bell } from "lucide-react";
+import { FileText, CheckCircle, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import {
@@ -23,6 +22,7 @@ import {
   DEFAULT_STATUS_UPDATE_SUBJECT,
   STATUS_UPDATE_SUBJECT_MAX_LENGTH,
 } from "@/lib/status-update-subject";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Fill the subject and leave the cursor at the end so the blank can be typed in
 const SUBJECT_PRESETS = [
@@ -217,27 +217,7 @@ export default function DolStatusUpdateForm() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <Card variant="elevated">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Bell className="h-6 w-6 text-primary" />
-              <div>
-                <CardTitle className="text-2xl">
-                  DOL Status Update Letter
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Generate status update notification for client's case
-                </p>
-              </div>
-            </div>
-            <Badge variant="default" size="lg">
-              DOL Letter
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
+      <PageHeader />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
@@ -331,7 +311,6 @@ export default function DolStatusUpdateForm() {
         {/* Generate Button */}
         <Card
           variant="elevated"
-          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
         >
           <CardContent className="p-8">
             <div className="text-center space-y-6">

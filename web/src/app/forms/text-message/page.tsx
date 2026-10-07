@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { trackEvent } from "@/lib/analytics";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { MessageSquare, Zap } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/Card";
+import { Zap } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { TextTemplateCard } from "@/components/text/TextTemplateCard";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 interface Client {
   id: string;
@@ -69,21 +70,7 @@ export default function TextMessageForm() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <Card variant="elevated">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <MessageSquare className="h-6 w-6 text-primary" />
-            <div>
-              <CardTitle className="text-2xl">Text a Client</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Pick a client and a canned message, then log it once it&apos;s
-                sent
-              </p>
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      <PageHeader />
 
       {/* Client Selection */}
       <ClientSelector

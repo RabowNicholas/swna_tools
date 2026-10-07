@@ -56,7 +56,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             className={cn(
               // Base styles
               "block w-full rounded-lg border transition-all duration-200",
-              "text-foreground placeholder-muted-foreground",
+              "text-foreground placeholder:text-placeholder",
               "focus:outline-none focus:ring-2 focus:ring-offset-1",
               "resize-vertical min-h-[100px]",
               

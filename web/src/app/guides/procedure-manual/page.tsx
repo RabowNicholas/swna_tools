@@ -2,16 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
-import { BookOpen, Loader2, MessageCircleQuestion, Quote, Search, ShieldAlert, Sparkles } from "lucide-react";
+import { Loader2, MessageCircleQuestion, Quote, Search, ShieldAlert, Sparkles } from "lucide-react";
 import { trackEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { SourceCard } from "@/components/manual/SourceCard";
 import { AnswerText } from "@/components/manual/AnswerText";
 import { buildIndex, type ManualIndex } from "@/lib/manual/search";
 import { loadEmbedder } from "@/lib/manual/embedder";
 import type { AskResponse, ManualData, ManualEmbeddings, ManualUnit } from "@/lib/manual/types";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 type Tab = "ask" | "quote";
 
@@ -141,19 +142,15 @@ export default function ProcedureManualPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      <PageHeader
+        description={
+          <>
+            Ask a question or find an exact quote from the Federal (EEOICPA) Procedure Manual
+            {index && ` — Version ${index.meta.version}, published ${index.meta.published}`}.
+          </>
+        }
+      />
       <Card variant="elevated">
-        <CardHeader>
-          <div className="flex items-center space-x-2">
-            <BookOpen className="h-6 w-6 text-primary" />
-            <div>
-              <CardTitle className="text-2xl">Procedure Manual</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Ask a question or find an exact quote from the Federal (EEOICPA) Procedure Manual
-                {index && ` — Version ${index.meta.version}, published ${index.meta.published}`}.
-              </p>
-            </div>
-          </div>
-        </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
             <ShieldAlert className="h-4 w-4 mt-0.5 shrink-0" />

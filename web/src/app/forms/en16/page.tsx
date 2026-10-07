@@ -10,7 +10,6 @@ import { useClientContext } from "@/contexts/ClientContext";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { FileText, CheckCircle, Zap } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
@@ -20,6 +19,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Zod schema for form validation
 const en16Schema = z.object({
@@ -193,25 +193,7 @@ export default function EN16Form() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <Card variant="elevated">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Zap className="h-6 w-6 text-primary" />
-              <div>
-                <CardTitle className="text-2xl">EN-16 Form Generator</CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  DOL required questionnaire
-                </p>
-              </div>
-            </div>
-            <Badge variant="default" size="lg">
-              Energy Notification
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
+      <PageHeader />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
@@ -233,7 +215,7 @@ export default function EN16Form() {
           <Card variant="elevated">
             <CardHeader>
               <div className="flex items-center space-x-2">
-                <FileText className="h-5 w-5 text-success" />
+                <FileText className="h-5 w-5 text-primary" />
                 <CardTitle>Client Information</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -267,7 +249,6 @@ export default function EN16Form() {
         {/* Generate Button */}
         <Card
           variant="elevated"
-          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
         >
           <CardContent className="p-8">
             <div className="text-center space-y-6">
@@ -309,7 +290,7 @@ export default function EN16Form() {
                 </div>
                 <div>
                   <h3 className="text-lg font-medium text-foreground mb-2">
-                    🎉 EN-16 form generated successfully!
+                    EN-16 form generated
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Your EN-16 energy notification form has been downloaded and

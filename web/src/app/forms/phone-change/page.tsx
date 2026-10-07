@@ -27,6 +27,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Zod schema for form validation
 const phoneChangeSchema = z.object({
@@ -245,15 +246,7 @@ export default function PhoneChangeForm() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">
-          📞 Phone Number Change Letter Generator
-        </h1>
-        <p className="text-muted-foreground">
-          Generate formal phone number change notification letter for DOL case
-        </p>
-      </div>
+      <PageHeader />
 
       <form className="space-y-8">
         {/* Client Selection */}
@@ -277,7 +270,7 @@ export default function PhoneChangeForm() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-success" />
+              <User className="h-5 w-5 text-primary" />
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -331,7 +324,7 @@ export default function PhoneChangeForm() {
               <Input
                 label="New Phone Number"
                 required
-                placeholder="(555) 123-4567"
+                placeholder="e.g. (555) 123-4567"
                 error={
                   attemptedSubmit
                     ? form.formState.errors.phone_number?.message
@@ -356,7 +349,7 @@ export default function PhoneChangeForm() {
             type="button"
             onClick={handleSubmitClick}
             disabled={loading}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50 min-w-[200px]"
+            className="min-w-[200px]"
             size="xl"
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}

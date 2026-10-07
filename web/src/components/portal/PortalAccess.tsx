@@ -167,7 +167,7 @@ export function PortalAccess({ client, autoOpen = true }: PortalAccessProps) {
       <Card variant="elevated" className="bg-success/10 border-success/20">
         <CardHeader>
           <div className="flex items-center space-x-2">
-            <Globe className="h-5 w-5 text-success" />
+            <Globe className="h-5 w-5 text-primary" />
             <CardTitle className="text-success">
               DOL Portal Status
             </CardTitle>

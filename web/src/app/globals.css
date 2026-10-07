@@ -1,115 +1,111 @@
 @import "tailwindcss";
 @config "../../tailwind.config.js";
 
-/* SWNA Tools Design System - Apple HIG Enhanced */
+/* SWNA Tools design tokens — calm, system-native, one accent color.
+   Blue is the only accent; red means error or destructive, green means success. */
 :root {
-  /* Core Colors - Enhanced Contrast */
-  --background: #fafaf9;
-  --foreground: #18181b;
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
   --card: #ffffff;
-  --card-foreground: #18181b;
-  --primary: #6366f1;
+  --card-foreground: #1d1d1f;
+  --sidebar: #ececee;
+  --primary: #007aff;
   --primary-foreground: #ffffff;
-  --primary-hover: #5b21b6;
-  --primary-active: #4c1d95;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #3f3f46;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #e4e4e7;
-  --accent-foreground: #18181b;
-  --destructive: #ef4444;
+  --primary-hover: #0066d6;
+  --primary-active: #0055b3;
+  --secondary: #ffffff;
+  --secondary-foreground: #1d1d1f;
+  --muted: #f0f0f2;
+  --muted-foreground: #6e6e73;
+  --placeholder: #a1a1a6;
+  --accent: #e8e8ed;
+  --accent-foreground: #1d1d1f;
+  --destructive: #ff3b30;
   --destructive-foreground: #ffffff;
-  --destructive-hover: #dc2626;
-  --border: #d4d4d8;
-  --card-border: #e4e4e7;
+  --destructive-hover: #d70015;
+  --border: #d2d2d7;
+  --card-border: #d2d2d7;
   --input: #ffffff;
-  --ring: #6366f1;
-  
-  /* Success, Warning, Error - Enhanced */
-  --success: #10b981;
+  --ring: #007aff;
+
+  --success: #248a3d;
   --success-foreground: #ffffff;
-  --success-hover: #059669;
-  --warning: #f59e0b;
+  --success-hover: #1d7032;
+  --warning: #c93400;
   --warning-foreground: #ffffff;
-  --warning-hover: #d97706;
-  --error: #ef4444;
+  --warning-hover: #a52b00;
+  --error: #ff3b30;
   --error-foreground: #ffffff;
-  --error-hover: #dc2626;
-  
-  /* Surface Elevation System */
-  --surface-ground: #ffffff;
+  --error-hover: #d70015;
+
+  --surface-ground: #f5f5f7;
   --surface-raised: #ffffff;
   --surface-elevated: #ffffff;
   --surface-overlay: #ffffff;
-  
-  /* Enhanced Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-base: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  
-  /* Radius */
-  --radius: 0.5rem;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  
-  /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --radius: 0.625rem;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.08);
+  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.16);
+  --shadow-xl: 0 20px 40px -12px rgb(0 0 0 / 0.2);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
-/* Dark Mode - Apple HIG Enhanced */
 .dark {
-  --background: #18181b;
-  --foreground: #fafafa;
-  --card: #27272a;
-  --card-foreground: #fafafa;
-  --primary: #8b5cf6;
+  --background: #161618;
+  --foreground: #f5f5f7;
+  --card: #222224;
+  --card-foreground: #f5f5f7;
+  --sidebar: #1c1c1e;
+  --primary: #0a84ff;
   --primary-foreground: #ffffff;
-  --primary-hover: #7c3aed;
-  --primary-active: #6d28d9;
-  --secondary: #3f3f46;
-  --secondary-foreground: #d4d4d8;
-  --muted: #27272a;
-  --muted-foreground: #a1a1aa;
-  --accent: #3f3f46;
-  --accent-foreground: #fafafa;
-  --destructive: #ef4444;
+  --primary-hover: #2e94ff;
+  --primary-active: #0071e3;
+  --secondary: #2c2c2e;
+  --secondary-foreground: #f5f5f7;
+  --muted: #2c2c2e;
+  --muted-foreground: #98989f;
+  --placeholder: #636366;
+  --accent: #323235;
+  --accent-foreground: #f5f5f7;
+  --destructive: #ff453a;
   --destructive-foreground: #ffffff;
-  --destructive-hover: #dc2626;
-  --border: #3f3f46;
-  --card-border: #52525b;
-  --input: #27272a;
-  --ring: #8b5cf6;
-  
-  /* Success, Warning, Error - Dark Mode Enhanced */
-  --success: #10b981;
-  --success-foreground: #ffffff;
-  --success-hover: #059669;
-  --warning: #f59e0b;
-  --warning-foreground: #ffffff;
-  --warning-hover: #d97706;
-  --error: #ef4444;
+  --destructive-hover: #ff6961;
+  --border: #38383a;
+  --card-border: #38383a;
+  --input: #1c1c1e;
+  --ring: #0a84ff;
+
+  --success: #30d158;
+  --success-foreground: #0b2a14;
+  --success-hover: #4cd96e;
+  --warning: #ff9f0a;
+  --warning-foreground: #2a1a00;
+  --warning-hover: #ffb340;
+  --error: #ff453a;
   --error-foreground: #ffffff;
-  --error-hover: #dc2626;
-  
-  /* Surface Elevation System - Dark Mode */
-  --surface-ground: #09090b;
-  --surface-raised: #18181b;
-  --surface-elevated: #27272a;
-  --surface-overlay: #3f3f46;
-  
-  /* Dark mode shadows */
+  --error-hover: #ff6961;
+
+  --surface-ground: #161618;
+  --surface-raised: #1c1c1e;
+  --surface-elevated: #222224;
+  --surface-overlay: #2c2c2e;
+
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.4);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.35);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 32px -8px rgb(0 0 0 / 0.5);
+  --shadow-xl: 0 20px 40px -12px rgb(0 0 0 / 0.55);
+}
+
+/* Example text in a field must never look like a real value */
+::placeholder {
+  color: var(--placeholder);
+  opacity: 1;
 }
 
 /* Professional body styling */
@@ -135,7 +131,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--muted);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -149,7 +145,7 @@ body {
 
 /* Enhanced selection styling */
 ::selection {
-  background: #3b82f620;
+  background: color-mix(in srgb, var(--primary) 30%, transparent);
   color: var(--foreground);
 }
 
@@ -221,7 +217,7 @@ body {
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  :root {
+  :root:not(.dark) {
     --border: #000000;
     --foreground: #000000;
     --muted-foreground: #000000;

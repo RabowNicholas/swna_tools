@@ -416,7 +416,7 @@ export function EmploymentHistorySection({
                     <Input
                       label="State"
                       maxLength={2}
-                      placeholder="NM"
+                      placeholder="e.g. NM"
                       required
                       helperText="Two letter state code"
                       error={recordErrors?.state?.message}

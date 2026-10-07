@@ -253,7 +253,6 @@ export function EmailDraft({ client, doctor, formData }: EmailDraftProps) {
                     onClick={() => {
                       window.location.href = mailtoLink;
                     }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
                     size="lg"
                     icon={<ExternalLink className="h-5 w-5" />}
                   >

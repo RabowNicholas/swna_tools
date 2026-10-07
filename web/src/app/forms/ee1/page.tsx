@@ -28,6 +28,7 @@ import { ee1Schema, type EE1FormValues } from "@/lib/schemas/ee1";
 import { formatSSN, generateEE1 } from "@/lib/claims/generate";
 import { getStateAbbreviation } from "@/lib/states";
 import { trackEvent } from "@/lib/analytics";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 interface Client {
   id: string;
@@ -334,10 +335,10 @@ export default function EE1Form() {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <h3 className="text-lg font-medium text-foreground mb-2">
             Error Loading Clients
           </h3>
-          <p className="text-gray-600">{clientsError}</p>
+          <p className="text-muted-foreground">{clientsError}</p>
         </div>
       </div>
     );
@@ -345,18 +346,7 @@ export default function EE1Form() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Generate EE-1 Form
-          </h1>
-          <p className="text-muted-foreground">
-            Worker&apos;s Claim for Benefits Under the Energy Employees
-            Occupational Illness Compensation Program Act
-          </p>
-        </div>
-      </div>
+      <PageHeader />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
@@ -376,7 +366,7 @@ export default function EE1Form() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-success" />
+              <User className="h-5 w-5 text-primary" />
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -389,7 +379,7 @@ export default function EE1Form() {
               {/* Personal Details Column */}
               <div className="space-y-6">
                 <h4 className="font-medium text-foreground">
-                  👤 Personal Details
+                  Personal Details
                 </h4>
 
                 <Input
@@ -403,7 +393,7 @@ export default function EE1Form() {
                 <Input
                   label="Client's Middle Initial"
                   maxLength={1}
-                  placeholder="Q"
+                  placeholder="e.g. Q"
                   error={form.formState.errors.middle_initial?.message}
                   helperText="Optional - Enter middle initial only (single letter)"
                   {...form.register("middle_initial")}
@@ -419,7 +409,7 @@ export default function EE1Form() {
 
                 <Input
                   label="Client's Social Security Number"
-                  placeholder="123456789"
+                  placeholder="e.g. 123456789"
                   maxLength={9}
                   required
                   error={form.formState.errors.ssn?.message}
@@ -466,7 +456,7 @@ export default function EE1Form() {
               {/* Contact Information Column */}
               <div className="space-y-6">
                 <h4 className="font-medium text-foreground">
-                  🏠 Client&apos;s Contact Information
+                  Contact Information
                 </h4>
 
                 <Input
@@ -490,7 +480,7 @@ export default function EE1Form() {
                     label="State"
                     required
                     maxLength={2}
-                    placeholder="NY"
+                    placeholder="e.g. NM"
                     error={form.formState.errors.address_state?.message}
                     helperText="2-letter code"
                     {...form.register("address_state")}
@@ -501,7 +491,7 @@ export default function EE1Form() {
                   label="Client's ZIP Code"
                   required
                   maxLength={10}
-                  placeholder="12345"
+                  placeholder="e.g. 87101"
                   error={form.formState.errors.address_zip?.message}
                   helperText="5-digit ZIP code (e.g., 12345 or 12345-6789)"
                   {...form.register("address_zip")}
@@ -510,7 +500,7 @@ export default function EE1Form() {
                 <Input
                   label="Client's Phone Number"
                   required
-                  placeholder="555.123.4567"
+                  placeholder="e.g. 555.123.4567"
                   error={form.formState.errors.phone?.message}
                   helperText="Phone number in format: 123.123.1234"
                   {...form.register("phone")}
@@ -541,7 +531,6 @@ export default function EE1Form() {
             size="lg"
             loading={loading}
             icon={<FileDown className="h-4 w-4" />}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50"
           >
             {loading ? "Generating..." : "Generate EE-1"}
           </Button>

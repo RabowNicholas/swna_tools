@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Progress } from "@/components/ui/Progress";
-import { Badge } from "@/components/ui/Badge";
 import {
   FileDown,
   MapPin,
@@ -34,6 +33,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Zod schema for form validation (simplified to match Streamlit version)
 const addressChangeSchema = z.object({
@@ -278,15 +278,7 @@ export default function AddressChangeForm() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">
-          🏠 Address Change Letter Generator
-        </h1>
-        <p className="text-muted-foreground">
-          Generate formal address change notification letter for DOL case
-        </p>
-      </div>
+      <PageHeader />
 
       <form className="space-y-8">
         {/* Client Selection */}
@@ -310,7 +302,7 @@ export default function AddressChangeForm() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-success" />
+              <User className="h-5 w-5 text-primary" />
               <CardTitle>Client Information</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -364,7 +356,7 @@ export default function AddressChangeForm() {
               <Input
                 label="Street Address"
                 required
-                placeholder="123 Main Street"
+                placeholder="e.g. 123 Main St"
                 error={
                   attemptedSubmit
                     ? form.formState.errors.street_address?.message
@@ -379,7 +371,7 @@ export default function AddressChangeForm() {
                   <Input
                     label="City"
                     required
-                    placeholder="Anytown"
+                    placeholder="e.g. Albuquerque"
                     error={
                       attemptedSubmit
                         ? form.formState.errors.city?.message
@@ -391,7 +383,7 @@ export default function AddressChangeForm() {
                 <Input
                   label="State"
                   required
-                  placeholder="ST"
+                  placeholder="e.g. NM"
                   maxLength={2}
                   error={
                     attemptedSubmit
@@ -406,7 +398,7 @@ export default function AddressChangeForm() {
               <Input
                 label="ZIP Code"
                 required
-                placeholder="12345"
+                placeholder="e.g. 87101"
                 maxLength={5}
                 error={
                   attemptedSubmit
@@ -432,7 +424,7 @@ export default function AddressChangeForm() {
             type="button"
             onClick={handleSubmitClick}
             disabled={loading}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50 min-w-[200px]"
+            className="min-w-[200px]"
             size="xl"
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}

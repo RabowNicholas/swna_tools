@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
 import { FileEdit, CheckCircle, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { PortalAccess } from "@/components/portal/PortalAccess";
@@ -20,6 +19,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 // Zod schema for form validation
 const dolLetterSchema = z.object({
@@ -192,27 +192,7 @@ export default function DolLetterForm() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <Card variant="elevated">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <FileEdit className="h-6 w-6 text-primary" />
-              <div>
-                <CardTitle className="text-2xl">
-                  Draft Custom DOL Letter
-                </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Create a custom letter to the Department of Labor
-                </p>
-              </div>
-            </div>
-            <Badge variant="default" size="lg">
-              DOL Letter
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
+      <PageHeader />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {/* Client Selection */}
@@ -302,7 +282,6 @@ export default function DolLetterForm() {
         {/* Generate Button */}
         <Card
           variant="elevated"
-          className="border-2 border-primary/10 bg-gradient-to-br from-primary/5 via-background to-success/5"
         >
           <CardContent className="p-8">
             <div className="text-center space-y-6">

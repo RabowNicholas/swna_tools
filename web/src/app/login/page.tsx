@@ -47,7 +47,7 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card variant="elevated" className="w-full max-w-md">
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-4">

@@ -40,6 +40,7 @@ import {
   letterConditions,
 } from "@/lib/generators/letter-templates";
 import { assembleClaim, formatPageRange } from "@/lib/claims/assemble";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const CONDITIONS = letterConditions();
 
@@ -528,14 +529,7 @@ export default function DoctorLetterForm() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <div className="space-y-4">
-        <h1 className="text-3xl font-bold text-foreground">
-          🩺 Doctor Letter Drafting
-        </h1>
-        <p className="text-muted-foreground">
-          Draft a causation letter for a physician to review and sign.
-        </p>
-      </div>
+      <PageHeader />
 
       <form className="space-y-8">
         <ClientSelector
@@ -600,7 +594,7 @@ export default function DoctorLetterForm() {
         <Card variant="elevated">
           <CardHeader>
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-success" />
+              <User className="h-5 w-5 text-primary" />
               <CardTitle>Employee</CardTitle>
             </div>
             <p className="text-sm text-muted-foreground">
@@ -709,7 +703,7 @@ export default function DoctorLetterForm() {
                   required
                   error={err("position")}
                   helperText='Just the title — "a" or "an" is added automatically'
-                  placeholder="electrician"
+                  placeholder="e.g. electrician"
                   {...form.register("position")}
                 />
                 <Input
@@ -836,7 +830,7 @@ export default function DoctorLetterForm() {
                             employmentBasis === "doe_verified" ? undefined : 4
                           }
                           placeholder={
-                            employmentBasis === "doe_verified" ? undefined : "1982"
+                            employmentBasis === "doe_verified" ? undefined : "YYYY"
                           }
                           error={rangeErrors?.from?.message}
                           {...form.register(`work_date_ranges.${index}.from`)}
@@ -855,7 +849,7 @@ export default function DoctorLetterForm() {
                             employmentBasis === "doe_verified" ? undefined : 4
                           }
                           placeholder={
-                            employmentBasis === "doe_verified" ? undefined : "1986"
+                            employmentBasis === "doe_verified" ? undefined : "YYYY"
                           }
                           error={rangeErrors?.to?.message}
                           {...form.register(`work_date_ranges.${index}.to`)}
@@ -936,7 +930,7 @@ export default function DoctorLetterForm() {
                     rows={4}
                     error={err("impression")}
                     helperText="Quoted verbatim in the letter. Omit the surrounding quotation marks — the letter supplies them."
-                    placeholder="Small rounded opacities, profusion 1/0, primarily in the upper lung zones"
+                    placeholder="e.g. Small rounded opacities, profusion 1/0, primarily in the upper lung zones"
                     {...form.register("impression")}
                   />
 
@@ -1067,7 +1061,7 @@ export default function DoctorLetterForm() {
             type="button"
             onClick={handleSubmitClick}
             disabled={loading || !template}
-            className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-500/50 min-w-[200px]"
+            className="min-w-[200px]"
             size="xl"
             loading={loading}
             icon={<FileDown className="h-5 w-5" />}
