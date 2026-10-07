@@ -241,10 +241,17 @@ export default function ProcedureManualPage() {
                 </div>
               ) : ask?.answer ? (
                 <>
+                  <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-200">
+                    <Sparkles className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>
+                      <strong>This answer is AI-generated and may contain mistakes.</strong> Verify the details against the
+                      Procedure Manual sources below before relying on it.
+                    </span>
+                  </div>
                   <AnswerText text={ask.answer} knownCites={knownCites} onCiteClick={jumpToCite} />
                   <p className="border-t border-border pt-3 text-xs text-muted-foreground">
-                    AI-written summary — check the sources below before relying on it. Quotation marks are used only for
-                    text verified word-for-word against the manual.
+                    Click a cite to jump to its source. Quotation marks are used only for text verified word-for-word
+                    against the manual.
                   </p>
                 </>
               ) : (

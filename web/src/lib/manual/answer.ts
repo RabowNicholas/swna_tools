@@ -8,7 +8,9 @@ import type { AskResponse, ManualData, ManualUnit } from './types';
 // unavailable (no key, rate limit, outage) it still returns the sources.
 
 const MAX_SOURCES = 8;
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+// Free-tier models, tried in order: a busy (503) or rate-limited (429) model
+// falls through to the next, since each has its own quota.
+const GEMINI_MODELS = [process.env.GEMINI_MODEL || 'gemini-flash-latest', 'gemini-flash-lite-latest'];
 
 let index: ManualIndex | null = null;
 function getIndex() {
@@ -48,32 +50,42 @@ export async function askManual(question: string, sourceIds?: string[]): Promise
   if (!apiKey) return { answer: null, sources, unavailableReason: 'AI answers aren’t set up yet (no GEMINI_API_KEY).' };
   if (!sources.length) return { answer: null, sources, unavailableReason: 'No matching sections found.' };
 
-  let res: Response;
-  try {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: `Excerpts from the Procedure Manual:\n\n${formatSources(sources)}\n\n===\n\nQuestion: ${question}` }],
-          },
-        ],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
-      }),
-      signal: AbortSignal.timeout(25_000),
-    });
-  } catch (err) {
-    console.error('Gemini request failed:', err);
-    return { answer: null, sources, unavailableReason: 'The AI service didn’t respond.' };
+  const request = JSON.stringify({
+    systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: `Excerpts from the Procedure Manual:\n\n${formatSources(sources)}\n\n===\n\nQuestion: ${question}` }],
+      },
+    ],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
+  });
+
+  let res: Response | null = null;
+  for (const model of GEMINI_MODELS) {
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+        body: request,
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch (err) {
+      console.error(`Gemini request to ${model} failed:`, err);
+      res = null;
+      continue;
+    }
+    if (res.ok) break;
+    console.error('Gemini error', model, res.status, (await res.text()).slice(0, 300));
+    if (res.status !== 429 && res.status !== 503) break;
   }
 
+  if (!res) return { answer: null, sources, unavailableReason: 'The AI service didn’t respond.' };
   if (!res.ok) {
-    console.error('Gemini error', res.status, (await res.text()).slice(0, 500));
     const reason =
-      res.status === 429 ? 'The free AI limit has been reached for now.' : `The AI service returned an error (${res.status}).`;
+      res.status === 429 ? 'The free AI limit has been reached for now.'
+      : res.status === 503 ? 'The free AI service is busy right now — try again in a minute.'
+      : `The AI service returned an error (${res.status}).`;
     return { answer: null, sources, unavailableReason: reason };
   }
 
