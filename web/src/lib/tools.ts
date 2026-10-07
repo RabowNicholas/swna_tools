@@ -112,6 +112,15 @@ export const TOOL_SECTIONS: ToolSection[] = [
     ],
   },
   {
+    id: "billing",
+    title: "Billing",
+    summary: "Invoice clients after an award.",
+    icon: Receipt,
+    tools: [
+      { name: "Invoice", href: "/forms/invoice", description: "Create an invoice for a client." },
+    ],
+  },
+  {
     id: "manage",
     title: "Manage",
     summary: "The claims pipeline and weekly reports.",
@@ -120,16 +129,6 @@ export const TOOL_SECTIONS: ToolSection[] = [
     tools: [
       { name: "Claims Pipeline", href: "/pipeline", description: "See where every claim stands and what needs follow-up." },
       { name: "AO Weekly Report", href: "/reports/ao-weekly", description: "Find AO clients with recent claim activity to report." },
-    ],
-  },
-  {
-    id: "billing",
-    title: "Billing",
-    summary: "Invoice clients after an award.",
-    icon: Receipt,
-    manage: true,
-    tools: [
-      { name: "Invoice", href: "/forms/invoice", description: "Create an invoice for a client." },
     ],
   },
 ];
