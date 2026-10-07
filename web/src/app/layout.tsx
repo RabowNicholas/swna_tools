@@ -4,7 +4,7 @@ import { LayoutProvider } from "@/components/layout/LayoutProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ClientProvider } from "@/contexts/ClientContext";
 import { SessionProvider } from "@/components/auth/SessionProvider";
-import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
+import { UsageTracker } from "@/components/layout/UsageTracker";
 
 export const metadata: Metadata = {
   title: "SWNA Tools",
@@ -32,15 +32,14 @@ export default function RootLayout({
       </head>
       <body className="h-full bg-background antialiased">
         <SessionProvider>
-          <AnalyticsProvider>
-            <ThemeProvider defaultTheme="dark" storageKey="swna-theme">
-              <ClientProvider>
-                <LayoutProvider>
-                  {children}
-                </LayoutProvider>
-              </ClientProvider>
-            </ThemeProvider>
-          </AnalyticsProvider>
+          <UsageTracker />
+          <ThemeProvider defaultTheme="dark" storageKey="swna-theme">
+            <ClientProvider>
+              <LayoutProvider>
+                {children}
+              </LayoutProvider>
+            </ClientProvider>
+          </ThemeProvider>
         </SessionProvider>
       </body>
     </html>

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useSession } from "next-auth/react";
 import { Loader2, MessageCircleQuestion, Quote, Search, ShieldAlert, Sparkles } from "lucide-react";
-import { trackEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/Card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -42,10 +41,6 @@ export default function ProcedureManualPage() {
   const [askError, setAskError] = useState<string | null>(null);
   const [highlight, setHighlight] = useState<string | null>(null);
   const searchSeq = useRef(0);
-
-  useEffect(() => {
-    if (session?.user) trackEvent.formViewed("procedure-manual", session.user.id);
-  }, [session]);
 
   // The manual (~4 MB) loads in its own chunk; the search model loads after it.
   useEffect(() => {

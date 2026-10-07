@@ -13,6 +13,7 @@
  */
 
 import { AssemblyError } from './assemble';
+import { SOURCE_HEADER } from '@/lib/events/source';
 import type { DiagnosisCategories } from '@/components/form/DiagnosisCategories';
 import type { EmploymentRecord } from '@/components/form/EmploymentHistory';
 
@@ -83,7 +84,12 @@ async function requestPdf(
   slotId: string,
   label: string
 ): Promise<ArrayBuffer> {
-  const response = await fetch(url, init);
+  // Tells usage tracking these runs came from Claims Assembly, not the EE-1/EE-3 pages
+  const headers = new Headers(init.headers);
+  if (window.location.pathname === '/forms/claims-assembly') {
+    headers.set(SOURCE_HEADER, 'claims-assembly');
+  }
+  const response = await fetch(url, { ...init, headers });
 
   const isPdf = response.headers.get('content-type')?.includes('pdf');
   if (!response.ok || !isPdf) {

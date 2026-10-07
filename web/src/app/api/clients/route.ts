@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { airtableService } from '@/lib/airtable';
 import { requireAuth } from '@/lib/auth';
+import { withToolTracking } from '@/lib/events/with-tracking';
 
 export async function GET() {
   try {
@@ -25,7 +26,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     // Require authentication
     await requireAuth();
@@ -137,3 +138,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withToolTracking('clients', handlePOST);

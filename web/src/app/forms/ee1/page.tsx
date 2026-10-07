@@ -26,7 +26,6 @@ import { SignatureUpload } from "@/components/form/SignatureUpload";
 import { ee1Schema, type EE1FormValues } from "@/lib/schemas/ee1";
 import { formatSSN, generateEE1 } from "@/lib/claims/generate";
 import { getStateAbbreviation } from "@/lib/states";
-import { trackEvent } from "@/lib/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
@@ -56,12 +55,6 @@ export default function EE1Form() {
   } = useClients();
   const [loading, setLoading] = useState(false);
 
-  // Track form view
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed('ee1', session.user.id);
-    }
-  }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
@@ -289,11 +282,6 @@ export default function EE1Form() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
-      // Track PDF generation
-      if (session?.user) {
-        trackEvent.pdfGenerated('ee1', session.user.id, data.client_id);
-      }
 
       setFormSubmitted(true);
       setSubmittedClient(selectedClient);

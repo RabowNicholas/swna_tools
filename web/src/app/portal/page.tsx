@@ -5,7 +5,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { Client } from "@/lib/clientStorage";
-import { trackEvent } from "@/lib/analytics";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
@@ -178,11 +177,6 @@ function PortalPageContent() {
   const formType = searchParams.get("formType") || "form";
 
   // Track page view
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed('portal', session.user.id);
-    }
-  }, [session]);
 
   // Handle client pre-selection from URL params and auto-open portal
   useEffect(() => {

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
-import { trackEvent } from "@/lib/analytics";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -90,12 +89,6 @@ export default function InvoiceForm() {
   } = useClients();
   const [loading, setLoading] = useState(false);
 
-  // Track form view
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed('invoice', session.user.id);
-    }
-  }, [session]);
   const [lastSelectedClient, setLastSelectedClient] = useState<string>("");
 
   const form = useForm<InvoiceFormData>({
@@ -347,10 +340,6 @@ export default function InvoiceForm() {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        // Track PDF generation
-        if (session?.user) {
-          trackEvent.pdfGenerated('invoice', session.user.id, data.client_id);
-        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to generate invoice");

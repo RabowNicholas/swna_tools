@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
-import { trackEvent } from "@/lib/analytics";
+import { track } from "@/lib/events/client";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -198,12 +198,6 @@ export default function EE10Form() {
   const [irError, setIrError] = useState<string | null>(null);
   const [irLoading, setIrLoading] = useState(false);
 
-  // Track form view
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed('ee10', session.user.id);
-    }
-  }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
@@ -329,10 +323,7 @@ export default function EE10Form() {
       return;
     }
 
-    // Track skip mode usage (similar to PDF generation tracking)
-    if (session?.user) {
-      trackEvent.formViewed('ee10-skip', session.user.id);
-    }
+    track({ type: 'tool_used', tool: 'ee10', clientId: selectedClient.id, props: { mode: 'skip' } });
 
     setFormSubmitted(true);
     setSubmittedClient(selectedClient);
@@ -420,11 +411,6 @@ export default function EE10Form() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-
-        // Track PDF generation
-        if (session?.user) {
-          trackEvent.pdfGenerated('ee10', session.user.id, data.client_id);
-        }
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);

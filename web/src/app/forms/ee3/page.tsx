@@ -22,7 +22,6 @@ import {
 } from "@/components/form/EmploymentHistory";
 import { ee3Schema, type EE3FormValues } from "@/lib/schemas/ee3";
 import { formatSSN, generateEE3 } from "@/lib/claims/generate";
-import { trackEvent } from "@/lib/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
@@ -38,12 +37,6 @@ export default function EE3Form() {
   } = useClients();
   const [loading, setLoading] = useState(false);
 
-  // Track form view
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed('ee3', session.user.id);
-    }
-  }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [collapsedEmployment, setCollapsedEmployment] = useState<Set<number>>(
     new Set()
@@ -207,11 +200,6 @@ export default function EE3Form() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
-      // Track PDF generation
-      if (session?.user) {
-        trackEvent.pdfGenerated('ee3', session.user.id, data.client_id);
-      }
 
       setFormSubmitted(true);
     } catch (error) {

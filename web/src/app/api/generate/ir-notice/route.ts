@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { LaPlataNoticeGenerator } from '@/lib/generators/ir-notice-generator';
+import { withToolTracking } from '@/lib/events/with-tracking';
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     await requireAuth();
 
@@ -47,3 +48,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withToolTracking('ir-notice', handlePOST);

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
-import { trackEvent } from "@/lib/analytics";
 import { TextTemplateCard } from "@/components/text/TextTemplateCard";
 import {
   ClientSelector,
@@ -29,12 +28,6 @@ export default function TextMessageForm() {
     refreshClients,
   } = useClients();
   const [clientId, setClientId] = useState("");
-
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed("text-message", session.user.id);
-    }
-  }, [session]);
 
   const selectedClient = clients.find((c) => c.id === clientId) as
     | Client

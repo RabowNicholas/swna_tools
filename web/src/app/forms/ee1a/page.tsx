@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
-import { trackEvent } from "@/lib/analytics";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -189,12 +188,6 @@ export default function EE1AForm() {
   } = useClients();
   const [loading, setLoading] = useState(false);
 
-  // Track form view
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed('ee1a', session.user.id);
-    }
-  }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
@@ -435,11 +428,6 @@ export default function EE1AForm() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-
-        // Track PDF generation
-        if (session?.user) {
-          trackEvent.pdfGenerated('ee1a', session.user.id, data.client_id);
-        }
 
         setFormSubmitted(true);
       } else {

@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
-import { trackEvent } from "@/lib/analytics";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -207,12 +206,6 @@ export default function DoctorLetterForm() {
   // The file input is uncontrolled, so clearing state alone leaves the old filename on
   // screen. Bumping this remounts it.
   const [uploadGeneration, setUploadGeneration] = useState(0);
-
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed("doctor-letter", session.user.id);
-    }
-  }, [session]);
 
   const form = useForm<DoctorLetterFormData>({
     resolver: zodResolver(doctorLetterSchema),
@@ -473,10 +466,6 @@ export default function DoctorLetterForm() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-
-      if (session?.user) {
-        trackEvent.pdfGenerated("doctor-letter", session.user.id, data.client_id);
-      }
 
       setFormSubmitted(true);
       setSubmittedClient(selectedClient);

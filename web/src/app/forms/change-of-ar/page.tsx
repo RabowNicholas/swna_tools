@@ -22,7 +22,6 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
-import { trackEvent } from "@/lib/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
@@ -59,12 +58,6 @@ export default function ChangeOfARForm() {
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [showSignaturePreview, setShowSignaturePreview] = useState(false);
-
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed("change-of-ar", session.user.id);
-    }
-  }, [session]);
 
   const form = useForm<ChangeOfARFormData>({
     resolver: zodResolver(changeOfARSchema),
@@ -159,14 +152,6 @@ export default function ChangeOfARForm() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-
-        if (session?.user) {
-          trackEvent.pdfGenerated(
-            "change-of-ar",
-            session.user.id,
-            data.client_id
-          );
-        }
 
         setFormSubmitted(true);
       } else {

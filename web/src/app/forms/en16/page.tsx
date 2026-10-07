@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
-import { trackEvent } from "@/lib/analytics";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useClientContext } from "@/contexts/ClientContext";
@@ -49,12 +48,6 @@ export default function EN16Form() {
   } = useClientContext();
   const [loading, setLoading] = useState(false);
 
-  // Track form view
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed('en16', session.user.id);
-    }
-  }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
   // Bumped per generated form, and used as the log card's key so a regenerated
@@ -142,11 +135,6 @@ export default function EN16Form() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-
-        // Track PDF generation
-        if (session?.user) {
-          trackEvent.pdfGenerated('en16', session.user.id, data.client_id);
-        }
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);

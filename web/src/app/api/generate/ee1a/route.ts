@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { EE1AGenerator } from '@/lib/generators/ee1a-generator';
+import { withToolTracking } from '@/lib/events/with-tracking';
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     await requireAuth();
 
@@ -60,3 +61,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withToolTracking('ee1a', handlePOST);

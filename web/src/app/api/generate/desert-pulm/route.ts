@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { DesertPulmReferralGenerator } from '@/lib/generators/desert-pulm-generator';
+import { withToolTracking } from '@/lib/events/with-tracking';
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     await requireAuth();
 
@@ -48,3 +49,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withToolTracking('desert-pulm', handlePOST);

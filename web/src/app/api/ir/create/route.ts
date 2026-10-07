@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { airtableService } from '@/lib/airtable';
+import { withToolTracking } from '@/lib/events/with-tracking';
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     console.log('[IR Create] Request started at', new Date().toISOString());
 
@@ -39,3 +40,5 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+export const POST = withToolTracking('ir-create', handlePOST);

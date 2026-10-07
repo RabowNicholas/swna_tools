@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
-import { trackEvent } from "@/lib/analytics";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useClientContext } from "@/contexts/ClientContext";
@@ -53,12 +52,6 @@ export default function WithdrawalForm() {
   } = useClientContext();
   const [loading, setLoading] = useState(false);
 
-  // Track form view
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed('withdrawal', session.user.id);
-    }
-  }, [session]);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
   // The condition as it was written into the letter, so a later edit to the
@@ -144,11 +137,6 @@ export default function WithdrawalForm() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-
-        // Track PDF generation
-        if (session?.user) {
-          trackEvent.pdfGenerated('withdrawal', session.user.id, data.client_id);
-        }
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);

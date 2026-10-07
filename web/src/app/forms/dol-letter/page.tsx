@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
-import { trackEvent } from "@/lib/analytics";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useClientContext } from "@/contexts/ClientContext";
@@ -52,13 +51,6 @@ export default function DolLetterForm() {
     refreshClients,
   } = useClientContext();
   const [loading, setLoading] = useState(false);
-
-  // Track form view
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed('dol-letter', session.user.id);
-    }
-  }, [session]);
 
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
@@ -137,11 +129,6 @@ export default function DolLetterForm() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-
-        // Track PDF generation
-        if (session?.user) {
-          trackEvent.pdfGenerated('dol-letter', session.user.id, data.client_id);
-        }
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);

@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { after, NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { askManual } from '@/lib/manual/answer';
+import { recordEvent } from '@/lib/events/record';
 
 export async function POST(request: NextRequest) {
   try {
-    await requireAuth();
+    const session = await requireAuth();
 
     const { question, sourceIds } = await request.json();
     if (typeof question !== 'string' || !question.trim()) {
@@ -15,7 +16,25 @@ export async function POST(request: NextRequest) {
     }
 
     const ids = Array.isArray(sourceIds) ? sourceIds.filter((id): id is string => typeof id === 'string') : undefined;
-    return NextResponse.json(await askManual(question.trim(), ids));
+    const started = Date.now();
+    const result = await askManual(question.trim(), ids);
+
+    // What people ask shows where the manual (and the app) has gaps
+    after(() =>
+      recordEvent({
+        type: 'manual_ask',
+        tool: 'procedure-manual',
+        userEmail: session.user?.email,
+        userName: session.user?.name,
+        ok: !!result.answer,
+        durationMs: Date.now() - started,
+        path: '/guides/procedure-manual',
+        error: result.unavailableReason ?? null,
+        props: { question: question.trim().slice(0, 500), sources: result.sources.length },
+      })
+    );
+
+    return NextResponse.json(result);
   } catch (error) {
     if (error instanceof Error && error.message === 'Unauthorized') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

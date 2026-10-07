@@ -24,6 +24,7 @@ import {
   renderTemplateText,
   TEXT_TEMPLATES,
 } from "@/lib/text-templates";
+import { track } from "@/lib/events/client";
 
 interface Client {
   id: string;
@@ -213,6 +214,7 @@ export function TextTemplateCard({
       }
 
       setLogged(true);
+      track({ type: "tool_used", tool: "text-message", clientId: client.id });
     } catch (error) {
       console.error("Error logging text to Airtable:", error);
       setLogError(

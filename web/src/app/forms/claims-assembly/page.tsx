@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { trackEvent } from "@/lib/analytics";
+import { track } from "@/lib/events/client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -174,12 +174,6 @@ export default function ClaimsAssemblyPage() {
   const { data: session } = useSession();
   const { clients, loading: clientsLoading, error: clientsError, refreshClients } =
     useClientContext();
-
-  useEffect(() => {
-    if (session?.user) {
-      trackEvent.formViewed("claims-assembly", session.user.id);
-    }
-  }, [session]);
 
   const form = useForm<ClaimFormValues>({
     resolver: zodResolver(claimSchema),
@@ -525,9 +519,7 @@ export default function ClaimsAssemblyPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      if (session?.user) {
-        trackEvent.pdfGenerated("claims-assembly", session.user.id, data.client_id);
-      }
+      track({ type: "tool_used", tool: "claims-assembly", clientId: data.client_id });
 
       setResult({ name, ranges: assembled.ranges, pageCount: assembled.pageCount });
     } catch (err) {

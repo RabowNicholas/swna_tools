@@ -8,6 +8,7 @@ import { Search, LogOut, Sun, Moon, Monitor } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TOOL_SECTIONS, searchTools } from '@/lib/tools';
 import { useTheme } from '@/components/theme/ThemeProvider';
+import { track } from '@/lib/events/client';
 
 function NavLink({
   href,
@@ -91,7 +92,18 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  // A search is worth recording once it's finished: when someone picks a result
+  // or gives up and leaves the box. Searches that find nothing show missing tools.
+  const recordedSearch = useRef<string | null>(null);
+  const recordSearch = (picked: string | null) => {
+    const q = query.trim();
+    if (!q || recordedSearch.current === q) return;
+    recordedSearch.current = q;
+    track({ type: 'search', props: { query: q.slice(0, 100), results: results.length, picked } });
+  };
+
   const go = (href: string) => {
+    recordSearch(href);
     setQuery('');
     setHighlight(0);
     inputRef.current?.blur();
@@ -110,6 +122,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       e.preventDefault();
       go(results[highlight].tool.href);
     } else if (e.key === 'Escape') {
+      recordSearch(null);
       setQuery('');
       inputRef.current?.blur();
     }
@@ -138,8 +151,14 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             onChange={(e) => {
               setQuery(e.target.value);
               setHighlight(0);
+              recordedSearch.current = null;
             }}
             onKeyDown={onSearchKey}
+            onBlur={() => {
+              // Clicking a result blurs the box before the click lands, so wait
+              // a beat and let the click record the search with what was picked
+              setTimeout(() => recordSearch(null), 300);
+            }}
             placeholder="Find a tool"
             aria-label="Find a tool"
             className="w-full rounded-lg border border-input-border bg-input py-1.5 pl-8 pr-10 text-[0.875rem] text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
@@ -205,6 +224,12 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 </div>
               </div>
             ))}
+            {session?.user?.role === 'admin' && (
+              <div className="mt-5">
+                <h2 className="px-2.5 pb-1 text-xs font-semibold text-muted-foreground">Admin</h2>
+                <NavLink href="/admin/usage" onNavigate={onNavigate}>Usage</NavLink>
+              </div>
+            )}
           </>
         )}
       </nav>
