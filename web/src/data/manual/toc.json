@@ -1,0 +1,1652 @@
+{
+ "meta": {
+  "title": "Federal (EEOICPA) Procedure Manual",
+  "version": "10.1",
+  "published": "September 21, 2026",
+  "unitCount": 2778
+ },
+ "chapters": [
+  {
+   "num": 1,
+   "title": "Definitions",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Definitions"
+    }
+   ]
+  },
+  {
+   "num": 2,
+   "title": "The EEOICPA",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "The EEOICPA"
+    },
+    {
+     "num": 3,
+     "title": "Organization"
+    },
+    {
+     "num": 4,
+     "title": "Training"
+    },
+    {
+     "num": 5,
+     "title": "Resources"
+    }
+   ]
+  },
+  {
+   "num": 3,
+   "title": "General Provisions",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Provisions of the EEOICPA"
+    },
+    {
+     "num": 3,
+     "title": "National Instant Criminal Background Check System (NICS) Improvement Amendments Act of 2007 (NIAA)"
+    }
+   ]
+  },
+  {
+   "num": 4,
+   "title": "Customer Service",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "DEEOIC Standards for Customer Service"
+    },
+    {
+     "num": 3,
+     "title": "Telephone Communications"
+    },
+    {
+     "num": 4,
+     "title": "Written Communications"
+    }
+   ]
+  },
+  {
+   "num": 5,
+   "title": "Program Directives",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Directives"
+    },
+    {
+     "num": 3,
+     "title": "Procedure Manual"
+    },
+    {
+     "num": 4,
+     "title": "Maintenance and Revision"
+    }
+   ]
+  },
+  {
+   "num": 6,
+   "title": "Processing Mail",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Types of Mail"
+    },
+    {
+     "num": 3,
+     "title": "Electronic Recordkeeping"
+    },
+    {
+     "num": 4,
+     "title": "Unreviewed Mail Notification"
+    },
+    {
+     "num": 5,
+     "title": "Handling of Mail Received in a DEEOIC Office"
+    },
+    {
+     "num": 6,
+     "title": "Physical Evidence"
+    },
+    {
+     "num": 7,
+     "title": "PII"
+    },
+    {
+     "num": 8,
+     "title": "Outgoing Mail"
+    },
+    {
+     "num": 9,
+     "title": "Returned Mail"
+    }
+   ]
+  },
+  {
+   "num": 7,
+   "title": "Case Creation",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "New Cases"
+    },
+    {
+     "num": 3,
+     "title": "Receipt of a New Claim"
+    },
+    {
+     "num": 4,
+     "title": "Assignment of Claims to a DO"
+    },
+    {
+     "num": 5,
+     "title": "Creating Cases in ECS"
+    },
+    {
+     "num": 6,
+     "title": "CE Review"
+    },
+    {
+     "num": 7,
+     "title": "Creating a Claim Under Part B vs"
+    },
+    {
+     "num": 8,
+     "title": "New Claims in Existing Cases"
+    },
+    {
+     "num": 9,
+     "title": "Withdrawal of a Claim"
+    }
+   ]
+  },
+  {
+   "num": 8,
+   "title": "Case Maintenance",
+   "sections": []
+  },
+  {
+   "num": 9,
+   "title": "Transfers and Loans",
+   "sections": []
+  },
+  {
+   "num": 10,
+   "title": "Resource Centers",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "RC Functions"
+    },
+    {
+     "num": 3,
+     "title": "ECS Usage in the RC"
+    },
+    {
+     "num": 4,
+     "title": "Security, Privacy, Conflicts of Interest"
+    },
+    {
+     "num": 5,
+     "title": "Occupational History Development"
+    },
+    {
+     "num": 6,
+     "title": "Transfer of Cases"
+    },
+    {
+     "num": 7,
+     "title": "RC File Retention"
+    }
+   ]
+  },
+  {
+   "num": 11,
+   "title": "Initial Development",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Review for Potential Development"
+    },
+    {
+     "num": 3,
+     "title": "Sources of Evidence"
+    },
+    {
+     "num": 4,
+     "title": "Advising the Claimant of Deficient Evidence"
+    },
+    {
+     "num": 5,
+     "title": "Requesting Evidence by Telephone"
+    },
+    {
+     "num": 6,
+     "title": "Former Part D Claims"
+    },
+    {
+     "num": 7,
+     "title": "DOE Former Worker Program (FWP)"
+    },
+    {
+     "num": 8,
+     "title": "Terminally Ill Claimants"
+    },
+    {
+     "num": 9,
+     "title": "Correspondence Creation and Tracking System (CCAT)"
+    }
+   ]
+  },
+  {
+   "num": 12,
+   "title": "Representative Services",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Authority"
+    },
+    {
+     "num": 3,
+     "title": "Length of Appointment"
+    },
+    {
+     "num": 4,
+     "title": "AR’s Role"
+    },
+    {
+     "num": 5,
+     "title": "Authority of an Attorney-in-Fact or Legal Conservator/Guardian"
+    },
+    {
+     "num": 6,
+     "title": "Interaction with Representatives"
+    },
+    {
+     "num": 7,
+     "title": "Representative Conflict of Interest Guidance"
+    },
+    {
+     "num": 8,
+     "title": "Representative Fees"
+    },
+    {
+     "num": 9,
+     "title": "Privacy Act Waivers"
+    }
+   ]
+  },
+  {
+   "num": 13,
+   "title": "Establishing Covered Employment",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Facility Coverage"
+    },
+    {
+     "num": 3,
+     "title": "Comparing Initial Claimed Employment to the Covered Facilities Database"
+    },
+    {
+     "num": 4,
+     "title": "Matching Claimed Employment"
+    },
+    {
+     "num": 5,
+     "title": "Verification of Employment"
+    },
+    {
+     "num": 6,
+     "title": "EPOD"
+    },
+    {
+     "num": 7,
+     "title": "Using the ORISE Database"
+    },
+    {
+     "num": 8,
+     "title": "Contacting DOE and Using the Secure Electronic Record Transfer System (SERT)"
+    },
+    {
+     "num": 9,
+     "title": "Contacting Corporate Verifiers"
+    },
+    {
+     "num": 10,
+     "title": "Verifying Employment Through SSA"
+    },
+    {
+     "num": 11,
+     "title": "Center for Construction Research and Training"
+    },
+    {
+     "num": 12,
+     "title": "Other Employment Evidence"
+    },
+    {
+     "num": 13,
+     "title": "Subcontractor Employment"
+    },
+    {
+     "num": 14,
+     "title": "Researcher Employment at DOE Facilities"
+    },
+    {
+     "num": 15,
+     "title": "Employees of Federal or State Governments Other Than DOE and its Predecessors"
+    },
+    {
+     "num": 16,
+     "title": "Evaluating Evidence to Verify Employment"
+    },
+    {
+     "num": 17,
+     "title": "Developing Non-Covered Employment"
+    },
+    {
+     "num": 18,
+     "title": "Additions or Modifications to Facility Status"
+    },
+    {
+     "num": 19,
+     "title": "Special Circumstances"
+    }
+   ]
+  },
+  {
+   "num": 14,
+   "title": "Establishing Special Exposure Cohort Status",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Identifying SEC Claims"
+    },
+    {
+     "num": 3,
+     "title": "Determining SEC Eligibility"
+    },
+    {
+     "num": 4,
+     "title": "Statutory SEC Classes"
+    },
+    {
+     "num": 5,
+     "title": "Additional SEC Classes"
+    },
+    {
+     "num": 6,
+     "title": "Workday Requirement"
+    },
+    {
+     "num": 7,
+     "title": "Specified Cancers"
+    },
+    {
+     "num": 8,
+     "title": "Procedures for Processing SEC Claims"
+    }
+   ]
+  },
+  {
+   "num": 15,
+   "title": "Establishing Toxic Substance Exposure and Causation",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Toxic Substances"
+    },
+    {
+     "num": 3,
+     "title": "Health Effects"
+    },
+    {
+     "num": 4,
+     "title": "Toxicologist Review"
+    },
+    {
+     "num": 5,
+     "title": "Sources of Exposure Data"
+    },
+    {
+     "num": 6,
+     "title": "Requesting the DAR"
+    },
+    {
+     "num": 7,
+     "title": "SEM"
+    },
+    {
+     "num": 8,
+     "title": "Using SEM in Exposure Development"
+    },
+    {
+     "num": 9,
+     "title": "Establishing Likely Exposure"
+    },
+    {
+     "num": 10,
+     "title": "Exposure Presumptions"
+    },
+    {
+     "num": 11,
+     "title": "IH Review"
+    },
+    {
+     "num": 12,
+     "title": "Radiation Exposure Under Part E and HP Review"
+    },
+    {
+     "num": 13,
+     "title": "Establishing Causation/Aggravation/Contribution"
+    },
+    {
+     "num": 14,
+     "title": "Validating SEM Data Prior to Issuance of RD and FD"
+    }
+   ]
+  },
+  {
+   "num": 16,
+   "title": "Developing and Weighing Medical Evidence",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Sources of Medical Evidence"
+    },
+    {
+     "num": 3,
+     "title": "Types of Medical Evidence"
+    },
+    {
+     "num": 4,
+     "title": "Contents of a Medical Report"
+    },
+    {
+     "num": 5,
+     "title": "Developing Medical Evidence"
+    },
+    {
+     "num": 6,
+     "title": "Weighing Medical Evidence"
+    },
+    {
+     "num": 7,
+     "title": "Using Death Certificate to Establish Diagnosis"
+    },
+    {
+     "num": 8,
+     "title": "Using Affidavits to Establish Date of Diagnosis"
+    },
+    {
+     "num": 9,
+     "title": "Reviews by a CMC"
+    },
+    {
+     "num": 10,
+     "title": "Deciding on Need for a CMC Referral"
+    },
+    {
+     "num": 11,
+     "title": "Referral to CMC"
+    },
+    {
+     "num": 12,
+     "title": "Role of CA in CMC Referrals"
+    },
+    {
+     "num": 13,
+     "title": "Post Referral to CMC"
+    },
+    {
+     "num": 14,
+     "title": "SECOP Examinations"
+    },
+    {
+     "num": 15,
+     "title": "Referee Specialist Examinations"
+    },
+    {
+     "num": 16,
+     "title": "Failure to Undergo SECOP or Referee Specialist Examination"
+    }
+   ]
+  },
+  {
+   "num": 17,
+   "title": "Development of Radiogenic Cancer Claims",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Identifying a Claim for Cancer"
+    },
+    {
+     "num": 3,
+     "title": "Medical Evidence of Cancer"
+    },
+    {
+     "num": 4,
+     "title": "Pre-Cancerous and Non-Malignant Conditions"
+    },
+    {
+     "num": 5,
+     "title": "Specified Cancers"
+    },
+    {
+     "num": 6,
+     "title": "Non-SEC Cancers and Dose Reconstruction"
+    },
+    {
+     "num": 7,
+     "title": "Preparing Non-SEC Cancer Claim Files for Referral to NIOSH"
+    },
+    {
+     "num": 8,
+     "title": "Cases Pulled While at NIOSH"
+    },
+    {
+     "num": 9,
+     "title": "NIOSH Actions"
+    },
+    {
+     "num": 10,
+     "title": "Receipt of Dose Reconstruction Results from NIOSH"
+    },
+    {
+     "num": 11,
+     "title": "Review of Claim for Rework of Dose Reconstruction"
+    },
+    {
+     "num": 12,
+     "title": "Procedures for Requesting Rework"
+    },
+    {
+     "num": 13,
+     "title": "Comments to Dose Reconstruction Submitted to FAB"
+    },
+    {
+     "num": 14,
+     "title": "Proving Causation Between Diagnosed Non-SEC Cancer and Covered Employment"
+    },
+    {
+     "num": 15,
+     "title": "Calculation of PoC Using NIOSH-IREP Computer Program"
+    },
+    {
+     "num": 16,
+     "title": "Establishing Causation for Cancer Under Part E"
+    }
+   ]
+  },
+  {
+   "num": 18,
+   "title": "Eligibility Criteria for Non-cancerous Conditions",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Approved Part B Illnesses"
+    },
+    {
+     "num": 3,
+     "title": "Identifying Claimed Condition as Part B, Part E, or Both"
+    },
+    {
+     "num": 4,
+     "title": "Proof of Covered Employment for Beryllium Illness"
+    },
+    {
+     "num": 5,
+     "title": "Beryllium Sensitivity"
+    },
+    {
+     "num": 6,
+     "title": "Established CBD Before 1993, Part B"
+    },
+    {
+     "num": 7,
+     "title": "Established CBD On/After January 1, 1993, Part B"
+    },
+    {
+     "num": 8,
+     "title": "Established CBD Decisions, Part B"
+    },
+    {
+     "num": 9,
+     "title": "Beryllium Sensitivity and CBD, Part E"
+    },
+    {
+     "num": 10,
+     "title": "Presumption of CBD, Diagnosis of Sarcoidosis, and History of Beryllium Exposure"
+    },
+    {
+     "num": 11,
+     "title": "Consequential Illnesses from CBD or its Treatment"
+    },
+    {
+     "num": 12,
+     "title": "Silicosis"
+    },
+    {
+     "num": 13,
+     "title": "Pneumoconiosis, Part E"
+    },
+    {
+     "num": 14,
+     "title": "Asbestosis, Part E"
+    },
+    {
+     "num": 15,
+     "title": "Idiopathic Disease Diagnosis"
+    },
+    {
+     "num": 16,
+     "title": "Medical Conditions Associated with Asbestos Exposures"
+    },
+    {
+     "num": 17,
+     "title": "COPD"
+    },
+    {
+     "num": 18,
+     "title": "Parkinsonism"
+    },
+    {
+     "num": 19,
+     "title": "Other Conditions"
+    }
+   ]
+  },
+  {
+   "num": 19,
+   "title": "Eligibility Requirements for Certain Uranium",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "RECA Background"
+    },
+    {
+     "num": 3,
+     "title": "How DEEOIC Identifies a RECA Section 5 Uranium Worker Claim"
+    },
+    {
+     "num": 4,
+     "title": "Obtaining Information from DOJ Regarding RECA Claim Status"
+    },
+    {
+     "num": 5,
+     "title": "Assessing RECA Status Information From DOJ"
+    },
+    {
+     "num": 6,
+     "title": "Processing a Uranium Employee Part B Claim"
+    },
+    {
+     "num": 7,
+     "title": "Part E Eligibility for Covered RECA Uranium Employees"
+    },
+    {
+     "num": 8,
+     "title": "Developing a Part E Claim"
+    },
+    {
+     "num": 9,
+     "title": "Issuing a Part B or E Decision Involving a RECA Uranium Worker"
+    },
+    {
+     "num": 10,
+     "title": "RECA Section 4 Claims"
+    }
+   ]
+  },
+  {
+   "num": 20,
+   "title": "Establishing Survivorship",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Policy"
+    },
+    {
+     "num": 3,
+     "title": "Eligible Survivors"
+    },
+    {
+     "num": 4,
+     "title": "Filing a Claim for Survivor Benefits"
+    },
+    {
+     "num": 5,
+     "title": "Establishing Employee’s Death"
+    },
+    {
+     "num": 6,
+     "title": "Linking Employee’s Death to an Occupational or Covered Illness"
+    },
+    {
+     "num": 7,
+     "title": "Surviving Spouse"
+    },
+    {
+     "num": 8,
+     "title": "Surviving Child"
+    },
+    {
+     "num": 9,
+     "title": "Parents, Grandchildren and Grandparents"
+    },
+    {
+     "num": 10,
+     "title": "Potential for Additional Survivors"
+    },
+    {
+     "num": 11,
+     "title": "Claims Involving Multiple Claimants"
+    },
+    {
+     "num": 12,
+     "title": "Issues During the Payment Process"
+    },
+    {
+     "num": 13,
+     "title": "Alternative to Filing a Survivor Claim Under Part E"
+    }
+   ]
+  },
+  {
+   "num": 21,
+   "title": "Impairment Ratings",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Policy"
+    },
+    {
+     "num": 3,
+     "title": "Definition of Impairment"
+    },
+    {
+     "num": 4,
+     "title": "General Requirements for Impairment Ratings"
+    },
+    {
+     "num": 5,
+     "title": "How a Claimant Files an Impairment Claim"
+    },
+    {
+     "num": 6,
+     "title": "Impairment Ratings by the Employee’s Choice Physician"
+    },
+    {
+     "num": 7,
+     "title": "Impairment Ratings by a CMC"
+    },
+    {
+     "num": 8,
+     "title": "Impairment Ratings for Certain Conditions"
+    },
+    {
+     "num": 9,
+     "title": "Evaluation of Impairment Rating"
+    },
+    {
+     "num": 10,
+     "title": "Pre-RD Challenges"
+    },
+    {
+     "num": 11,
+     "title": "Impairment Award"
+    },
+    {
+     "num": 12,
+     "title": "Impairment and Tort Offset/SWC Coordination"
+    },
+    {
+     "num": 13,
+     "title": "How to Calculate Increased Impairment Award with Tort Offset/SWC Coordination"
+    },
+    {
+     "num": 14,
+     "title": "Issuance of RD"
+    },
+    {
+     "num": 15,
+     "title": "FAB Development"
+    },
+    {
+     "num": 16,
+     "title": "Additional Filings for Increased Impairment Benefits"
+    },
+    {
+     "num": 17,
+     "title": "Issues Involving Survivor Election"
+    }
+   ]
+  },
+  {
+   "num": 22,
+   "title": "Wage-loss Determinations",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Policy"
+    },
+    {
+     "num": 3,
+     "title": "Definitions"
+    },
+    {
+     "num": 4,
+     "title": "General Requirements for Wage-Loss"
+    },
+    {
+     "num": 5,
+     "title": "When Wage-Loss Is Not Covered"
+    },
+    {
+     "num": 6,
+     "title": "How to File Initial Wage-Loss Claims"
+    },
+    {
+     "num": 7,
+     "title": "How to File Subsequent Wage-Loss Claims"
+    },
+    {
+     "num": 8,
+     "title": "Development of Wage-Loss Claims"
+    },
+    {
+     "num": 9,
+     "title": "Medical Evidence to Establish Wage-Loss"
+    },
+    {
+     "num": 10,
+     "title": "Wage Evidence to Establish Wage-Loss"
+    },
+    {
+     "num": 11,
+     "title": "Wage-Loss Calculator"
+    },
+    {
+     "num": 12,
+     "title": "Calculation of AAW"
+    },
+    {
+     "num": 13,
+     "title": "Determination of Wage-Loss Percentage"
+    },
+    {
+     "num": 14,
+     "title": "Employee Wage-Loss Compensation"
+    },
+    {
+     "num": 15,
+     "title": "Survivor Wage-Loss Compensation"
+    },
+    {
+     "num": 16,
+     "title": "Maximum Aggregate Compensation"
+    },
+    {
+     "num": 17,
+     "title": "RDs and FDs"
+    }
+   ]
+  },
+  {
+   "num": 23,
+   "title": "Consequential Conditions",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Defining a Consequential Condition"
+    },
+    {
+     "num": 3,
+     "title": "Claims for Consequential Conditions"
+    },
+    {
+     "num": 4,
+     "title": "Claim Development"
+    },
+    {
+     "num": 5,
+     "title": "Metastasized Cancer(s)"
+    },
+    {
+     "num": 6,
+     "title": "Conditions Resulting from Medical Treatment"
+    },
+    {
+     "num": 7,
+     "title": "Independent Intervening Causes"
+    },
+    {
+     "num": 8,
+     "title": "Pre-Existing Conditions"
+    },
+    {
+     "num": 9,
+     "title": "Psychological Conditions"
+    },
+    {
+     "num": 10,
+     "title": "Accepting or Denying the Consequential Condition"
+    },
+    {
+     "num": 11,
+     "title": "Impairment and Wage-Loss"
+    },
+    {
+     "num": 12,
+     "title": "SWC Claims, Lawsuits and Fraud"
+    }
+   ]
+  },
+  {
+   "num": 24,
+   "title": "Recommended Decisions",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Authority"
+    },
+    {
+     "num": 3,
+     "title": "When RD is Required"
+    },
+    {
+     "num": 4,
+     "title": "Administrative Closures"
+    },
+    {
+     "num": 5,
+     "title": "Who Receives an RD"
+    },
+    {
+     "num": 6,
+     "title": "Writing an RD"
+    },
+    {
+     "num": 7,
+     "title": "Content and Format"
+    },
+    {
+     "num": 8,
+     "title": "Types of RDs"
+    },
+    {
+     "num": 9,
+     "title": "Decision Issuance"
+    },
+    {
+     "num": 10,
+     "title": "Letter Decisions"
+    },
+    {
+     "num": 11,
+     "title": "Special Circumstances"
+    }
+   ]
+  },
+  {
+   "num": 25,
+   "title": "FAB Review Process",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Authority"
+    },
+    {
+     "num": 3,
+     "title": "Processing, Monitoring, and Transferring Case Files"
+    },
+    {
+     "num": 4,
+     "title": "Waivers"
+    },
+    {
+     "num": 5,
+     "title": "Objections and Review of the Written Record"
+    },
+    {
+     "num": 6,
+     "title": "Hearing Requests"
+    },
+    {
+     "num": 7,
+     "title": "Conduct of the Hearing"
+    },
+    {
+     "num": 8,
+     "title": "Post-Hearing Actions"
+    },
+    {
+     "num": 9,
+     "title": "Receipt of New Claim or New Medical Evidence"
+    },
+    {
+     "num": 10,
+     "title": "One Year Requirement"
+    },
+    {
+     "num": 11,
+     "title": "Decisions Returned by Postal Service"
+    }
+   ]
+  },
+  {
+   "num": 26,
+   "title": "FAB Decisions",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "FD"
+    },
+    {
+     "num": 3,
+     "title": "Preparation of FD"
+    },
+    {
+     "num": 4,
+     "title": "Remand Orders"
+    },
+    {
+     "num": 5,
+     "title": "Administrative Closure"
+    },
+    {
+     "num": 6,
+     "title": "Claimant Rights Following the Issuance of FAB FD"
+    },
+    {
+     "num": 7,
+     "title": "Alternative Filing, Part E"
+    }
+   ]
+  },
+  {
+   "num": 27,
+   "title": "Reopening Process",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Authority"
+    },
+    {
+     "num": 3,
+     "title": "Claimant’s Explicit Request for Reopening"
+    },
+    {
+     "num": 4,
+     "title": "Claimant’s Non-Specific Correspondence or Evidence"
+    },
+    {
+     "num": 5,
+     "title": "Reopening and Vacating a FAB Decision"
+    },
+    {
+     "num": 6,
+     "title": "Reopening and Vacating a FAB Decision Following an Employee’s or Survivor’s Death"
+    },
+    {
+     "num": 7,
+     "title": "Denying a Specific Request for Reopening"
+    },
+    {
+     "num": 8,
+     "title": "ECS Implications"
+    }
+   ]
+  },
+  {
+   "num": 28,
+   "title": "Medical Bill Process",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Roles and Responsibilities"
+    },
+    {
+     "num": 3,
+     "title": "Medical Bill Processing Assistance"
+    },
+    {
+     "num": 4,
+     "title": "Automated Medical Bill Processing Systems"
+    },
+    {
+     "num": 5,
+     "title": "Fee Schedule"
+    },
+    {
+     "num": 6,
+     "title": "Fee Schedule Review Process"
+    },
+    {
+     "num": 7,
+     "title": "ICD-CM Codes"
+    },
+    {
+     "num": 8,
+     "title": "Coding Software"
+    },
+    {
+     "num": 9,
+     "title": "Eligibility Files"
+    },
+    {
+     "num": 10,
+     "title": "Prompt Pay"
+    },
+    {
+     "num": 11,
+     "title": "Time Limits for Submission of Medical Bills"
+    },
+    {
+     "num": 12,
+     "title": "Provider Debarment and Suspension"
+    },
+    {
+     "num": 13,
+     "title": "Issuing Medical Payments to a Survivor After the Employee’s Death"
+    }
+   ]
+  },
+  {
+   "num": 29,
+   "title": "Ancillary Medical Benefits",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Submitting Claims for Reimbursement Authorization"
+    },
+    {
+     "num": 3,
+     "title": "Documentation Supporting Claim Submission"
+    },
+    {
+     "num": 4,
+     "title": "Development Options Available to the MBE"
+    },
+    {
+     "num": 5,
+     "title": "Addressing Certain Types of AMB"
+    },
+    {
+     "num": 6,
+     "title": "Exception Processing for Denied Medical Benefit Charges Under the OWCP Treatment Suites"
+    },
+    {
+     "num": 7,
+     "title": "Issuing an AMB Decision"
+    }
+   ]
+  },
+  {
+   "num": 30,
+   "title": "Home and Residential Health Care",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Definitions"
+    },
+    {
+     "num": 3,
+     "title": "Claimant’s Role in the HRHC Authorization Process"
+    },
+    {
+     "num": 4,
+     "title": "Receipt of Form EE-17A"
+    },
+    {
+     "num": 5,
+     "title": "Evaluating an LMN"
+    },
+    {
+     "num": 6,
+     "title": "Development Resources"
+    },
+    {
+     "num": 7,
+     "title": "Developing Evidence to Support HRHC Requests"
+    },
+    {
+     "num": 8,
+     "title": "Authorizing Reimbursement for Medically Appropriate Care"
+    },
+    {
+     "num": 9,
+     "title": "Issuing RD to Deny or Reduce Authorized HRHC"
+    },
+    {
+     "num": 10,
+     "title": "Notification of Discontinuance of Authorization"
+    },
+    {
+     "num": 11,
+     "title": "Processing Requests for Emergency Authorizations"
+    },
+    {
+     "num": 12,
+     "title": "Billing and Documentation of Services"
+    },
+    {
+     "num": 13,
+     "title": "Medical Travel Occurring During Authorized Periods of HRHC"
+    }
+   ]
+  },
+  {
+   "num": 31,
+   "title": "Tort Action and Election of Remedies",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Authority"
+    },
+    {
+     "num": 3,
+     "title": "Developing for Lawsuit"
+    },
+    {
+     "num": 4,
+     "title": "Evaluating Lawsuit Documents"
+    },
+    {
+     "num": 5,
+     "title": "Election of Remedies, Part B"
+    },
+    {
+     "num": 6,
+     "title": "Tort Offset, Parts B and/or E"
+    },
+    {
+     "num": 7,
+     "title": "Pending Tort Settlement Payment"
+    },
+    {
+     "num": 8,
+     "title": "Required Tort Offset"
+    },
+    {
+     "num": 9,
+     "title": "Actions to Absorb Surplus"
+    }
+   ]
+  },
+  {
+   "num": 32,
+   "title": "Coordinating State Workers’ Compensation Benefits",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Authority"
+    },
+    {
+     "num": 3,
+     "title": "SWC Benefits"
+    },
+    {
+     "num": 4,
+     "title": "When Coordination is Required"
+    },
+    {
+     "num": 5,
+     "title": "Exceptions"
+    },
+    {
+     "num": 6,
+     "title": "Verifying SWC Claims"
+    },
+    {
+     "num": 7,
+     "title": "Pending SWC Payment"
+    },
+    {
+     "num": 8,
+     "title": "Calculate Amount to Coordinate"
+    },
+    {
+     "num": 9,
+     "title": "Actions to Absorb Surplus"
+    },
+    {
+     "num": 10,
+     "title": "Contact with SWC Office"
+    }
+   ]
+  },
+  {
+   "num": 33,
+   "title": "Compensation Payments",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Responsibilities"
+    },
+    {
+     "num": 3,
+     "title": "Processing the EN-20"
+    },
+    {
+     "num": 4,
+     "title": "Creating the EFT Payment"
+    },
+    {
+     "num": 5,
+     "title": "Creating the Check Payment"
+    },
+    {
+     "num": 6,
+     "title": "Completing the ECS Payment"
+    },
+    {
+     "num": 7,
+     "title": "Entering and Identifying Payments in OIS"
+    },
+    {
+     "num": 8,
+     "title": "Expedited and Exception Payments"
+    },
+    {
+     "num": 9,
+     "title": "Deleting Payments and Cancelling Transactions"
+    },
+    {
+     "num": 10,
+     "title": "Payment Reports"
+    },
+    {
+     "num": 11,
+     "title": "Substitutions Among Staff"
+    },
+    {
+     "num": 12,
+     "title": "Temporary Role Changes for Expedited Payments"
+    },
+    {
+     "num": 13,
+     "title": "Stolen Check Claims"
+    },
+    {
+     "num": 14,
+     "title": "Processing Payment Cancellations"
+    },
+    {
+     "num": 15,
+     "title": "ECS Payment Cancellation Process"
+    },
+    {
+     "num": 16,
+     "title": "Post Payment Cancellation Actions"
+    },
+    {
+     "num": 17,
+     "title": "Death During Payment Process"
+    },
+    {
+     "num": 18,
+     "title": "Following Up on Unreturned Form EN-20"
+    }
+   ]
+  },
+  {
+   "num": 34,
+   "title": "Post-award Administration",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Authority"
+    },
+    {
+     "num": 3,
+     "title": "CE Responsibilities"
+    },
+    {
+     "num": 4,
+     "title": "NO Responsibilities"
+    }
+   ]
+  },
+  {
+   "num": 35,
+   "title": "Overpayment Process",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Legislative Authority and Directives"
+    },
+    {
+     "num": 3,
+     "title": "Definition of Overpayment"
+    },
+    {
+     "num": 4,
+     "title": "Notification of EEOICPA Payment"
+    },
+    {
+     "num": 5,
+     "title": "Recovery of Funds"
+    },
+    {
+     "num": 6,
+     "title": "Referral to NO"
+    },
+    {
+     "num": 7,
+     "title": "Identifying Overpayments"
+    },
+    {
+     "num": 8,
+     "title": "Review and Initial Notification"
+    },
+    {
+     "num": 9,
+     "title": "Telephone Conferences"
+    },
+    {
+     "num": 10,
+     "title": "Consideration of Overpayment Waiver"
+    },
+    {
+     "num": 11,
+     "title": "Overpayment Decisions"
+    },
+    {
+     "num": 12,
+     "title": "Overpayment Database"
+    },
+    {
+     "num": 13,
+     "title": "TROR and Debt Collection Activities"
+    }
+   ]
+  },
+  {
+   "num": 36,
+   "title": "Debt Liquidation",
+   "sections": [
+    {
+     "num": 1,
+     "title": "Purpose and Scope"
+    },
+    {
+     "num": 2,
+     "title": "Responsibilities"
+    },
+    {
+     "num": 3,
+     "title": "Management of Debt"
+    },
+    {
+     "num": 4,
+     "title": "Recovery of Debt"
+    },
+    {
+     "num": 5,
+     "title": "Assessment of Charges"
+    },
+    {
+     "num": 6,
+     "title": "Waiver of Interest Charges"
+    },
+    {
+     "num": 7,
+     "title": "Compromise"
+    },
+    {
+     "num": 8,
+     "title": "Referring Delinquent Debts to The U.S. Department of the Treasury"
+    },
+    {
+     "num": 9,
+     "title": "Termination or Suspension of Collection Action of Debts"
+    },
+    {
+     "num": 10,
+     "title": "Debt Recovery After Claimant Death"
+    },
+    {
+     "num": 11,
+     "title": "Court Ordered Restitution in Fraud Cases"
+    }
+   ]
+  }
+ ]
+}

@@ -80,6 +80,7 @@ const navigationCategories: NavigationCategory[] = [
     name: 'Guides',
     icon: BookOpen,
     items: [
+      { name: 'Procedure Manual', href: '/guides/procedure-manual', icon: BookOpen, description: 'Ask questions and find exact quotes' },
       { name: 'IR Process Guide', href: '/guides/ir-process', icon: BookOpen, description: 'IR testing coordination flowchart' },
     ]
   },

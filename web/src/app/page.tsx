@@ -140,6 +140,12 @@ export default function Home() {
     },
     // Guides
     {
+      id: "procedure-manual",
+      name: "Procedure Manual",
+      description: "Ask questions and find exact quotes from the EEOICPA Procedure Manual",
+      href: "/guides/procedure-manual",
+    },
+    {
       id: "ir-process",
       name: "IR Process Guide",
       description: "Step-by-step IR testing coordination flowchart from FD letter to testing complete",
@@ -210,7 +216,7 @@ export default function Home() {
     dolLetters: allTools.filter((tool) =>
       ["dol-letter", "withdrawal", "address-change", "phone-change", "rd-waiver", "dol-status-update", "ir-notice", "change-of-ar"].includes(tool.id)
     ),
-    guides: allTools.filter((tool) => ["ir-process"].includes(tool.id)),
+    guides: allTools.filter((tool) => ["procedure-manual", "ir-process"].includes(tool.id)),
     medical: allTools.filter((tool) =>
       ["desert-pulm", "doctor-letter"].includes(tool.id)
     ),

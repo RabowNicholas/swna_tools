@@ -13,7 +13,8 @@ import {
   Users, 
   Settings,
   Heart,
-  BarChart3
+  BarChart3,
+  BookOpen
 } from 'lucide-react';
 
 interface LayoutProviderProps {
@@ -120,6 +121,26 @@ const navigationItems = [
     ]
   },
   {
+    id: 'guides',
+    title: 'Guides',
+    icon: <BookOpen className="h-4 w-4" />,
+    description: 'Reference and how-tos',
+    children: [
+      {
+        id: 'procedure-manual',
+        title: 'Procedure Manual',
+        href: '/guides/procedure-manual',
+        description: 'Ask questions and find exact quotes'
+      },
+      {
+        id: 'ir-process',
+        title: 'IR Process Guide',
+        href: '/guides/ir-process',
+        description: 'IR testing coordination flowchart'
+      }
+    ]
+  },
+  {
     id: 'billing',
     title: 'Billing',
     icon: <BarChart3 className="h-4 w-4" />,
@@ -182,10 +203,12 @@ function generateBreadcrumbs(pathname: string) {
     'ir-notice': 'IR Schedule Notice',
     'change-of-ar': 'Change of AR Letter',
     'clients': 'Client Manager',
+    'procedure-manual': 'Procedure Manual',
+    'ir-process': 'IR Process Guide',
   };
 
   // Routes that don't have actual pages (skip in breadcrumbs)
-  const skipRoutes = new Set(['forms']);
+  const skipRoutes = new Set(['forms', 'guides']);
 
   let currentPath = '';
   
