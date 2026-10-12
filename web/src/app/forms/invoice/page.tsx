@@ -334,7 +334,9 @@ export default function InvoiceForm() {
           .toLocaleDateString("en-US")
           .replace(/\//g, ".");
 
-        a.download = `Invoice ${data.part_type} ${amountStr} ${nameStr} ${todayStr}.xlsx`;
+        const invoiceNum = data.invoice_number.trim().replace(/^#/, "");
+
+        a.download = `Invoice ${invoiceNum} ${data.part_type} ${amountStr} ${nameStr} ${todayStr}.xlsx`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);

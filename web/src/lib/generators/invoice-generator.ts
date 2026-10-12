@@ -137,7 +137,9 @@ export class InvoiceGenerator {
     const today = new Date();
     const todayStr = `${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}.${String(today.getFullYear()).slice(-2)}`;
 
-    const filename = `Invoice ${fields.part_type} ${amountStr} ${nameStr} ${todayStr}.xlsx`;
+    const invoiceNum = String(fields.invoice_number).trim().replace(/^#/, '');
+
+    const filename = `Invoice ${invoiceNum} ${fields.part_type} ${amountStr} ${nameStr} ${todayStr}.xlsx`;
 
     return {
       filename,
