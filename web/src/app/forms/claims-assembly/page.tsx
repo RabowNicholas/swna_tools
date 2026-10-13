@@ -15,6 +15,7 @@ import {
   AlertCircle,
   CheckCircle,
   ClipboardList,
+  Download,
   Upload,
   Lock,
   User,
@@ -49,14 +50,29 @@ import {
   zipSchema,
 } from "@/lib/schemas/ee1";
 import { employmentDraftSchema, employmentHistorySchema } from "@/lib/schemas/ee3";
+import {
+  consequentialDiagnosisSchema,
+  emptyConsequentialDiagnosis,
+  hasConsequentialDiagnosisErrors,
+  validateConsequentialDiagnoses,
+  type ConsequentialDiagnosisError,
+} from "@/lib/schemas/ee1a";
+import {
+  ConsequentialDiagnosesSection,
+  type ConsequentialDiagnosesValues,
+} from "@/components/form/ConsequentialDiagnoses";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import { getStateAbbreviation } from "@/lib/states";
 import {
   CONDITIONS,
   COVER_SHEET_PATH,
   getCondition,
   requiredDocuments,
+  consequentialDocuments,
   claimFileName,
+  formFileName,
   type DocumentSlot,
+  type SlotGenerator,
 } from "@/lib/claims/manifest";
 import {
   assembleClaim,
@@ -65,16 +81,50 @@ import {
   type AssemblyInput,
   type PageRange,
 } from "@/lib/claims/assemble";
-import { formatSSN, generateEE1, generateEE3 } from "@/lib/claims/generate";
+import {
+  formatSSN,
+  generateEE1,
+  generateEE1A,
+  generateEE3,
+} from "@/lib/claims/generate";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
 const CLAIM_TYPES = [
   { value: "primary", label: "Primary" },
-  { value: "consequential", label: "Consequential (CQ) — not supported yet", disabled: true },
+  { value: "consequential", label: "Consequential (CQ)" },
   { value: "survivorship", label: "Survivorship — not supported yet", disabled: true },
   { value: "blind_file", label: "Blind-file — not supported yet", disabled: true },
 ];
+
+/** The form field that says whether this tool builds each generated document. */
+const GENERATOR_FIELD = {
+  ee1: "generate_ee1",
+  ee1a: "generate_ee1a",
+  ee3: "generate_ee3",
+} as const satisfies Record<SlotGenerator, string>;
+
+/** Hand a finished PDF to the browser to save. */
+function downloadPdf(bytes: ArrayBuffer | Uint8Array, name: string) {
+  const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${name}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
+
+/** A form this tool built, kept so it can be saved on its own as well. */
+interface BuiltForm {
+  slotId: string;
+  label: string;
+  /** The name it's saved under in the client's folder */
+  name: string;
+  bytes: ArrayBuffer;
+}
 
 /**
  * Everything the claim needs, gathered in one pass.
@@ -87,10 +137,14 @@ const CLAIM_TYPES = [
 const claimSchema = z
   .object({
     client_id: z.string().min(1, "Please select a client"),
-    condition_id: z.string().min(1, "Select the claimed condition"),
+    claim_type: z.enum(["primary", "consequential"]),
+    condition_id: z.string(),
     other_abbreviation: z.string().optional(),
+    /** Consequential claims name their conditions freely, e.g. "HTN, DM" */
+    cq_conditions: z.string().optional(),
     has_prior_claim: z.boolean(),
     generate_ee1: z.boolean(),
+    generate_ee1a: z.boolean(),
     generate_ee3: z.boolean(),
 
     first_name: z.string().min(1, "First name is required"),
@@ -100,6 +154,7 @@ const claimSchema = z
       .optional(),
     last_name: z.string().min(1, "Last name is required"),
     former_name: z.string().optional(),
+    case_id: z.string(),
     ssn: z.string(),
     dob: z.string(),
     sex: z.enum(["Male", "Female"]),
@@ -110,6 +165,7 @@ const claimSchema = z
     phone: z.string(),
 
     employment_history: z.array(employmentDraftSchema),
+    diagnoses: z.array(consequentialDiagnosisSchema),
   })
   .superRefine((data, ctx) => {
     const require = (
@@ -127,6 +183,40 @@ const claimSchema = z
       }
     };
 
+    // The EE-1 and the EE-1a both carry the claimant's address and phone
+    const requireContact = () => {
+      require(
+        z.string().min(1, "Street address is required"),
+        "address_main",
+        data.address_main
+      );
+      require(z.string().min(1, "City is required"), "address_city", data.address_city);
+      require(stateSchema, "address_state", data.address_state);
+      require(zipSchema, "address_zip", data.address_zip);
+      require(phoneSchema, "phone", data.phone);
+    };
+
+    // A consequential claim is the EE-1a and nothing else from this tool, so
+    // none of the primary rules below apply to it
+    if (data.claim_type === "consequential") {
+      require(
+        z.string().trim().min(1, "Enter the conditions to use in the filename"),
+        "cq_conditions",
+        data.cq_conditions ?? ""
+      );
+      if (data.generate_ee1a) {
+        require(z.string().trim().min(1, "Case ID is required"), "case_id", data.case_id);
+        requireContact();
+      }
+      return;
+    }
+
+    require(
+      z.string().min(1, "Select the claimed condition"),
+      "condition_id",
+      data.condition_id
+    );
+
     if (data.condition_id === "other" && !data.other_abbreviation?.trim()) {
       ctx.addIssue({
         code: "custom",
@@ -142,15 +232,7 @@ const claimSchema = z
 
     if (data.generate_ee1) {
       require(z.string().min(1, "Date of birth is required"), "dob", data.dob);
-      require(
-        z.string().min(1, "Street address is required"),
-        "address_main",
-        data.address_main
-      );
-      require(z.string().min(1, "City is required"), "address_city", data.address_city);
-      require(stateSchema, "address_state", data.address_state);
-      require(zipSchema, "address_zip", data.address_zip);
-      require(phoneSchema, "phone", data.phone);
+      requireContact();
     }
 
     // The EE-3 is only part of a first claim, and only when we're building it
@@ -181,15 +263,19 @@ export default function ClaimsAssemblyPage() {
     reValidateMode: "onChange",
     defaultValues: {
       client_id: "",
+      claim_type: "primary",
       condition_id: "",
       other_abbreviation: "",
+      cq_conditions: "",
       has_prior_claim: false,
       generate_ee1: true,
+      generate_ee1a: true,
       generate_ee3: true,
       first_name: "",
       middle_initial: "",
       last_name: "",
       former_name: "",
+      case_id: "",
       ssn: "",
       dob: "",
       sex: "Male",
@@ -199,6 +285,7 @@ export default function ClaimsAssemblyPage() {
       address_zip: "",
       phone: "",
       employment_history: [emptyEmploymentRecord()],
+      diagnoses: [emptyConsequentialDiagnosis()],
     },
   });
 
@@ -211,6 +298,11 @@ export default function ClaimsAssemblyPage() {
   const [diagnosisErrors, setDiagnosisErrors] = useState<DiagnosisErrors>(
     emptyDiagnosisErrors()
   );
+
+  // EE-1a detail
+  const [consequentialErrors, setConsequentialErrors] = useState<
+    ConsequentialDiagnosisError[]
+  >([]);
 
   // EE-3 detail
   const [collapsedEmployment, setCollapsedEmployment] = useState<Set<number>>(
@@ -228,39 +320,52 @@ export default function ClaimsAssemblyPage() {
   const [assembling, setAssembling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{
+    /** Changes per assembly, so the log card starts fresh each time */
+    id: number;
     name: string;
     ranges: PageRange[];
     pageCount: number;
+    forms: BuiltForm[];
+    /** The claim as the log names it, e.g. "EEOIC Claim CQ HTN, DM" */
+    logLabel: string;
+    /** Whether the client still has B-read results to hear about */
+    hasBRead: boolean;
   } | null>(null);
 
-  const condition = getCondition(values.condition_id);
+  const isConsequential = values.claim_type === "consequential";
+  const condition = isConsequential
+    ? undefined
+    : getCondition(values.condition_id);
+  /** Enough is known to say which documents the claim needs */
+  const claimDefined = isConsequential || !!condition;
   const selectedClient = clients.find((c) => c.id === values.client_id);
 
-  const slots: DocumentSlot[] = useMemo(
-    () =>
-      condition
-        ? requiredDocuments(condition.category, {
-            needsEE3: !values.has_prior_claim,
-          })
-        : [],
-    [condition, values.has_prior_claim]
-  );
+  const slots: DocumentSlot[] = useMemo(() => {
+    if (isConsequential) return consequentialDocuments();
+    if (!condition) return [];
+    return requiredDocuments(condition.category, {
+      needsEE3: !values.has_prior_claim,
+    });
+  }, [isConsequential, condition, values.has_prior_claim]);
 
   /** A generated slot the assembler switched back to an upload. */
   const isGeneratorOff = (slot: DocumentSlot) =>
-    (slot.generator === "ee1" && !values.generate_ee1) ||
-    (slot.generator === "ee3" && !values.generate_ee3);
+    !!slot.generator && !values[GENERATOR_FIELD[slot.generator]];
 
   const needsUpload = (slot: DocumentSlot) =>
     slot.source === "upload" || (slot.source === "generated" && isGeneratorOff(slot));
 
-  const abbreviation =
-    condition?.id === "other"
+  const abbreviation = isConsequential
+    ? values.cq_conditions?.trim() ?? ""
+    : condition?.id === "other"
       ? values.other_abbreviation?.trim() ?? ""
       : condition?.abbreviation ?? "";
 
-  const buildsEE1 = slots.some((s) => s.generator === "ee1" && !isGeneratorOff(s));
-  const buildsEE3 = slots.some((s) => s.generator === "ee3" && !isGeneratorOff(s));
+  const builds = (generator: SlotGenerator) =>
+    slots.some((s) => s.generator === generator && !isGeneratorOff(s));
+  const buildsEE1 = builds("ee1");
+  const buildsEE1A = builds("ee1a");
+  const buildsEE3 = builds("ee3");
 
   const missing = slots.filter((s) => needsUpload(s) && s.required && !files[s.id]);
 
@@ -275,6 +380,8 @@ export default function ClaimsAssemblyPage() {
    * Nothing on the page belongs to two clients — condition, uploads, signature
    * and employment history are all claim-specific — so every field goes back to
    * its default and only the Airtable details for the new client are filled in.
+   * The claim type is the exception: it describes the work being done, and
+   * claims of one type tend to be assembled in a run.
    */
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
@@ -283,11 +390,14 @@ export default function ClaimsAssemblyPage() {
     form.reset({
       ...form.formState.defaultValues,
       client_id: clientId,
+      claim_type: form.getValues("claim_type"),
       employment_history: [emptyEmploymentRecord()],
+      diagnoses: [emptyConsequentialDiagnosis()],
     } as ClaimFormValues);
 
     setDiagnosisCategories(emptyDiagnosisCategories());
     setDiagnosisErrors(emptyDiagnosisErrors());
+    setConsequentialErrors([]);
     setEmploymentDateErrors({});
     setCollapsedEmployment(new Set());
     setSignatureFile(null);
@@ -329,6 +439,7 @@ export default function ClaimsAssemblyPage() {
       }
     }
 
+    form.setValue("case_id", fields["Case ID"] || "");
     form.setValue("address_main", fields["Street Address"] || "");
     form.setValue("address_city", fields["City"] || "");
     form.setValue("address_state", getStateAbbreviation(fields["State"] || ""));
@@ -371,6 +482,19 @@ export default function ClaimsAssemblyPage() {
     });
   };
 
+  /**
+   * The two claim types share almost no documents, so anything uploaded for
+   * one is dropped. The claimant's details carry over — same client.
+   */
+  const handleClaimTypeChange = (claimType: ClaimFormValues["claim_type"]) => {
+    form.setValue("claim_type", claimType);
+    clearResult();
+    setAttemptedSubmit(false);
+    form.clearErrors();
+    setFiles({});
+    setUploadGeneration((n) => n + 1);
+  };
+
   const selectFile = (slotId: string, file: File | undefined) => {
     clearResult();
     setFiles((prev) => {
@@ -409,7 +533,14 @@ export default function ClaimsAssemblyPage() {
       ? validateDiagnoses(diagnosisCategories)
       : emptyDiagnosisErrors();
     setDiagnosisErrors(diagnosisResult);
-    const diagnosisFailed = Object.values(diagnosisResult).flat().length > 0;
+    const consequentialResult = buildsEE1A
+      ? validateConsequentialDiagnoses(form.getValues("diagnoses"))
+      : [];
+    setConsequentialErrors(consequentialResult);
+
+    const diagnosisFailed =
+      Object.values(diagnosisResult).flat().length > 0 ||
+      hasConsequentialDiagnosisErrors(consequentialResult);
 
     if (!isValid || Object.keys(dateErrors).length > 0 || diagnosisFailed) {
       setError("Some claim details still need attention.");
@@ -423,13 +554,14 @@ export default function ClaimsAssemblyPage() {
       return;
     }
 
-    if (!condition || !selectedClient) return;
+    if (!claimDefined || !selectedClient) return;
 
     setAssembling(true);
 
     try {
       const data = form.getValues();
       const inputs: AssemblyInput[] = [];
+      const forms: BuiltForm[] = [];
 
       for (const slot of slots) {
         if (slot.source === "template") {
@@ -452,42 +584,76 @@ export default function ClaimsAssemblyPage() {
           continue;
         }
 
-        if (slot.source === "generated" && !isGeneratorOff(slot)) {
-          const bytes =
-            slot.generator === "ee1"
-              ? await generateEE1(
-                  selectedClient,
-                  {
-                    first_name: data.first_name,
-                    middle_initial: data.middle_initial || "",
-                    last_name: data.last_name,
-                    ssn: formatSSN(data.ssn),
-                    dob: data.dob,
-                    sex: data.sex,
-                    address_main: data.address_main,
-                    address_city: data.address_city,
-                    address_state: data.address_state,
-                    address_zip: data.address_zip,
-                    phone: data.phone,
-                    diagnosis_categories: diagnosisCategories,
-                  },
-                  signatureFile,
-                  slot.id
-                )
-              : await generateEE3(
-                  selectedClient,
-                  {
-                    first_name: data.first_name,
-                    middle_name: data.middle_initial || "",
-                    last_name: data.last_name,
-                    former_name: data.former_name,
-                    ssn: formatSSN(data.ssn),
-                    employment_history: data.employment_history,
-                  },
-                  slot.id
-                );
+        if (slot.generator && !isGeneratorOff(slot)) {
+          let bytes: ArrayBuffer;
+
+          if (slot.generator === "ee1") {
+            bytes = await generateEE1(
+              selectedClient,
+              {
+                first_name: data.first_name,
+                middle_initial: data.middle_initial || "",
+                last_name: data.last_name,
+                ssn: formatSSN(data.ssn),
+                dob: data.dob,
+                sex: data.sex,
+                address_main: data.address_main,
+                address_city: data.address_city,
+                address_state: data.address_state,
+                address_zip: data.address_zip,
+                phone: data.phone,
+                diagnosis_categories: diagnosisCategories,
+              },
+              signatureFile,
+              slot.id
+            );
+          } else if (slot.generator === "ee1a") {
+            bytes = await generateEE1A(
+              selectedClient,
+              {
+                first_name: data.first_name,
+                last_name: data.last_name,
+                case_id: data.case_id.trim(),
+                address_main: data.address_main,
+                address_city: data.address_city,
+                address_state: data.address_state,
+                address_zip: data.address_zip,
+                phone: data.phone,
+                diagnoses: data.diagnoses,
+              },
+              signatureFile,
+              slot.id
+            );
+          } else {
+            bytes = await generateEE3(
+              selectedClient,
+              {
+                first_name: data.first_name,
+                middle_name: data.middle_initial || "",
+                last_name: data.last_name,
+                former_name: data.former_name,
+                ssn: formatSSN(data.ssn),
+                employment_history: data.employment_history,
+              },
+              slot.id
+            );
+          }
 
           inputs.push({ slotId: slot.id, label: slot.label, bytes });
+          forms.push({
+            slotId: slot.id,
+            label: slot.label,
+            name: formFileName({
+              form: slot.generator,
+              conditionAbbr: abbreviation,
+              firstName: data.first_name,
+              lastName: data.last_name,
+              // The EE-3 always carries SWNA's own signature; the other two
+              // are signed only if the client's was supplied
+              signed: slot.generator === "ee3" || !!signatureFile,
+            }),
+            bytes,
+          });
           continue;
         }
 
@@ -505,23 +671,24 @@ export default function ClaimsAssemblyPage() {
         conditionAbbr: abbreviation,
         firstName: data.first_name,
         lastName: data.last_name,
+        claimType: data.claim_type,
       });
 
-      const blob = new Blob([assembled.pdfBytes as BlobPart], {
-        type: "application/pdf",
-      });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${name}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      downloadPdf(assembled.pdfBytes, name);
 
       track({ type: "tool_used", tool: "claims-assembly", clientId: data.client_id });
 
-      setResult({ name, ranges: assembled.ranges, pageCount: assembled.pageCount });
+      setResult({
+        id: Date.now(),
+        name,
+        ranges: assembled.ranges,
+        pageCount: assembled.pageCount,
+        forms,
+        logLabel: `EEOIC Claim ${isConsequential ? "CQ " : ""}${abbreviation}`,
+        hasBRead:
+          condition?.category === "chronic_silicosis" ||
+          condition?.category === "pneumoconiosis",
+      });
     } catch (err) {
       console.error("Error assembling claim:", err);
       setError(
@@ -544,7 +711,7 @@ export default function ClaimsAssemblyPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
-      <PageHeader description="Pick the client and the condition, fill in the claim once, and this builds the EE-1 and EE-3, merges them with the documents you supply, and names the finished claim." />
+      <PageHeader description="Pick the client and the claim type, fill in the claim once, and this builds the EE-1 and EE-3 (or the EE-1a for a consequential claim), merges them with the documents you supply, and names the finished claim." />
 
       {/* Client */}
       <ClientSelector
@@ -576,26 +743,41 @@ export default function ClaimsAssemblyPage() {
               <Select
                 label="Claim Type"
                 required
-                value="primary"
-                onChange={() => undefined}
+                value={values.claim_type}
+                onChange={(e) =>
+                  handleClaimTypeChange(
+                    e.target.value as ClaimFormValues["claim_type"]
+                  )
+                }
                 options={CLAIM_TYPES}
-                helperText="Consequential, survivorship and blind-file claims are still assembled by hand"
+                helperText="Consequential if the diagnosis letter says the illness is “consequential to”, “caused by” or “aggravated by” another illness. Primary if it says toxic exposure at work caused it. Survivorship and blind-file claims are still assembled by hand."
               />
 
-              <Select
-                label="Condition"
-                required
-                value={values.condition_id}
-                onChange={(e) => {
-                  form.setValue("condition_id", e.target.value);
-                  seedDiagnosis(e.target.value);
-                  clearResult();
-                }}
-                placeholder="Select the claimed condition"
-                options={CONDITIONS.map((c) => ({ value: c.id, label: c.label }))}
-                error={form.formState.errors.condition_id?.message}
-                helperText="Sets the medical evidence the claim needs"
-              />
+              {isConsequential ? (
+                <Input
+                  label="Conditions"
+                  required
+                  placeholder="e.g. HTN, DM"
+                  error={form.formState.errors.cq_conditions?.message}
+                  helperText="Short names, as they should read in the filename: EEOIC Claim CQ HTN, DM F. Last"
+                  {...form.register("cq_conditions", { onChange: clearResult })}
+                />
+              ) : (
+                <Select
+                  label="Condition"
+                  required
+                  value={values.condition_id}
+                  onChange={(e) => {
+                    form.setValue("condition_id", e.target.value);
+                    seedDiagnosis(e.target.value);
+                    clearResult();
+                  }}
+                  placeholder="Select the claimed condition"
+                  options={CONDITIONS.map((c) => ({ value: c.id, label: c.label }))}
+                  error={form.formState.errors.condition_id?.message}
+                  helperText="Sets the medical evidence the claim needs"
+                />
+              )}
             </div>
 
             {condition?.id === "other" && (
@@ -609,33 +791,35 @@ export default function ClaimsAssemblyPage() {
               />
             )}
 
-            <label className="flex items-start space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={values.has_prior_claim}
-                onChange={(e) => {
-                  form.setValue("has_prior_claim", e.target.checked);
-                  clearResult();
-                }}
-                className="mt-1 h-4 w-4 rounded border-border"
-              />
-              <span className="text-sm">
-                <span className="font-medium text-foreground">
-                  A claim has already been submitted for this client
+            {!isConsequential && (
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={values.has_prior_claim}
+                  onChange={(e) => {
+                    form.setValue("has_prior_claim", e.target.checked);
+                    clearResult();
+                  }}
+                  className="mt-1 h-4 w-4 rounded border-border"
+                />
+                <span className="text-sm">
+                  <span className="font-medium text-foreground">
+                    A claim has already been submitted for this client
+                  </span>
+                  <span className="block text-muted-foreground">
+                    By us or a previous AR. Removes the EE-3, which is only filed
+                    on a client&apos;s first claim.
+                  </span>
                 </span>
-                <span className="block text-muted-foreground">
-                  By us or a previous AR. Removes the EE-3, which is only filed
-                  on a client&apos;s first claim.
-                </span>
-              </span>
-            </label>
+              </label>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {condition && (
+      {claimDefined && (
         <>
-          {/* Claimant details — feeds both generated forms and the filename */}
+          {/* Claimant details — feeds the generated forms and the filename */}
           <Card variant="elevated">
             <CardHeader>
               <div className="flex items-center space-x-2">
@@ -661,14 +845,16 @@ export default function ClaimsAssemblyPage() {
                     {...form.register("first_name")}
                   />
 
-                  <Input
-                    label="Middle Initial"
-                    maxLength={1}
-                    placeholder="e.g. Q"
-                    error={form.formState.errors.middle_initial?.message}
-                    helperText="Optional"
-                    {...form.register("middle_initial")}
-                  />
+                  {!isConsequential && (
+                    <Input
+                      label="Middle Initial"
+                      maxLength={1}
+                      placeholder="e.g. Q"
+                      error={form.formState.errors.middle_initial?.message}
+                      helperText="Optional"
+                      {...form.register("middle_initial")}
+                    />
+                  )}
 
                   <Input
                     label="Last Name"
@@ -677,55 +863,67 @@ export default function ClaimsAssemblyPage() {
                     {...form.register("last_name")}
                   />
 
-                  <Input
-                    label="Former Name"
-                    helperText="If applicable — EE-3 only"
-                    {...form.register("former_name")}
-                  />
+                  {isConsequential ? (
+                    <Input
+                      label="Case ID"
+                      required
+                      error={form.formState.errors.case_id?.message}
+                      helperText="The case ID of the already-accepted illness"
+                      {...form.register("case_id")}
+                    />
+                  ) : (
+                    <>
+                      <Input
+                        label="Former Name"
+                        helperText="If applicable — EE-3 only"
+                        {...form.register("former_name")}
+                      />
 
-                  <Input
-                    label="Social Security Number"
-                    placeholder="e.g. 123456789"
-                    maxLength={9}
-                    required
-                    error={form.formState.errors.ssn?.message}
-                    helperText="9 digits; dashes are added for you"
-                    {...form.register("ssn")}
-                  />
+                      <Input
+                        label="Social Security Number"
+                        placeholder="e.g. 123456789"
+                        maxLength={9}
+                        required
+                        error={form.formState.errors.ssn?.message}
+                        helperText="9 digits; dashes are added for you"
+                        {...form.register("ssn")}
+                      />
 
-                  <Input
-                    label="Date of Birth"
-                    type="date"
-                    required
-                    error={form.formState.errors.dob?.message}
-                    {...form.register("dob")}
-                  />
+                      <Input
+                        label="Date of Birth"
+                        type="date"
+                        required
+                        error={form.formState.errors.dob?.message}
+                        {...form.register("dob")}
+                      />
 
-                  <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Sex<span className="text-muted-foreground ml-0.5" aria-label="required">*</span>
-                    </label>
-                    <div className="flex space-x-4">
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          value="Male"
-                          {...form.register("sex")}
-                          className="text-primary focus:ring-primary"
-                        />
-                        <span>Male</span>
-                      </label>
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          value="Female"
-                          {...form.register("sex")}
-                          className="text-primary focus:ring-primary"
-                        />
-                        <span>Female</span>
-                      </label>
-                    </div>
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Sex<span className="text-muted-foreground ml-0.5" aria-label="required">*</span>
+                        </label>
+                        <div className="flex space-x-4">
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              value="Male"
+                              {...form.register("sex")}
+                              className="text-primary focus:ring-primary"
+                            />
+                            <span>Male</span>
+                          </label>
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              value="Female"
+                              {...form.register("sex")}
+                              className="text-primary focus:ring-primary"
+                            />
+                            <span>Female</span>
+                          </label>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="space-y-6">
@@ -792,6 +990,28 @@ export default function ClaimsAssemblyPage() {
                   clearResult();
                 }}
                 errors={diagnosisErrors}
+                attemptedSubmit={attemptedSubmit}
+              />
+              <SignatureUpload
+                file={signatureFile}
+                onChange={(file) => {
+                  setSignatureFile(file);
+                  clearResult();
+                }}
+              />
+            </>
+          )}
+
+          {/* EE-1a detail */}
+          {buildsEE1A && (
+            <>
+              <ConsequentialDiagnosesSection
+                id="diagnosis-section"
+                form={
+                  form as unknown as UseFormReturn<ConsequentialDiagnosesValues>
+                }
+                errors={consequentialErrors}
+                onErrorsChange={setConsequentialErrors}
                 attemptedSubmit={attemptedSubmit}
               />
               <SignatureUpload
@@ -909,11 +1129,11 @@ export default function ClaimsAssemblyPage() {
                               type="checkbox"
                               checked={upload}
                               onChange={(e) => {
-                                const field =
-                                  slot.generator === "ee1"
-                                    ? "generate_ee1"
-                                    : "generate_ee3";
-                                form.setValue(field, !e.target.checked);
+                                if (!slot.generator) return;
+                                form.setValue(
+                                  GENERATOR_FIELD[slot.generator],
+                                  !e.target.checked
+                                );
                                 if (!e.target.checked) selectFile(slot.id, undefined);
                                 clearResult();
                               }}
@@ -930,9 +1150,9 @@ export default function ClaimsAssemblyPage() {
 
               <p className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
                 <Lock className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
-                Only the EE-1 and EE-3 details are sent to our server, to fill
-                out those forms. The medical records are merged in your browser
-                and never uploaded.
+                Only the EE-1, EE-1a and EE-3 details are sent to our server, to
+                fill out those forms. The medical records are merged in your
+                browser and never uploaded.
               </p>
             </CardContent>
           </Card>
@@ -998,6 +1218,28 @@ export default function ClaimsAssemblyPage() {
                   ))}
                 </div>
 
+                {result.forms.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Save a copy of each form to the client&apos;s folder:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {result.forms.map((built) => (
+                        <Button
+                          key={built.slotId}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadPdf(built.bytes, built.name)}
+                          icon={<Download className="h-4 w-4" />}
+                        >
+                          {built.name}.pdf
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <p className="text-sm text-muted-foreground">
                   Leave it in your Claim Drafts folder until another team member
                   has checked it.
@@ -1006,6 +1248,30 @@ export default function ClaimsAssemblyPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Airtable note that the claim was compiled — pressed by the assembler,
+          never written on its own */}
+      {result && selectedClient && (
+        <AirtableLogCard
+          key={result.id}
+          client={selectedClient}
+          title="Log to Airtable"
+          subject="the compiled claim"
+          requireReference={false}
+          description="Add a note to the client's record that the claim has been compiled. Status tags are left as they are."
+          action={() =>
+            `Compiled ${result.logLabel} (client needs to be contacted for permission to submit${
+              result.hasBRead ? " and to go over B-read results" : ""
+            })`
+          }
+          confirmation={() => (
+            <>
+              {result.logLabel} was logged as compiled on{" "}
+              {selectedClient.fields.Name}&apos;s record.
+            </>
+          )}
+        />
       )}
     </div>
   );

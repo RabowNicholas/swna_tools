@@ -5,9 +5,16 @@
  * claim and the order they're stacked in. That rule set lives here as data so
  * it's applied the same way every time, rather than re-derived per assembler.
  *
- * Primary claims only for now — CQ, survivorship and blind-file each change
- * the document set in ways this doesn't cover yet.
+ * Primary and consequential (CQ) claims. Survivorship and blind-file each
+ * change the document set in ways this doesn't cover yet.
  */
+
+/**
+ * Primary: an illness caused by exposure at work. Consequential: an illness
+ * caused or aggravated by one DOL has already accepted — filed on an EE-1a
+ * against the existing case, so there is no EE-1 and never an EE-3.
+ */
+export type ClaimType = 'primary' | 'consequential';
 
 /** Drives which documents a claim needs. */
 export type ConditionCategory =
@@ -52,7 +59,7 @@ export const getCondition = (id: string): Condition | undefined =>
 export type SlotSource = 'template' | 'generated' | 'upload';
 
 /** The generators a claim can drive, keyed to /api/generate/<id>. */
-export type SlotGenerator = 'ee1' | 'ee3';
+export type SlotGenerator = 'ee1' | 'ee3' | 'ee1a';
 
 export interface DocumentSlot {
   id: string;
@@ -77,18 +84,9 @@ export interface ManifestOptions {
   needsEE3: boolean;
 }
 
-/**
- * The documents a primary claim needs, in assembly order.
- *
- * Cover sheet and AR form open every claim; the EE-1 and (for a first-ever
- * claim) the EE-3 follow; the medical evidence closes it out and is the only
- * part that varies by condition.
- */
-export function requiredDocuments(
-  category: ConditionCategory,
-  { needsEE3 }: ManifestOptions
-): DocumentSlot[] {
-  const slots: DocumentSlot[] = [
+/** Cover sheet and AR form open every claim, whatever its type. */
+function openingDocuments(): DocumentSlot[] {
+  return [
     {
       id: 'cover_sheet',
       label: 'Claim Form Cover Sheet',
@@ -104,6 +102,22 @@ export function requiredDocuments(
       required: true,
       hint: 'Check it carries the current work address, and that any older form has no DOL stamp.',
     },
+  ];
+}
+
+/**
+ * The documents a primary claim needs, in assembly order.
+ *
+ * Cover sheet and AR form open every claim; the EE-1 and (for a first-ever
+ * claim) the EE-3 follow; the medical evidence closes it out and is the only
+ * part that varies by condition.
+ */
+export function requiredDocuments(
+  category: ConditionCategory,
+  { needsEE3 }: ManifestOptions
+): DocumentSlot[] {
+  const slots: DocumentSlot[] = [
+    ...openingDocuments(),
     {
       id: 'ee1',
       label: 'EE-1',
@@ -126,6 +140,41 @@ export function requiredDocuments(
   }
 
   return [...slots, ...medicalEvidence(category)];
+}
+
+/**
+ * The documents a consequential claim needs, in assembly order.
+ *
+ * The same whatever is being claimed: the EE-1a stands in for the EE-1, there
+ * is no EE-3 because the client already has a case, and the diagnosis letter
+ * carries the link back to the accepted illness.
+ */
+export function consequentialDocuments(): DocumentSlot[] {
+  return [
+    ...openingDocuments(),
+    {
+      id: 'ee1a',
+      label: 'EE-1a',
+      source: 'generated',
+      generator: 'ee1a',
+      required: true,
+      hint: 'Built from the claim details below, with the signature if one was supplied.',
+    },
+    {
+      id: 'dx_letter',
+      label: 'Diagnosis Letter',
+      source: 'upload',
+      required: true,
+      hint: 'Confirm a doctor signed it before assembling. If the consequential condition is chronic silicosis, the B-read goes with it.',
+    },
+    {
+      id: 'medical_records',
+      label: 'Supporting Medical Records',
+      source: 'upload',
+      required: false,
+      hint: 'Optional — often already attached to the diagnosis letter. Add any records or studies that support it.',
+    },
+  ];
 }
 
 /** The medical evidence a category calls for — the part that actually varies. */
@@ -182,26 +231,74 @@ export interface ClaimNameParts {
   conditionAbbr: string;
   firstName: string;
   lastName: string;
+  /** Defaults to primary */
+  claimType?: ClaimType;
   /** Defaults to today */
   date?: Date;
 }
 
-/**
- * The assembled claim's filename, e.g. "EEOIC Claim CS F. Last 12.05.23".
- */
-export function claimFileName({
-  conditionAbbr,
-  firstName,
-  lastName,
-  date = new Date(),
-}: ClaimNameParts): string {
+/** "C. Britt 01.29.26" — how every file for a client ends. */
+function nameAndDate(firstName: string, lastName: string, date: Date): string {
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
   const yy = String(date.getFullYear()).slice(-2);
 
   const initial = firstName.trim().charAt(0).toUpperCase();
-  const surname = lastName.trim();
-  const condition = conditionAbbr.trim();
 
-  return `EEOIC Claim ${condition} ${initial}. ${surname} ${mm}.${dd}.${yy}`;
+  return `${initial}. ${lastName.trim()} ${mm}.${dd}.${yy}`;
+}
+
+/**
+ * The assembled claim's filename, e.g. "EEOIC Claim CS F. Last 12.05.23", or
+ * "EEOIC Claim CQ CKD, HTN F. Last 12.05.23" for a consequential claim.
+ */
+export function claimFileName({
+  conditionAbbr,
+  firstName,
+  lastName,
+  claimType = 'primary',
+  date = new Date(),
+}: ClaimNameParts): string {
+  const prefix = claimType === 'consequential' ? 'CQ ' : '';
+
+  return `EEOIC Claim ${prefix}${conditionAbbr.trim()} ${nameAndDate(firstName, lastName, date)}`;
+}
+
+/** What each generated form is called on its own. */
+const FORM_NAMES: Record<SlotGenerator, string> = {
+  ee1: 'EE-1',
+  ee1a: 'EE-1a',
+  ee3: 'EE-3',
+};
+
+export interface FormNameParts {
+  form: SlotGenerator;
+  conditionAbbr: string;
+  firstName: string;
+  lastName: string;
+  /** False for a form built without the client's signature, still to be signed */
+  signed: boolean;
+  /** Defaults to today */
+  date?: Date;
+}
+
+/**
+ * The name a generated form is saved under in the client's folder, e.g.
+ * "EE-1 SIGNED CS F. Last 12.05.23". The EE-3 covers the client's whole work
+ * history rather than one condition, so it carries no condition.
+ */
+export function formFileName({
+  form,
+  conditionAbbr,
+  firstName,
+  lastName,
+  signed,
+  date = new Date(),
+}: FormNameParts): string {
+  const parts = [FORM_NAMES[form]];
+  if (signed) parts.push('SIGNED');
+  if (form !== 'ee3') parts.push(conditionAbbr.trim());
+  parts.push(nameAndDate(firstName, lastName, date));
+
+  return parts.filter(Boolean).join(' ');
 }

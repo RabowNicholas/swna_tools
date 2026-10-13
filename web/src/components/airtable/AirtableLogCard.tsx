@@ -122,6 +122,14 @@ interface AirtableLogCardProps {
    * e.g. a checkbox in `children`. Defaults to true.
    */
   ready?: boolean;
+  /**
+   * False for an entry that records work done here rather than a portal
+   * submission, so there is no reference number to wait for. `action` is then
+   * called with an empty reference. Defaults to true.
+   */
+  requireReference?: boolean;
+  /** Overrides the card title, for an entry that isn't a portal submission */
+  title?: string;
 }
 
 /**
@@ -148,6 +156,8 @@ export function AirtableLogCard({
   submissionField,
   children,
   ready: pageReady = true,
+  requireReference = true,
+  title = "Update Airtable",
 }: AirtableLogCardProps) {
   const { data: session } = useSession();
   const { refreshClients } = useClients();
@@ -169,13 +179,15 @@ export function AirtableLogCard({
   const submitted = submission.trim();
   // A card that asks what was submitted can't log until it's been answered.
   const ready =
-    pageReady && !!referenceNumber.trim() && (!submissionField || !!submitted);
+    pageReady &&
+    (!requireReference || !!referenceNumber.trim()) &&
+    (!submissionField || !!submitted);
   const logEntry = (reference: string) =>
     buildLogEntry(action(reference, statusTags, submitted), session?.user?.email);
 
   const handleUpdate = async () => {
     const reference = referenceNumber.trim();
-    if (!reference || !ready) return;
+    if (!ready) return;
 
     const extra = extraFields?.();
     if (extra && "error" in extra) {
@@ -243,7 +255,7 @@ export function AirtableLogCard({
       <CardHeader>
         <div className="flex items-center space-x-2">
           <Database className="h-5 w-5 text-primary" />
-          <CardTitle>Update Airtable</CardTitle>
+          <CardTitle>{title}</CardTitle>
         </div>
         <p className="text-sm text-muted-foreground">
           {description ?? (
@@ -297,15 +309,17 @@ export function AirtableLogCard({
               />
             )}
 
-            <Input
-              label="Portal Reference Number"
-              required
-              placeholder="Paste the reference number from the portal"
-              value={referenceNumber}
-              onChange={(e) => setReferenceNumber(e.target.value)}
-              disabled={updating}
-              helperText="Shown by the submission portal after you submit"
-            />
+            {requireReference && (
+              <Input
+                label="Portal Reference Number"
+                required
+                placeholder="Paste the reference number from the portal"
+                value={referenceNumber}
+                onChange={(e) => setReferenceNumber(e.target.value)}
+                disabled={updating}
+                helperText="Shown by the submission portal after you submit"
+              />
+            )}
 
             {statusPicker && (
               <div className="space-y-2">
@@ -368,7 +382,10 @@ export function AirtableLogCard({
                 <>
                   Adds to {clientName}&apos;s log:{" "}
                   <span className="font-medium text-foreground">
-                    {logEntry(referenceNumber.trim() || "REFERENCE")}
+                    {logEntry(
+                      referenceNumber.trim() ||
+                        (requireReference ? "REFERENCE" : "")
+                    )}
                   </span>
                 </>
               )}

@@ -40,7 +40,7 @@ export const TOOL_SECTIONS: ToolSection[] = [
     summary: "The forms for a new claim.",
     icon: FilePlus2,
     tools: [
-      { name: "Claims Assembly", href: "/forms/claims-assembly", description: "Build the full claim package: EE-1, EE-3 and your documents, merged and named." },
+      { name: "Claims Assembly", href: "/forms/claims-assembly", description: "Build the full claim package, primary or consequential: the forms and your documents, merged and named." },
       { name: "EE-1", href: "/forms/ee1", description: "The worker's claim for benefits." },
       { name: "EE-1a", href: "/forms/ee1a", description: "A claim for a new condition caused by an illness DOL already accepted." },
       { name: "EE-3", href: "/forms/ee3", description: "The client's employment history." },

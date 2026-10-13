@@ -1,5 +1,5 @@
 /**
- * Building an EE-1 or EE-3 from the browser.
+ * Building an EE-1, EE-1a or EE-3 from the browser.
  *
  * The generators run on the server — they need the blank templates and sharp
  * for signature ink isolation — so these post the collected fields to the
@@ -8,14 +8,16 @@
  * 4.5MB body cap; the claimant's medical records stay in the browser and are
  * merged there.
  *
- * The routes disagree on request encoding — the EE-1's accepts multipart so it
- * can carry the signature file — which is the reason this lives in one place.
+ * The routes disagree on request encoding — the EE-1's and EE-1a's accept
+ * multipart so they can carry the signature file, each under its own field
+ * names — which is the reason this lives in one place.
  */
 
 import { AssemblyError } from './assemble';
 import { SOURCE_HEADER } from '@/lib/events/source';
 import type { DiagnosisCategories } from '@/components/form/DiagnosisCategories';
 import type { EmploymentRecord } from '@/components/form/EmploymentHistory';
+import type { ConsequentialDiagnosis } from '@/lib/schemas/ee1a';
 
 /** Airtable client record, passed through to the generator untouched. */
 export type ClientRecord = { id: string; fields: Record<string, unknown> };
@@ -39,6 +41,19 @@ export interface EE1GeneratorFields {
   address_zip: string;
   phone: string;
   diagnosis_categories: DiagnosisCategories;
+}
+
+export interface EE1AGeneratorFields {
+  first_name: string;
+  last_name: string;
+  /** The case the accepted illness sits under */
+  case_id: string;
+  address_main: string;
+  address_city: string;
+  address_state: string;
+  address_zip: string;
+  phone: string;
+  diagnoses: ConsequentialDiagnosis[];
 }
 
 export interface EE3GeneratorFields {
@@ -114,6 +129,25 @@ export async function generateEE1(
   }
 
   return requestPdf('/api/generate/ee1', { method: 'POST', body }, slotId, 'EE-1');
+}
+
+/** The EE-1a route also takes multipart, with the fields under one `data` part. */
+export async function generateEE1A(
+  clientRecord: ClientRecord,
+  fields: EE1AGeneratorFields,
+  signatureFile?: File | null,
+  slotId = 'ee1a'
+): Promise<ArrayBuffer> {
+  const body = new FormData();
+  body.append(
+    'data',
+    JSON.stringify({ client_record: clientRecord, form_data: fields })
+  );
+  if (signatureFile) {
+    body.append('signature_file', signatureFile);
+  }
+
+  return requestPdf('/api/generate/ee1a', { method: 'POST', body }, slotId, 'EE-1a');
 }
 
 /** The EE-3 carries SWNA's baked-in signature, so plain JSON is enough. */

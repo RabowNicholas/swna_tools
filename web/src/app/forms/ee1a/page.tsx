@@ -3,29 +3,29 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
-import { useForm } from "react-hook-form";
+import { useForm, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import {
-  FileDown,
-  AlertCircle,
-  CheckCircle,
-  Plus,
-  Trash2,
-  Upload,
-  FileText,
-  User,
-  Info,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { FileDown, CheckCircle, Upload, User, Info } from "lucide-react";
 import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import {
+  ConsequentialDiagnosesSection,
+  type ConsequentialDiagnosesValues,
+} from "@/components/form/ConsequentialDiagnoses";
+import {
+  consequentialDiagnosisSchema,
+  emptyConsequentialDiagnosis,
+  hasConsequentialDiagnosisErrors,
+  validateConsequentialDiagnoses,
+  type ConsequentialDiagnosisError,
+} from "@/lib/schemas/ee1a";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
@@ -116,30 +116,6 @@ const getStateAbbreviation = (stateName: string): string => {
   return stateName;
 };
 
-// Date validation helper
-const validateDate = (date: string, label: string): string | null => {
-  if (!date) return null;
-
-  const dateObj = new Date(date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const minDate = new Date("1900-01-01");
-
-  if (isNaN(dateObj.getTime())) {
-    return `${label} must be a valid date`;
-  }
-
-  if (dateObj > today) {
-    return `${label} cannot be in the future`;
-  }
-
-  if (dateObj < minDate) {
-    return `${label} must be after January 1, 1900`;
-  }
-
-  return null;
-};
-
 // Zod schema for form validation
 const ee1aSchema = z.object({
   client_id: z.string().min(1, "Please select a client"),
@@ -162,21 +138,11 @@ const ee1aSchema = z.object({
       "Phone number must be in format: 123.123.1234"
     ),
   diagnoses: z
-    .array(
-      z.object({
-        diagnosis_text: z.string(),
-        diagnosis_date: z.string(),
-      })
-    )
+    .array(consequentialDiagnosisSchema)
     .min(1, "At least one diagnosis is required"),
 });
 
 type EE1AFormData = z.infer<typeof ee1aSchema>;
-
-interface DiagnosisError {
-  diagnosis_text?: string;
-  diagnosis_date?: string;
-}
 
 export default function EE1AForm() {
   const { data: session } = useSession();
@@ -192,7 +158,9 @@ export default function EE1AForm() {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
-  const [diagnosisErrors, setDiagnosisErrors] = useState<DiagnosisError[]>([]);
+  const [diagnosisErrors, setDiagnosisErrors] = useState<
+    ConsequentialDiagnosisError[]
+  >([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<EE1AFormData>({
@@ -209,12 +177,9 @@ export default function EE1AForm() {
       address_state: "",
       address_zip: "",
       phone: "",
-      diagnoses: [{ diagnosis_text: "", diagnosis_date: "" }],
+      diagnoses: [emptyConsequentialDiagnosis()],
     },
   });
-
-  // Watch diagnoses for dynamic validation
-  const diagnoses = form.watch("diagnoses");
 
   // Show error if clients failed to load
   useEffect(() => {
@@ -285,65 +250,10 @@ export default function EE1AForm() {
     }
   };
 
-  // Add diagnosis
-  const addDiagnosis = () => {
-    const currentDiagnoses = form.getValues("diagnoses");
-    if (currentDiagnoses.length < 5) {
-      form.setValue("diagnoses", [
-        ...currentDiagnoses,
-        { diagnosis_text: "", diagnosis_date: "" },
-      ]);
-      setDiagnosisErrors([...diagnosisErrors, {}]);
-    } else {
-      alert("Maximum of 5 diagnoses allowed");
-    }
-  };
-
-  // Remove diagnosis
-  const removeDiagnosis = (index: number) => {
-    const currentDiagnoses = form.getValues("diagnoses");
-    if (currentDiagnoses.length > 1) {
-      form.setValue(
-        "diagnoses",
-        currentDiagnoses.filter((_, i) => i !== index)
-      );
-      setDiagnosisErrors(diagnosisErrors.filter((_, i) => i !== index));
-    }
-  };
-
-  // Validate diagnoses
   const validateDiagnoses = (): boolean => {
-    const currentDiagnoses = form.getValues("diagnoses");
-    const errors: DiagnosisError[] = [];
-    let hasError = false;
-
-    currentDiagnoses.forEach((diagnosis, index) => {
-      const diagError: DiagnosisError = {};
-
-      if (!diagnosis.diagnosis_text || diagnosis.diagnosis_text.trim() === "") {
-        diagError.diagnosis_text = "Diagnosis description is required";
-        hasError = true;
-      }
-
-      if (!diagnosis.diagnosis_date || diagnosis.diagnosis_date.trim() === "") {
-        diagError.diagnosis_date = "Diagnosis date is required";
-        hasError = true;
-      } else {
-        const dateError = validateDate(
-          diagnosis.diagnosis_date,
-          "Diagnosis date"
-        );
-        if (dateError) {
-          diagError.diagnosis_date = dateError;
-          hasError = true;
-        }
-      }
-
-      errors[index] = diagError;
-    });
-
+    const errors = validateConsequentialDiagnoses(form.getValues("diagnoses"));
     setDiagnosisErrors(errors);
-    return !hasError;
+    return !hasConsequentialDiagnosisErrors(errors);
   };
 
   // Handle submit click with manual validation
@@ -451,10 +361,6 @@ export default function EE1AForm() {
   if (clientsError) {
     return <PageError title="Couldn’t load clients" message={clientsError} onRetry={() => refreshClients(true)} />;
   }
-
-  const hasAnyDiagnosisError = diagnosisErrors.some(
-    (err) => err.diagnosis_text || err.diagnosis_date
-  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -600,138 +506,12 @@ export default function EE1AForm() {
         </Card>
 
         {/* Consequential Illnesses */}
-        <Card variant="elevated">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center space-x-2">
-                  <FileText className="h-5 w-5 text-primary" />
-                  <CardTitle>Consequential Illnesses</CardTitle>
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  List conditions that resulted from your accepted illness (max
-                  5)
-                </p>
-              </div>
-              {diagnoses.length < 5 && (
-                <Button
-                  type="button"
-                  onClick={addDiagnosis}
-                  variant="outline"
-                  size="sm"
-                  icon={<Plus className="h-4 w-4" />}
-                >
-                  Add Diagnosis
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {hasAnyDiagnosisError && attemptedSubmit && (
-              <div
-                style={{
-                  backgroundColor:
-                    "color-mix(in srgb, var(--destructive) 15%, transparent)",
-                  borderColor: "var(--destructive)",
-                }}
-                className="mb-6 p-4 rounded-lg border-2 flex items-start"
-              >
-                <AlertCircle
-                  className="h-5 w-5 flex-shrink-0 mt-0.5"
-                  style={{ color: "var(--destructive)" }}
-                />
-                <div className="ml-3">
-                  <h4
-                    className="font-medium"
-                    style={{ color: "var(--destructive)" }}
-                  >
-                    Please complete all diagnosis information
-                  </h4>
-                  <p
-                    className="text-sm mt-1"
-                    style={{ color: "var(--destructive)" }}
-                  >
-                    Each diagnosis must have both a description and a valid
-                    date.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-4">
-              {diagnoses.map((diagnosis, index) => (
-                <Card
-                  key={index}
-                  style={
-                    attemptedSubmit &&
-                    (diagnosisErrors[index]?.diagnosis_text ||
-                      diagnosisErrors[index]?.diagnosis_date)
-                      ? {
-                          borderColor: "var(--destructive)",
-                          backgroundColor:
-                            "color-mix(in srgb, var(--destructive) 10%, transparent)",
-                        }
-                      : undefined
-                  }
-                  className={cn(
-                    "border-2 transition-all",
-                    !attemptedSubmit ||
-                      (!diagnosisErrors[index]?.diagnosis_text &&
-                        !diagnosisErrors[index]?.diagnosis_date)
-                      ? "border-border"
-                      : ""
-                  )}
-                >
-                  <CardContent className="pt-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-medium text-foreground">
-                          Diagnosis #{index + 1}
-                        </h4>
-                        {diagnoses.length > 1 && (
-                          <Button
-                            type="button"
-                            onClick={() => removeDiagnosis(index)}
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            icon={<Trash2 className="h-4 w-4" />}
-                          >
-                            Remove
-                          </Button>
-                        )}
-                      </div>
-
-                      <Input
-                        label="Diagnosis Description"
-                        required
-                        placeholder="Describe the consequential illness..."
-                        error={
-                          attemptedSubmit
-                            ? diagnosisErrors[index]?.diagnosis_text
-                            : undefined
-                        }
-                        {...form.register(`diagnoses.${index}.diagnosis_text`)}
-                      />
-
-                      <Input
-                        label="Diagnosis Date"
-                        type="date"
-                        required
-                        error={
-                          attemptedSubmit
-                            ? diagnosisErrors[index]?.diagnosis_date
-                            : undefined
-                        }
-                        {...form.register(`diagnoses.${index}.diagnosis_date`)}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <ConsequentialDiagnosesSection
+          form={form as unknown as UseFormReturn<ConsequentialDiagnosesValues>}
+          errors={diagnosisErrors}
+          onErrorsChange={setDiagnosisErrors}
+          attemptedSubmit={attemptedSubmit}
+        />
 
         {/* Signature Upload */}
         <Card variant="elevated">
