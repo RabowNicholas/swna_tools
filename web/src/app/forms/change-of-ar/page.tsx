@@ -28,11 +28,15 @@ import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
-import { CopyField } from "@/components/portal/PortalAccess";
+import { CopyField, PortalAccess } from "@/components/portal/PortalAccess";
 import { appendPdf } from "@/lib/pdf/append-pdf";
 
-// DEEOIC fax line for AR changes, in the form HelloFax takes
+// DEEOIC fax line for AR changes, used when there's no case ID to submit
+// under in the portal. In the form HelloFax takes.
 const DOL_AR_FAX_NUMBER = "+1 702-697-0843";
+
+// The portal category an AR change is submitted under
+const PORTAL_CATEGORY = "Identification of AR";
 
 const changeOfARSchema = z.object({
   client_id: z.string().min(1, "Please select a client"),
@@ -40,6 +44,8 @@ const changeOfARSchema = z.object({
   letter_date: z.string().min(1, "Letter date is required"),
   prev_rep_name: z.string().min(1, "Previous representative name is required"),
   phone: z.string().min(1, "Phone number is required"),
+  // Optional: with one the packet goes through the portal, without it's faxed
+  case_id: z.string(),
 });
 
 type ChangeOfARFormData = z.infer<typeof changeOfARSchema>;
@@ -70,6 +76,8 @@ export default function ChangeOfARForm() {
   // Bumped per generation so the Airtable card starts fresh each time
   const [submissionId, setSubmissionId] = useState(0);
   const [faxed, setFaxed] = useState(false);
+  // The case ID the packet went out under; decides portal vs fax
+  const [submittedCaseId, setSubmittedCaseId] = useState("");
 
   // The client's wet-signed DOL AR form, appended after the letter
   const [arFormFile, setArFormFile] = useState<File | null>(null);
@@ -86,6 +94,7 @@ export default function ChangeOfARForm() {
       letter_date: new Date().toISOString().split("T")[0],
       prev_rep_name: "",
       phone: "",
+      case_id: "",
     },
   });
 
@@ -99,6 +108,7 @@ export default function ChangeOfARForm() {
         parseClientName(client.fields.Name || "")
       );
       form.setValue("phone", client.fields["Phone"] || "");
+      form.setValue("case_id", String(client.fields["Case ID"] || "").trim());
       form.setValue("letter_date", new Date().toISOString().split("T")[0]);
     }
   };
@@ -177,6 +187,7 @@ export default function ChangeOfARForm() {
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
         setSubmittedPrevRep(data.prev_rep_name);
+        setSubmittedCaseId(data.case_id.trim());
         setFaxed(false);
         setSubmissionId((id) => id + 1);
       } else {
@@ -256,6 +267,18 @@ export default function ChangeOfARForm() {
                       className="bg-muted/30"
                     />
                   </div>
+
+                  <Input
+                    label="Case ID"
+                    error={form.formState.errors.case_id?.message}
+                    placeholder="Leave blank if we don't have one"
+                    helperText={
+                      form.watch("case_id").trim()
+                        ? "Has a case ID, so the packet goes through the DOL portal."
+                        : "No case ID, so the packet gets faxed to the DOL."
+                    }
+                    {...form.register("case_id")}
+                  />
 
                   <Input
                     label="Letter Date"
@@ -422,57 +445,113 @@ export default function ChangeOfARForm() {
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     The removal letter and the signed AR form have been
-                    downloaded as one PDF, ready to fax to the DOL.
+                    downloaded as one PDF, ready to{" "}
+                    {submittedCaseId
+                      ? "submit in the DOL portal"
+                      : "fax to the DOL"}
+                    .
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card variant="elevated">
-            <CardHeader>
-              <div className="flex items-center space-x-2">
-                <Send className="h-5 w-5 text-primary" />
-                <CardTitle>Fax to the DOL</CardTitle>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Send the downloaded PDF through HelloFax to the number below.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <CopyField label="DOL fax number" value={DOL_AR_FAX_NUMBER} />
-            </CardContent>
-          </Card>
+          {submittedCaseId ? (
+            <>
+              <Card variant="elevated">
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    <Send className="h-5 w-5 text-primary" />
+                    <CardTitle>Submit in the DOL portal</CardTitle>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Upload the downloaded PDF under the category below.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <CopyField label="Portal category" value={PORTAL_CATEGORY} />
+                </CardContent>
+              </Card>
 
-          <AirtableLogCard
-            key={submissionId}
-            client={submittedClient}
-            subject="the change of AR"
-            requireReference={false}
-            description="Once the fax has gone through, log it on the client's record."
-            action={() => `Submitted change of AR (removed ${submittedPrevRep})`}
-            autoStatus={{ add: ["Awaiting AR Change"], remove: [] }}
-            ready={faxed}
-            confirmation={() => (
-              <>
-                The change of AR was added to {submittedClient.fields.Name}
-                &apos;s log and the Awaiting AR Change tag was added to Status.
-              </>
-            )}
-          >
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 rounded border-border accent-primary flex-shrink-0"
-                checked={faxed}
-                onChange={(e) => setFaxed(e.target.checked)}
+              <PortalAccess
+                client={
+                  {
+                    ...submittedClient,
+                    fields: {
+                      ...submittedClient.fields,
+                      "Case ID": submittedCaseId,
+                    },
+                  } as any
+                }
+                autoOpen={true}
               />
-              <span className="text-sm text-foreground">
-                Faxed through HelloFax
-                <span className="text-muted-foreground" aria-label="required"> *</span>
-              </span>
-            </label>
-          </AirtableLogCard>
+            </>
+          ) : (
+            <Card variant="elevated">
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <Send className="h-5 w-5 text-primary" />
+                  <CardTitle>Fax to the DOL</CardTitle>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  No case ID, so send the downloaded PDF through HelloFax to
+                  the number below.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <CopyField label="DOL fax number" value={DOL_AR_FAX_NUMBER} />
+              </CardContent>
+            </Card>
+          )}
+
+          {submittedCaseId ? (
+            <AirtableLogCard
+              key={submissionId}
+              client={submittedClient}
+              subject="the change of AR"
+              action={(reference) =>
+                `Submitted change of AR (removed ${submittedPrevRep}) (*${reference})`
+              }
+              autoStatus={{ add: ["Awaiting AR Change"], remove: [] }}
+              confirmation={(reference) => (
+                <>
+                  The change of AR was added to {submittedClient.fields.Name}
+                  &apos;s log with reference {reference} and the Awaiting AR
+                  Change tag was added to Status.
+                </>
+              )}
+            />
+          ) : (
+            <AirtableLogCard
+              key={submissionId}
+              client={submittedClient}
+              subject="the change of AR"
+              requireReference={false}
+              description="Once the fax has gone through, log it on the client's record."
+              action={() => `Submitted change of AR (removed ${submittedPrevRep})`}
+              autoStatus={{ add: ["Awaiting AR Change"], remove: [] }}
+              ready={faxed}
+              confirmation={() => (
+                <>
+                  The change of AR was added to {submittedClient.fields.Name}
+                  &apos;s log and the Awaiting AR Change tag was added to Status.
+                </>
+              )}
+            >
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 h-4 w-4 rounded border-border accent-primary flex-shrink-0"
+                  checked={faxed}
+                  onChange={(e) => setFaxed(e.target.checked)}
+                />
+                <span className="text-sm text-foreground">
+                  Faxed through HelloFax
+                  <span className="text-muted-foreground" aria-label="required"> *</span>
+                </span>
+              </label>
+            </AirtableLogCard>
+          )}
         </>
       )}
     </div>
