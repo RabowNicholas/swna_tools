@@ -16,6 +16,8 @@ import {
   EyeOff,
   CheckCircle,
   UserX,
+  FileText,
+  Send,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -24,6 +26,12 @@ import {
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
+import { CopyField } from "@/components/portal/PortalAccess";
+import { appendPdf } from "@/lib/pdf/append-pdf";
+
+// DEEOIC fax line for AR changes, in the form HelloFax takes
+const DOL_AR_FAX_NUMBER = "+1 702-697-0843";
 
 const changeOfARSchema = z.object({
   client_id: z.string().min(1, "Please select a client"),
@@ -54,6 +62,16 @@ export default function ChangeOfARForm() {
   } = useClientContext();
   const [loading, setLoading] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  // The previous rep as written into the letter, so a later edit to the form
+  // can't log a name different from the one sent
+  const [submittedPrevRep, setSubmittedPrevRep] = useState("");
+  // Bumped per generation so the Airtable card starts fresh each time
+  const [submissionId, setSubmissionId] = useState(0);
+  const [faxed, setFaxed] = useState(false);
+
+  // The client's wet-signed DOL AR form, appended after the letter
+  const [arFormFile, setArFormFile] = useState<File | null>(null);
 
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
@@ -108,7 +126,18 @@ export default function ChangeOfARForm() {
     }
   };
 
+  const handleArFormUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      alert("Please upload the AR form as a PDF.");
+      return;
+    }
+    setArFormFile(file);
+  };
+
   const onSubmit = async (data: ChangeOfARFormData) => {
+    if (!signatureFile || !arFormFile) return;
     setLoading(true);
     try {
       const selectedClient = clients.find((c) => c.id === data.client_id) as any;
@@ -127,9 +156,7 @@ export default function ChangeOfARForm() {
       };
       formDataForAPI.append("form_data", JSON.stringify(formDataPayload));
 
-      if (signatureFile) {
-        formDataForAPI.append("signature_file", signatureFile);
-      }
+      formDataForAPI.append("signature_file", signatureFile);
 
       const response = await fetch("/api/generate/change-of-ar", {
         method: "POST",
@@ -137,7 +164,17 @@ export default function ChangeOfARForm() {
       });
 
       if (response.ok) {
-        const blob = await response.blob();
+        // The letter goes first, then the signed AR form it refers to, so the
+        // fax arrives as one packet
+        const letterBytes = await (await response.blob()).arrayBuffer();
+        const packet = await appendPdf(
+          letterBytes,
+          await arFormFile.arrayBuffer(),
+          "AR form"
+        );
+        const blob = new Blob([packet as BlobPart], {
+          type: "application/pdf",
+        });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -154,6 +191,10 @@ export default function ChangeOfARForm() {
         document.body.removeChild(a);
 
         setFormSubmitted(true);
+        setSubmittedClient(selectedClient);
+        setSubmittedPrevRep(data.prev_rep_name);
+        setFaxed(false);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -327,10 +368,43 @@ export default function ChangeOfARForm() {
 
                   {!signatureFile && (
                     <p className="text-sm text-muted-foreground">
-                      No signature uploaded. The letter will be generated
-                      without a signature.
+                      Required. The signature goes on the removal letter.
                     </p>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Signed AR Form */}
+            <Card variant="elevated">
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <CardTitle>Signed AR Form</CardTitle>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Upload the client&apos;s completed, wet-signed DOL AR form
+                  (PDF). It&apos;s attached after the removal letter.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-4">
+                  <label htmlFor="ar-form-upload" className="cursor-pointer">
+                    <div className="flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-muted/50 transition-colors text-sm">
+                      <Upload className="h-4 w-4" />
+                      {arFormFile ? "Change AR Form" : "Upload AR Form"}
+                    </div>
+                    <input
+                      id="ar-form-upload"
+                      type="file"
+                      accept=".pdf,application/pdf"
+                      className="hidden"
+                      onChange={handleArFormUpload}
+                    />
+                  </label>
+                  <span className="text-sm text-muted-foreground">
+                    {arFormFile ? arFormFile.name : "Required."}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -349,7 +423,9 @@ export default function ChangeOfARForm() {
                   disabled={
                     loading ||
                     !form.watch("client_id") ||
-                    !form.watch("prev_rep_name")
+                    !form.watch("prev_rep_name") ||
+                    !signatureFile ||
+                    !arFormFile
                   }
                   variant="primary"
                   hierarchy="primary"
@@ -358,40 +434,94 @@ export default function ChangeOfARForm() {
                   className="min-w-[250px]"
                   icon={<FileDown className="h-5 w-5" />}
                 >
-                  {loading ? "Generating Letter..." : "Generate Change of AR Letter"}
+                  {loading ? "Generating Packet..." : "Generate Change of AR Packet"}
                 </Button>
               </div>
 
-              {!form.watch("client_id") && (
+              {!form.watch("client_id") ? (
                 <p className="text-sm text-muted-foreground">
-                  Select a client above to generate a Change of AR letter
+                  Select a client above to generate a Change of AR packet
                 </p>
+              ) : (
+                (!signatureFile || !arFormFile) && (
+                  <p className="text-sm text-muted-foreground">
+                    Upload the client&apos;s signature and signed AR form to
+                    continue
+                  </p>
+                )
               )}
             </div>
           </CardContent>
         </Card>
       </form>
 
-      {/* Success Message */}
-      {formSubmitted && (
-        <Card variant="elevated" className="bg-success/10 border-success/20">
-          <CardContent className="p-6">
-            <div className="flex items-start space-x-4">
-              <div className="flex-shrink-0">
-                <CheckCircle className="h-6 w-6 text-success" />
+      {/* Success, fax instructions, and Airtable log */}
+      {formSubmitted && submittedClient && (
+        <>
+          <Card variant="elevated" className="bg-success/10 border-success/20">
+            <CardContent className="p-6">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <CheckCircle className="h-6 w-6 text-success" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-foreground mb-2">
+                    Change of AR packet generated
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    The removal letter and the signed AR form have been
+                    downloaded as one PDF, ready to fax to the DOL.
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  Change of AR letter generated successfully!
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Your Change of AR letter has been downloaded. Please have the
-                  client sign it and fax it to OWCP-DEEOIC.
-                </p>
+            </CardContent>
+          </Card>
+
+          <Card variant="elevated">
+            <CardHeader>
+              <div className="flex items-center space-x-2">
+                <Send className="h-5 w-5 text-primary" />
+                <CardTitle>Fax to the DOL</CardTitle>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <p className="text-sm text-muted-foreground">
+                Send the downloaded PDF through HelloFax to the number below.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <CopyField label="DOL fax number" value={DOL_AR_FAX_NUMBER} />
+            </CardContent>
+          </Card>
+
+          <AirtableLogCard
+            key={submissionId}
+            client={submittedClient}
+            subject="the change of AR"
+            requireReference={false}
+            description="Once the fax has gone through, log it on the client's record."
+            action={() => `Submitted change of AR (removed ${submittedPrevRep})`}
+            autoStatus={{ add: ["Awaiting AR Change"], remove: [] }}
+            ready={faxed}
+            confirmation={() => (
+              <>
+                The change of AR was added to {submittedClient.fields.Name}
+                &apos;s log and the Awaiting AR Change tag was added to Status.
+              </>
+            )}
+          >
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 rounded border-border accent-primary flex-shrink-0"
+                checked={faxed}
+                onChange={(e) => setFaxed(e.target.checked)}
+              />
+              <span className="text-sm text-foreground">
+                Faxed through HelloFax
+                <span className="text-muted-foreground" aria-label="required"> *</span>
+              </span>
+            </label>
+          </AirtableLogCard>
+        </>
       )}
     </div>
   );
