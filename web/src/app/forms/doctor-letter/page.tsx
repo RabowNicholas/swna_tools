@@ -38,6 +38,7 @@ import {
   letterConditions,
 } from "@/lib/generators/letter-templates";
 import { assembleClaim, formatPageRange } from "@/lib/claims/assemble";
+import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
@@ -977,23 +978,18 @@ export default function DoctorLetterForm() {
                   <p className="text-sm text-muted-foreground">
                     The same B-read the findings above were taken from.
                   </p>
-                  <input
+                  <FileDropzone
                     key={`b-read-${uploadGeneration}`}
-                    type="file"
                     accept="application/pdf,.pdf"
-                    aria-label="B-read PDF"
-                    onChange={(e) => {
-                      setBReadFile(e.target.files?.[0] ?? null);
+                    file={bReadFile}
+                    onFile={(file) => {
+                      setBReadFile(file);
                       setError(null);
                     }}
-                    className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-accent/80"
+                    prompt="the B-read PDF"
+                    hint="PDF only"
+                    typeError="Please upload the B-read as a PDF."
                   />
-                  {bReadFile && (
-                    <div className="flex items-center gap-2 text-sm text-success">
-                      <CheckCircle className="h-4 w-4" />
-                      <span className="truncate">{bReadFile.name}</span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

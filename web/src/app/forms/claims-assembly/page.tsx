@@ -87,6 +87,7 @@ import {
   generateEE1A,
   generateEE3,
 } from "@/lib/claims/generate";
+import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
@@ -1105,21 +1106,15 @@ export default function ClaimsAssemblyPage() {
                                 {slot.hint}
                               </p>
                             )}
-                            <input
+                            <FileDropzone
                               key={`${slot.id}-${uploadGeneration}`}
-                              type="file"
                               accept="application/pdf,.pdf"
-                              onChange={(e) =>
-                                selectFile(slot.id, e.target.files?.[0])
-                              }
-                              className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-accent file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground hover:file:bg-accent/80"
+                              file={file ?? null}
+                              onFile={(picked) => selectFile(slot.id, picked)}
+                              prompt="the PDF"
+                              hint="PDF only"
+                              typeError="Please upload a PDF."
                             />
-                            {file && (
-                              <p className="flex items-center gap-1 text-sm text-success">
-                                <CheckCircle className="h-4 w-4 flex-shrink-0" />
-                                <span className="truncate">{file.name}</span>
-                              </p>
-                            )}
                           </div>
                         )}
 

@@ -10,7 +10,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { FileDropzone } from "@/components/form/FileDropzone";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Upload, Eye, EyeOff, CheckCircle, Info } from "lucide-react";
 
@@ -34,16 +34,8 @@ export function SignatureUpload({ file, onChange }: SignatureUploadProps) {
     }
   }
 
-  const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = event.target.files?.[0];
-    if (!selected) return;
-
-    const validTypes = ["image/png", "image/jpeg", "image/jpg"];
-    if (!validTypes.includes(selected.type)) {
-      alert("Please upload a PNG or JPEG image file.");
-      return;
-    }
-
+  // The type is already checked against `accept` by the dropzone
+  const handleUpload = (selected: File) => {
     try {
       // Use the original file without any processing — the generator's
       // isolateInk() does the cleanup server-side.
@@ -101,12 +93,14 @@ export function SignatureUpload({ file, onChange }: SignatureUploadProps) {
             </div>
           </div>
 
-          <Input
-            type="file"
+          <FileDropzone
             label="Client Signature (optional)"
             accept="image/png,image/jpeg,image/jpg"
-            onChange={handleUpload}
-            helperText="A clear photo or scan, PNG or JPG"
+            file={file}
+            onFile={handleUpload}
+            prompt="the signature image"
+            hint="A clear photo or scan, PNG or JPG"
+            typeError="Please upload a PNG or JPEG image file."
           />
 
           {file && (

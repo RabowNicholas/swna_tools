@@ -24,6 +24,7 @@ import {
   ClientSelector,
   parseClientName,
 } from "@/components/form/ClientSelector";
+import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
@@ -102,16 +103,9 @@ export default function ChangeOfARForm() {
     }
   };
 
-  const handleSignatureUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const validTypes = ["image/png", "image/jpeg", "image/jpg"];
-      if (!validTypes.includes(file.type)) {
-        alert("Please upload a PNG or JPEG image file.");
-        return;
-      }
+  // The type is already checked against `accept` by the dropzone
+  const handleSignatureUpload = async (file: File) => {
+    {
       try {
         setSignatureFile(file);
         const reader = new FileReader();
@@ -124,16 +118,6 @@ export default function ChangeOfARForm() {
         alert("Failed to load signature image. Please try a different image.");
       }
     }
-  };
-
-  const handleArFormUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (file.type !== "application/pdf") {
-      alert("Please upload the AR form as a PDF.");
-      return;
-    }
-    setArFormFile(file);
   };
 
   const onSubmit = async (data: ChangeOfARFormData) => {
@@ -305,50 +289,34 @@ export default function ChangeOfARForm() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <label
-                      htmlFor="signature-upload"
-                      className="cursor-pointer"
+                  <FileDropzone
+                    accept="image/png,image/jpeg,image/jpg"
+                    file={signatureFile}
+                    onFile={handleSignatureUpload}
+                    prompt="the signature image"
+                    hint="Required. PNG or JPG, placed on the removal letter."
+                    typeError="Please upload a PNG or JPEG image file."
+                  />
+
+                  {signaturePreview && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setShowSignaturePreview(!showSignaturePreview)
+                      }
+                      icon={
+                        showSignaturePreview ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )
+                      }
                     >
-                      <div className="flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-muted/50 transition-colors text-sm">
-                        <Upload className="h-4 w-4" />
-                        {signatureFile ? "Change Signature" : "Upload Signature"}
-                      </div>
-                      <input
-                        id="signature-upload"
-                        type="file"
-                        accept=".png,.jpg,.jpeg"
-                        className="hidden"
-                        onChange={handleSignatureUpload}
-                      />
-                    </label>
-
-                    {signatureFile && (
-                      <span className="text-sm text-muted-foreground">
-                        {signatureFile.name}
-                      </span>
-                    )}
-
-                    {signaturePreview && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          setShowSignaturePreview(!showSignaturePreview)
-                        }
-                        icon={
-                          showSignaturePreview ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )
-                        }
-                      >
-                        {showSignaturePreview ? "Hide" : "Show"} Preview
-                      </Button>
-                    )}
-                  </div>
+                      {showSignaturePreview ? "Hide" : "Show"} Preview
+                    </Button>
+                  )}
 
                   {showSignaturePreview && signaturePreview && (
                     <div className="border border-border rounded-md p-4 bg-muted/20">
@@ -364,12 +332,6 @@ export default function ChangeOfARForm() {
                         unoptimized
                       />
                     </div>
-                  )}
-
-                  {!signatureFile && (
-                    <p className="text-sm text-muted-foreground">
-                      Required. The signature goes on the removal letter.
-                    </p>
                   )}
                 </div>
               </CardContent>
@@ -388,24 +350,14 @@ export default function ChangeOfARForm() {
                 </p>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-4">
-                  <label htmlFor="ar-form-upload" className="cursor-pointer">
-                    <div className="flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-muted/50 transition-colors text-sm">
-                      <Upload className="h-4 w-4" />
-                      {arFormFile ? "Change AR Form" : "Upload AR Form"}
-                    </div>
-                    <input
-                      id="ar-form-upload"
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      className="hidden"
-                      onChange={handleArFormUpload}
-                    />
-                  </label>
-                  <span className="text-sm text-muted-foreground">
-                    {arFormFile ? arFormFile.name : "Required."}
-                  </span>
-                </div>
+                <FileDropzone
+                  accept="application/pdf,.pdf"
+                  file={arFormFile}
+                  onFile={setArFormFile}
+                  prompt="the signed AR form"
+                  hint="Required. PDF only."
+                  typeError="Please upload the AR form as a PDF."
+                />
               </CardContent>
             </Card>
           </>

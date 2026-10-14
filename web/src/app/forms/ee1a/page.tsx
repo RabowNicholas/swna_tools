@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { useForm, type UseFormReturn } from "react-hook-form";
@@ -26,6 +26,7 @@ import {
   validateConsequentialDiagnoses,
   type ConsequentialDiagnosisError,
 } from "@/lib/schemas/ee1a";
+import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 
@@ -161,7 +162,6 @@ export default function EE1AForm() {
   const [diagnosisErrors, setDiagnosisErrors] = useState<
     ConsequentialDiagnosisError[]
   >([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<EE1AFormData>({
     resolver: zodResolver(ee1aSchema),
@@ -230,9 +230,8 @@ export default function EE1AForm() {
   };
 
   // Handle signature file upload (no processing - use original file)
-  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  const handleSignatureUpload = async (file: File) => {
+    {
       try {
         // Use original file without any processing
         setSignatureFile(file);
@@ -541,50 +540,23 @@ export default function EE1AForm() {
                 </div>
               </div>
 
-              <input
-                ref={fileInputRef}
-                type="file"
+              <FileDropzone
                 accept="image/*"
-                onChange={handleSignatureUpload}
-                className="hidden"
+                file={signatureFile}
+                onFile={handleSignatureUpload}
+                prompt="the signature image"
+                hint="PNG or JPG"
+                typeError="Please upload an image file."
               />
 
-              {!signatureFile ? (
-                <Button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  variant="outline"
-                  className="w-full py-8 border-2 border-dashed"
-                  icon={<Upload className="h-5 w-5" />}
-                >
-                  Click to upload signature image
-                </Button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="border-2 border-border rounded-lg p-4 bg-muted/30">
-                    {signaturePreview && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={signaturePreview}
-                        alt="Signature preview"
-                        className="max-h-32 mx-auto"
-                      />
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground flex items-center">
-                      <CheckCircle className="h-4 w-4 mr-2 text-success" />
-                      {signatureFile.name}
-                    </span>
-                    <Button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      variant="outline"
-                      size="sm"
-                    >
-                      Change
-                    </Button>
-                  </div>
+              {signatureFile && signaturePreview && (
+                <div className="border-2 border-border rounded-lg p-4 bg-muted/30">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={signaturePreview}
+                    alt="Signature preview"
+                    className="max-h-32 mx-auto"
+                  />
                 </div>
               )}
             </div>
