@@ -115,7 +115,9 @@ async function onUpload(job) {
   banner("info", `attaching ${escapeHtml(job.file.name)}…`);
 
   try {
-    const heldBefore = $$(DOL.heldRow).length;
+    // Dropdowns already on the page, so the new file's one can be told apart
+    const selectsBefore = new Set($$(DOL.categorySelect).map((el) => el.id));
+    const errorsBefore = $$(DOL.rowError).length;
 
     // Hand the file to the uploader as if it had been picked in ADD FILE
     const input = $(DOL.fileInput);
@@ -131,15 +133,21 @@ async function onUpload(job) {
     });
     start.click();
 
-    const held = await waitFor(() => {
-      const rows = $$(DOL.heldRow);
-      return rows.length > heldBefore ? rows[rows.length - 1] : null;
+    // DOL draws the held row first and adds its category dropdown on a redraw,
+    // so wait for the new dropdown itself. A row error (e.g. a file DOL won't
+    // take) ends the wait with DOL's own message.
+    const found = await waitFor(() => {
+      const errors = $$(DOL.rowError);
+      if (errors.length > errorsBefore) return { error: errors[errors.length - 1].innerText.trim() };
+      const fresh = $$(DOL.categorySelect).find((el) => !selectsBefore.has(el.id));
+      return fresh ? { select: fresh } : null;
     }, 60000);
+    if (found.error) throw new Error(`DOL said: ${found.error}`);
+    const docId = found.select.id.replace("select_", "");
 
-    // The portal redraws the table about a second after Upload, which wipes
-    // anything picked before that. So let it settle, set the category and
-    // date, then check they stuck and set them again if not.
-    const docId = $(DOL.categorySelect, held).id.replace("select_", "");
+    // The portal also redraws the table about a second after Upload, which
+    // wipes anything picked before that. So let it settle, set the category
+    // and date, then check they stuck and set them again if not.
     const today = new Date();
     const authorDate = [today.getMonth() + 1, today.getDate()]
       .map((n) => String(n).padStart(2, "0"))

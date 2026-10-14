@@ -5,7 +5,7 @@ import type { PortalData } from "./portal-data";
 import type { PortalCategory } from "./categories";
 
 /** The extension version this app was built against */
-export const HELPER_VERSION = "1.0.1";
+export const HELPER_VERSION = "1.0.2";
 
 type HelperMessage =
   | { source: "swna-helper"; type: "pong"; version: string }
