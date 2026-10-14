@@ -105,6 +105,38 @@ export async function logSave({
   }
 }
 
+/**
+ * Saves the file, then notes it on the client's Airtable Log. A log failure
+ * doesn't undo the save, so it's returned rather than thrown.
+ */
+export async function saveAndLog({
+  dir,
+  subfolder = '',
+  createSubfolder = false,
+  fileName,
+  blob,
+  recordId,
+  where,
+  userEmail,
+}: {
+  dir: DirHandle;
+  subfolder?: string;
+  createSubfolder?: boolean;
+  fileName: string;
+  blob: Blob;
+  recordId: string;
+  where: string;
+  userEmail?: string | null;
+}): Promise<{ result: SaveResult; logError: string | null }> {
+  const result = await saveToClientFolder({ clientDir: dir, subfolder, fileName, blob, createSubfolder });
+  try {
+    await logSave({ recordId, fileName: result.savedAs, where, userEmail });
+    return { result, logError: null };
+  } catch (e) {
+    return { result, logError: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 /** The plain browser download, for when there's no Sync folder to save to */
 export function downloadBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);

@@ -5,6 +5,8 @@
 
 export const SHARED_FOLDER = '1. SWNA Shared Folder';
 export const ACTIVE_CLIENTS = '2. Active Clients';
+/** Where assembled claims wait in each person's "<Name>'s Claim Drafts" */
+export const NEW_CLAIMS = '5. New Claims - To Compile';
 
 // The File System Access calls Chrome has that TypeScript's DOM types don't
 type PermissionMode = { mode: 'readwrite' };
@@ -72,6 +74,24 @@ export async function activeClientsFrom(root: DirHandle): Promise<DirHandle | nu
   } catch {
     return null;
   }
+}
+
+/**
+ * "1. SWNA Shared Folder" from whichever level the user picked. Null when they
+ * picked "2. Active Clients" itself, since a picked folder can't see its parent.
+ */
+export async function sharedFolderFrom(root: DirHandle): Promise<DirHandle | null> {
+  if (root.name === SHARED_FOLDER) return root;
+  try {
+    return (await root.getDirectoryHandle(SHARED_FOLDER)) as DirHandle;
+  } catch {
+    return null;
+  }
+}
+
+/** The folders down to "1. SWNA Shared Folder", for showing where a file goes */
+export function pathToShared(root: DirHandle): string[] {
+  return root.name === SHARED_FOLDER ? [SHARED_FOLDER] : [root.name, SHARED_FOLDER];
 }
 
 /** The folders above a client's folder, for showing where a file goes */

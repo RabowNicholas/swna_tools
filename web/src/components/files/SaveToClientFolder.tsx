@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { FolderInput, CheckCircle, AlertCircle, AlertTriangle, FileDown } from "lucide-react";
+import { FolderInput } from "lucide-react";
 import { DESTINATIONS, fileNameFor, type DestinationId } from "@/lib/files/destinations";
 import type { FolderMatch } from "@/lib/files/client-folder";
 import {
@@ -17,13 +14,15 @@ import {
   type DirHandle,
   type SyncState,
 } from "@/lib/files/sync-folder";
+import { findClientFolder, saveAndLog, type SaveResult } from "@/lib/files/save-to-client";
 import {
-  findClientFolder,
-  saveToClientFolder,
-  logSave,
-  downloadBlob,
-  type SaveResult,
-} from "@/lib/files/save-to-client";
+  SaveCardShell,
+  Notice,
+  DownloadFallback,
+  syncGate,
+  SaveTargetRows,
+  SavedMessage,
+} from "./SaveCardParts";
 
 /** Any Airtable client record; only the id and Name are used */
 export interface FolderClient {
@@ -111,24 +110,18 @@ export function SaveToClientFolder({
     setError(null);
     const target = sub === CREATE ? expectedSub : sub;
     try {
-      const result = await saveToClientFolder({
-        clientDir,
+      const { result, logError } = await saveAndLog({
+        dir: clientDir,
         subfolder: target,
+        createSubfolder: sub === CREATE,
         fileName: fileName.trim(),
         blob,
-        createSubfolder: sub === CREATE,
+        recordId: client.id,
+        where: target || "the client folder",
+        userEmail: session?.user?.email,
       });
       setSaved(result);
-      try {
-        await logSave({
-          recordId: client.id,
-          fileName: result.savedAs,
-          where: target || "the client folder",
-          userEmail: session?.user?.email,
-        });
-      } catch (e) {
-        setLogError(e instanceof Error ? e.message : String(e));
-      }
+      setLogError(logError);
     } catch (e) {
       setError(`Couldn’t save the file: ${e instanceof Error ? e.message : e}`);
     } finally {
@@ -144,60 +137,16 @@ export function SaveToClientFolder({
   ];
   const shortTarget = [folder, targetSub].filter(Boolean).join(" › ");
 
-  const fallback = (message: React.ReactNode) => (
-    <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">{message}</p>
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={() => downloadBlob(blob, fileName.trim())}
-        icon={<FileDown className="h-4 w-4" />}
-      >
-        Download instead
-      </Button>
-    </div>
-  );
-
   const body = () => {
-    if (!sync) return <p className="text-sm text-muted-foreground">Checking your Sync folder…</p>;
-    if (sync.status === "unsupported") {
-      return fallback("Saving straight to the client folder only works in Chrome.");
-    }
-    if (sync.status === "unset") {
-      return fallback(
-        <>
-          Set your Sync folder in <Link href="/settings" className="text-primary underline">Settings</Link>{" "}
-          to save files straight to the client&apos;s folder.
-        </>
-      );
-    }
-    if (sync.status === "needs-permission") {
-      return (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Chrome needs your OK to use your Sync folder again. Pick &ldquo;Allow on every visit&rdquo; so it stops asking.
-          </p>
-          <Button type="button" onClick={handleReconnect} icon={<FolderInput className="h-4 w-4" />}>
-            Allow access to {sync.root?.name}
-          </Button>
-        </div>
-      );
-    }
-    if (sync.status === "missing") {
-      return fallback(
-        <>
-          Your Sync folder no longer has “1. SWNA Shared Folder/2. Active Clients” in it. Check it in{" "}
-          <Link href="/settings" className="text-primary underline">Settings</Link>.
-        </>
-      );
-    }
+    const gate = syncGate(sync, { blob, fileName, onReconnect: handleReconnect });
+    if (gate) return gate;
     if (!match) return <p className="text-sm text-muted-foreground">Finding the client’s folder…</p>;
     if (match.status === "none") {
-      return fallback(
-        <>
+      return (
+        <DownloadFallback blob={blob} fileName={fileName}>
           There&apos;s no folder for <strong>{match.expected}</strong> in 2. Active Clients. It should be named
           &ldquo;{match.expected}&rdquo;; check the name in Sync, then generate again.
-        </>
+        </DownloadFallback>
       );
     }
 
@@ -244,27 +193,13 @@ export function SaveToClientFolder({
         )}
 
         {folder && (
-          <dl className="grid grid-cols-[4rem_1fr] gap-x-3 gap-y-3 text-sm">
-            <dt className="font-medium text-muted-foreground">From</dt>
-            <dd className="text-foreground">The {doc} you just generated</dd>
-            <dt className="font-medium text-muted-foreground">To</dt>
-            <dd className="text-foreground break-words">
-              {sub === null ? (
-                <span className="text-muted-foreground">Pick a folder above</span>
-              ) : (
-                path.map((p, i) => (
-                  <span key={i}>
-                    {i > 0 && <span className="text-muted-foreground"> › </span>}
-                    <span className={i >= path.length - (targetSub ? 2 : 1) ? "font-semibold" : ""}>{p}</span>
-                  </span>
-                ))
-              )}
-            </dd>
-            <dt className="font-medium text-muted-foreground pt-2.5">Name</dt>
-            <dd>
-              <Input value={fileName} onChange={(e) => setFileName(e.target.value)} aria-label="File name" />
-            </dd>
-          </dl>
+          <SaveTargetRows
+            from={`The ${doc} you just generated`}
+            path={sub === null ? null : path}
+            boldFrom={path.length - (targetSub ? 2 : 1)}
+            fileName={fileName}
+            onFileNameChange={setFileName}
+          />
         )}
 
         <Button
@@ -282,66 +217,13 @@ export function SaveToClientFolder({
   };
 
   return (
-    <Card variant="elevated">
-      <CardHeader>
-        <div className="flex items-center space-x-2">
-          <FolderInput className="h-5 w-5 text-primary" />
-          <CardTitle>Save to the client&apos;s folder</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {saved ? (
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <CheckCircle className="h-5 w-5 text-success flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-foreground">
-                Saved to {path.join(" › ")} › <strong>{saved.savedAs}</strong>
-                {saved.renamed && (
-                  <p className="text-muted-foreground mt-1">
-                    A file named &ldquo;{fileName.trim()}&rdquo; was already there, so this one got a number.
-                  </p>
-                )}
-                {!logError && <p className="text-muted-foreground mt-1">Noted in the client&apos;s Airtable Log.</p>}
-              </div>
-            </div>
-            {logError && (
-              <Notice tone="error" title="The file is saved, but the Airtable Log wasn’t updated:">
-                {logError}
-              </Notice>
-            )}
-          </div>
-        ) : (
-          body()
-        )}
-        {error && <Notice tone="error" title={error} />}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Notice({
-  tone,
-  title,
-  children,
-}: {
-  tone: "warning" | "error";
-  title: string;
-  children?: React.ReactNode;
-}) {
-  const Icon = tone === "warning" ? AlertTriangle : AlertCircle;
-  return (
-    <div
-      className={
-        tone === "warning"
-          ? "flex gap-3 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm"
-          : "flex gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm"
-      }
-    >
-      <Icon className={tone === "warning" ? "h-4 w-4 mt-0.5 text-warning flex-shrink-0" : "h-4 w-4 mt-0.5 text-destructive flex-shrink-0"} />
-      <div className="text-foreground">
-        <p>{title}</p>
-        {children}
-      </div>
-    </div>
+    <SaveCardShell title={<>Save to the client&apos;s folder</>}>
+      {saved ? (
+        <SavedMessage path={path} saved={saved} askedName={fileName.trim()} logError={logError} />
+      ) : (
+        body()
+      )}
+      {error && <Notice tone="error" title={error} />}
+    </SaveCardShell>
   );
 }

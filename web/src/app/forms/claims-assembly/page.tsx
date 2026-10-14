@@ -90,6 +90,7 @@ import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
+import { SaveToClaimDrafts } from "@/components/files/SaveToClaimDrafts";
 
 const CLAIM_TYPES = [
   { value: "primary", label: "Primary" },
@@ -104,19 +105,6 @@ const GENERATOR_FIELD = {
   ee1a: "generate_ee1a",
   ee3: "generate_ee3",
 } as const satisfies Record<SlotGenerator, string>;
-
-/** Hand a finished PDF to the browser to save. */
-function downloadPdf(bytes: ArrayBuffer | Uint8Array, name: string) {
-  const blob = new Blob([bytes as BlobPart], { type: "application/pdf" });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${name}.pdf`;
-  document.body.appendChild(a);
-  a.click();
-  window.URL.revokeObjectURL(url);
-  document.body.removeChild(a);
-}
 
 /** A form this tool built, kept so it can be saved on its own as well. */
 interface BuiltForm {
@@ -324,6 +312,8 @@ export default function ClaimsAssemblyPage() {
     /** Changes per assembly, so the log card starts fresh each time */
     id: number;
     name: string;
+    /** The assembled claim, saved to the user's Claim Drafts from its card */
+    packet: Blob;
     ranges: PageRange[];
     pageCount: number;
     forms: BuiltForm[];
@@ -675,13 +665,12 @@ export default function ClaimsAssemblyPage() {
         claimType: data.claim_type,
       });
 
-      downloadPdf(assembled.pdfBytes, name);
-
       track({ type: "tool_used", tool: "claims-assembly", clientId: data.client_id });
 
       setResult({
         id: Date.now(),
         name,
+        packet: new Blob([assembled.pdfBytes as BlobPart], { type: "application/pdf" }),
         ranges: assembled.ranges,
         pageCount: assembled.pageCount,
         forms,
@@ -1194,7 +1183,7 @@ export default function ClaimsAssemblyPage() {
                     Claim assembled
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    {result.pageCount} pages, downloaded as{" "}
+                    {result.pageCount} pages, as{" "}
                     <span className="font-medium text-foreground">
                       {result.name}.pdf
                     </span>
@@ -1214,13 +1203,22 @@ export default function ClaimsAssemblyPage() {
                 </div>
 
                 <p className="text-sm text-muted-foreground">
-                  Leave it in your Claim Drafts folder until another team member
-                  has checked it.
+                  Save it to your Claim Drafts below and leave it there until
+                  another team member has checked it.
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {result && selectedClient && (
+        <SaveToClaimDrafts
+          key={result.id}
+          client={selectedClient}
+          blob={result.packet}
+          fileName={`${result.name}.pdf`}
+        />
       )}
 
       {/* A copy of each form this tool built, for the client's folder */}
