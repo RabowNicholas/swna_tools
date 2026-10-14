@@ -42,6 +42,8 @@ function waitFor(find, timeoutMs = 20000) {
   });
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function setValue(input, value) {
   input.value = value;
   input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -134,9 +136,31 @@ async function onUpload(job) {
       return rows.length > heldBefore ? rows[rows.length - 1] : null;
     }, 60000);
 
-    const select = $(DOL.categorySelect, held);
-    const option = [...select.options].find((o) => o.value === String(job.category.value));
-    if (option) setValue(select, option.value);
+    // The portal redraws the table about a second after Upload, which wipes
+    // anything picked before that. So let it settle, set the category and
+    // date, then check they stuck and set them again if not.
+    const docId = $(DOL.categorySelect, held).id.replace("select_", "");
+    const today = new Date();
+    const authorDate = [today.getMonth() + 1, today.getDate()]
+      .map((n) => String(n).padStart(2, "0"))
+      .concat(String(today.getFullYear()))
+      .join("/");
+
+    await sleep(2500);
+    let option = null;
+    let dateSet = false;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const select = document.getElementById(`select_${docId}`);
+      const date = document.getElementById(`date_${docId}`);
+      option = select ? [...select.options].find((o) => o.value === String(job.category.value)) : null;
+      if (option && select.value !== option.value) setValue(select, option.value);
+      if (date && date.value !== authorDate) setValue(date, authorDate);
+      await sleep(1500);
+      const selectNow = document.getElementById(`select_${docId}`);
+      const dateNow = document.getElementById(`date_${docId}`);
+      dateSet = !!dateNow && dateNow.value === authorDate;
+      if ((!option || selectNow?.value === option.value) && (!dateNow || dateSet)) break;
+    }
 
     const submit = $(DOL.submit);
     if (submit) {
@@ -151,8 +175,9 @@ async function onUpload(job) {
       "done",
       `attached <u>${escapeHtml(job.file.name)}</u>` +
         (option
-          ? ` as <u>${escapeHtml(option.textContent.trim())}</u>.`
-          : `, but couldn’t pick “${escapeHtml(job.category.label)}”. Pick the category by hand.`) +
+          ? ` as <u>${escapeHtml(option.textContent.trim())}</u>`
+          : `, but couldn’t pick “${escapeHtml(job.category.label)}”. Pick the category by hand`) +
+        (dateSet ? `, dated ${authorDate}.` : ". Add the author date by hand if you want one.") +
         " Check it, then click SUBMIT yourself. The helper never submits."
     );
   } catch (e) {

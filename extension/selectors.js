@@ -22,6 +22,8 @@ const DOL = {
   // Row once the file is held, with the category dropdown
   heldRow: "tr.template-download",
   categorySelect: "select[id^='select_']",
+  // Optional author date on the held row, MM/DD/YYYY
+  authorDate: "input[id^='date_']",
   // Files the case for real. The helper never clicks it.
   submit: "input.submitportalfiles",
 
