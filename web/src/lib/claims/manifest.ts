@@ -238,7 +238,7 @@ export interface ClaimNameParts {
 }
 
 /** "C. Britt 01.29.26" — how every file for a client ends. */
-function nameAndDate(firstName: string, lastName: string, date: Date): string {
+export function nameAndDate(firstName: string, lastName: string, date: Date): string {
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
   const yy = String(date.getFullYear()).slice(-2);

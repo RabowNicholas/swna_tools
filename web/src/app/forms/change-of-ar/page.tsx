@@ -30,6 +30,7 @@ import { PageLoading, PageError } from "@/components/ui/PageStatus";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import { CopyField, PortalAccess } from "@/components/portal/PortalAccess";
 import { appendPdf } from "@/lib/pdf/append-pdf";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 // DEEOIC fax line for AR changes, used when there's no case ID to submit
 // under in the portal. In the form HelloFax takes.
@@ -76,6 +77,7 @@ export default function ChangeOfARForm() {
   // Bumped per generation so the Airtable card starts fresh each time
   const [submissionId, setSubmissionId] = useState(0);
   const [faxed, setFaxed] = useState(false);
+  const [packetPdf, setPacketPdf] = useState<Blob | null>(null);
   // The case ID the packet went out under; decides portal vs fax
   const [submittedCaseId, setSubmittedCaseId] = useState("");
 
@@ -173,23 +175,10 @@ export default function ChangeOfARForm() {
           await arFormFile.arrayBuffer(),
           "AR form"
         );
-        const blob = new Blob([packet as BlobPart], {
-          type: "application/pdf",
-        });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-
-        const nameForFile = data.claimant_name.replace(/\s+/g, "_");
-        const currentDate = new Date()
-          .toLocaleDateString("en-US")
-          .replace(/\//g, ".");
-        a.download = `Change_of_AR_${nameForFile}_${currentDate}.pdf`;
-
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Saved to the client's folder from the card below
+        setPacketPdf(
+          new Blob([packet as BlobPart], { type: "application/pdf" })
+        );
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
@@ -451,17 +440,26 @@ export default function ChangeOfARForm() {
                     Change of AR packet generated
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    The removal letter and the signed AR form have been
-                    downloaded as one PDF, ready to{" "}
+                    The removal letter and the signed AR form are one PDF.
+                    Save it to the client&apos;s folder below, then{" "}
                     {submittedCaseId
-                      ? "submit in the DOL portal"
-                      : "fax to the DOL"}
+                      ? "submit it in the DOL portal"
+                      : "fax it to the DOL"}
                     .
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {packetPdf && (
+            <SaveToClientFolder
+              key={submissionId}
+              client={submittedClient}
+              blob={packetPdf}
+              destination="change-of-ar"
+            />
+          )}
 
           {submittedCaseId ? (
             <>
@@ -472,7 +470,7 @@ export default function ChangeOfARForm() {
                     <CardTitle>Submit in the DOL portal</CardTitle>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Upload the downloaded PDF under the category below.
+                    Upload the saved PDF under the category below.
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -501,7 +499,7 @@ export default function ChangeOfARForm() {
                   <CardTitle>Fax to the DOL</CardTitle>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  No case ID, so send the downloaded PDF through HelloFax to
+                  No case ID, so send the saved PDF through HelloFax to
                   the number below.
                 </p>
               </CardHeader>

@@ -123,12 +123,13 @@ export const TOOL_SECTIONS: ToolSection[] = [
   {
     id: "manage",
     title: "Manage",
-    summary: "The claims pipeline and weekly reports.",
+    summary: "The claims pipeline, weekly reports and settings.",
     icon: ChartColumn,
     manage: true,
     tools: [
       { name: "Claims Pipeline", href: "/pipeline", description: "See where every claim stands and what needs follow-up." },
       { name: "AO Weekly Report", href: "/reports/ao-weekly", description: "Find AO clients with recent claim activity to report." },
+      { name: "Settings", href: "/settings", description: "Point the app at your Sync folder so files save straight into the client's folder." },
     ],
   },
 ];

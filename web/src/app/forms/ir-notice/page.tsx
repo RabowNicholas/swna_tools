@@ -30,6 +30,7 @@ import {
 import { IRNoticeEmailDraft } from "@/components/email/IRNoticeEmailDraft";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -168,6 +169,7 @@ export default function IRNoticeForm() {
   const [submittedProvider, setSubmittedProvider] = useState<string>("");
   const [submittedAppointmentDate, setSubmittedAppointmentDate] = useState<string>("");
   const [submittedClientName, setSubmittedClientName] = useState<string>("");
+  const [noticePdf, setNoticePdf] = useState<Blob | null>(null);
   // Bumped per generated notice, and used as the log card's key so a
   // regenerated notice starts a fresh submission
   const [submissionId, setSubmissionId] = useState(0);
@@ -260,20 +262,8 @@ export default function IRNoticeForm() {
       });
 
       if (response.ok) {
-        // Download the PDF
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `IR_Notice_${data.client_name.replace(
-          /\s+/g,
-          "_"
-        )}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
+        // Saved to the client's folder from the card below
+        setNoticePdf(await response.blob());
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
         setSubmittedProvider(data.provider_name);
@@ -454,12 +444,21 @@ export default function IRNoticeForm() {
                       IR schedule notice generated successfully!
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Your Independent Review schedule notice has been downloaded and is ready for submission.
+                      Save it to the client&apos;s folder below, then submit it in the portal.
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {submittedClient && noticePdf && (
+              <SaveToClientFolder
+                key={submissionId}
+                client={submittedClient}
+                blob={noticePdf}
+                destination="ir-notice"
+              />
+            )}
 
             {/* Portal Access */}
             {submittedClient && (
