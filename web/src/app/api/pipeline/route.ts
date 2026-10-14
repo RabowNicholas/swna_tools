@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { airtableService } from '@/lib/airtable';
+import { requireAuth } from '@/lib/auth';
 import { PIPELINE_STAGES, getStagesForStatus } from '@/lib/pipeline-config';
 
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,9 @@ interface StageData {
 
 export async function GET() {
   try {
+    // Every client's name and status — signed-in staff only
+    await requireAuth();
+
     // Fetch all clients from Airtable
     const clients = await airtableService.getClients();
 
@@ -93,6 +97,10 @@ export async function GET() {
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     console.error('Error fetching pipeline data:', error);
     return NextResponse.json(
       {
