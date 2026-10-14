@@ -470,7 +470,12 @@ export default function RDWaiverForm() {
 
             {/* Portal Access */}
             {submittedClient && (
-              <PortalAccess client={submittedClient} autoOpen={true} />
+              <PortalAccess
+                client={submittedClient}
+                autoOpen={true}
+                file={generatedFile}
+                tool="rd-waiver"
+              />
             )}
 
             {/* Airtable update — after submitting in the portal, paste the

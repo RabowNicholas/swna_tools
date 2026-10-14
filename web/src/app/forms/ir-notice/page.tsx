@@ -462,7 +462,12 @@ export default function IRNoticeForm() {
 
             {/* Portal Access */}
             {submittedClient && (
-              <PortalAccess client={submittedClient} autoOpen={true} />
+              <PortalAccess
+                client={submittedClient}
+                autoOpen={true}
+                file={noticePdf}
+                tool="ir-notice"
+              />
             )}
 
             {/* Airtable update — after submitting in the portal, paste the

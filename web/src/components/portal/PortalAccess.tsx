@@ -1,49 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
-import { Globe, Copy, ExternalLink } from 'lucide-react';
+import { Globe, Copy, ExternalLink, Wand2, CheckCircle, AlertCircle } from 'lucide-react';
+import { extractPortalData } from '@/lib/portal/portal-data';
+import { DOL_CATEGORIES, DEFAULT_CATEGORY, categoryFor } from '@/lib/portal/categories';
+import { detectHelper, fillPortal, portalFileName } from '@/lib/portal/helper';
+import { DESTINATIONS, fileNameFor, type DestinationId } from '@/lib/files/destinations';
 
 interface Client {
   id: string;
   fields: {
-    Name: string;
+    Name?: string;
     "Case ID"?: string;
-    [key: string]: string | undefined;
-  };
-}
-
-interface PortalData {
-  caseId: string;
-  lastName: string;
-  ssnLast4: string;
-}
-
-function extractPortalData(client: Client): PortalData {
-  const fields = client.fields;
-  const name = fields.Name || "";
-  const caseId = fields["Case ID"] || "";
-
-  let lastName = "";
-  let ssnLast4 = "";
-
-  if (name.includes(",")) {
-    const parts = name.split(",");
-    lastName = parts[0].trim();
-
-    if (name.includes(" - ")) {
-      const ssnPart = name.split(" - ");
-      if (ssnPart.length > 1) {
-        ssnLast4 = ssnPart[ssnPart.length - 1].trim();
-      }
-    }
-  }
-
-  return {
-    caseId: caseId.trim(),
-    lastName,
-    ssnLast4,
+    [key: string]: unknown;
   };
 }
 
@@ -106,6 +79,10 @@ export function CopyField({
 export interface PortalAccessProps {
   client: Client;
   autoOpen?: boolean;
+  /** The document to upload. With the portal helper installed, it fills the portal for you. */
+  file?: Blob | null;
+  /** Which tool made the file, for its name and default DOL category */
+  tool?: DestinationId;
 }
 
 /**
@@ -120,11 +97,25 @@ export interface PortalAccessProps {
  */
 let portalWindow: Window | null = null;
 
-export function PortalAccess({ client, autoOpen = true }: PortalAccessProps) {
+export function PortalAccess({ client, autoOpen = true, file, tool }: PortalAccessProps) {
   const portalData = extractPortalData(client);
+  // undefined while checking, null when the helper isn't installed
+  const [helper, setHelper] = useState<string | null | undefined>(undefined);
+  const [category, setCategory] = useState(() => categoryFor((tool && DEFAULT_CATEGORY[tool]) ?? 20));
+  const [filling, setFilling] = useState(false);
+  const [fillResult, setFillResult] = useState<{ ok: boolean; error?: string } | null>(null);
+
+  const canFill = !!(file && tool);
+  const fileName = tool ? portalFileName(fileNameFor(DESTINATIONS[tool].doc, client.fields.Name ?? '')) : '';
+  const useHelper = canFill && !!helper;
 
   useEffect(() => {
-    if (autoOpen) {
+    detectHelper().then(setHelper);
+  }, []);
+
+  useEffect(() => {
+    // With the helper, the portal opens when "Fill DOL portal" is clicked instead
+    if (autoOpen && helper !== undefined && !useHelper) {
       // Small delay to ensure component has rendered
       const timer = setTimeout(() => {
         openPortal();
@@ -132,7 +123,15 @@ export function PortalAccess({ client, autoOpen = true }: PortalAccessProps) {
 
       return () => clearTimeout(timer);
     }
-  }, [autoOpen]);
+  }, [autoOpen, helper, useHelper]);
+
+  const handleFill = async () => {
+    if (!file) return;
+    setFilling(true);
+    setFillResult(null);
+    setFillResult(await fillPortal({ portal: portalData, category, blob: file, fileName }));
+    setFilling(false);
+  };
 
   const openPortal = () => {
     // Already open — bring it forward. Re-opening would reload it out from
@@ -163,6 +162,62 @@ export function PortalAccess({ client, autoOpen = true }: PortalAccessProps) {
 
   return (
     <div className="space-y-8">
+      {useHelper && (
+        <Card variant="elevated">
+          <CardHeader>
+            <div className="flex items-center space-x-2">
+              <Wand2 className="h-5 w-5 text-primary" />
+              <CardTitle>Fill the DOL portal</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Opens the portal, looks up case {portalData.caseId || '(no case ID)'} ({portalData.lastName}, SSN
+              last 4 {portalData.ssnLast4}) and attaches the file. It stops before SUBMIT, so you check it and
+              click SUBMIT yourself.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Select
+              label="DOL category"
+              value={String(category.value)}
+              onChange={(e) => setCategory(categoryFor(Number(e.target.value)))}
+            >
+              {DOL_CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              Uploads as <span className="font-medium text-foreground">{fileName}</span>
+            </p>
+            <Button
+              type="button"
+              size="lg"
+              onClick={handleFill}
+              loading={filling}
+              disabled={filling || !portalData.caseId || !portalData.lastName || !portalData.ssnLast4}
+              icon={<Wand2 className="h-5 w-5" />}
+            >
+              Fill DOL portal
+            </Button>
+            {fillResult?.ok && (
+              <div className="flex items-start gap-2 text-sm text-foreground">
+                <CheckCircle className="h-4 w-4 mt-0.5 text-success flex-shrink-0" />
+                The portal opened in a new tab. Check what the helper filled in, then click SUBMIT there.
+              </div>
+            )}
+            {fillResult && !fillResult.ok && (
+              <div className="flex items-start gap-2 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                {fillResult.error}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {!useHelper && (
+      <>
       {/* Portal Status */}
       <Card variant="elevated" className="bg-success/10 border-success/20">
         <CardHeader>
@@ -192,15 +247,24 @@ export function PortalAccess({ client, autoOpen = true }: PortalAccessProps) {
           >
             Reopen DOL Portal
           </Button>
+          {canFill && helper === null && (
+            <p className="text-sm text-muted-foreground mt-4">
+              Install the DOL portal helper in{' '}
+              <Link href="/settings" className="text-primary underline">Settings</Link> and it will fill this in for
+              you.
+            </p>
+          )}
         </CardContent>
       </Card>
+      </>
+      )}
 
       {/* Portal Login Information */}
       <Card variant="elevated">
         <CardHeader>
           <div className="flex items-center space-x-2">
             <Copy className="h-5 w-5 text-primary" />
-            <CardTitle>Portal Login Information</CardTitle>
+            <CardTitle>{useHelper ? 'Or fill it by hand' : 'Portal Login Information'}</CardTitle>
           </div>
           <p className="text-sm text-muted-foreground mt-2">
             Copy these values and paste them into the DOL portal login form.

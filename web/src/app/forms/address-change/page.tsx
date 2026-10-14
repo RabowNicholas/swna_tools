@@ -429,7 +429,12 @@ export default function AddressChangeForm() {
 
             {/* Portal Access */}
             {submittedClient && (
-              <PortalAccess client={submittedClient} autoOpen={true} />
+              <PortalAccess
+                client={submittedClient}
+                autoOpen={true}
+                file={generatedFile}
+                tool="address-change"
+              />
             )}
 
             {/* Airtable update — after submitting in the portal, paste the

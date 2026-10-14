@@ -1,0 +1,175 @@
+// Runs in every frame of the DOL portal. When the app has handed over a job,
+// it walks the portal one page at a time: landing → case lookup → upload page,
+// where it attaches the file, picks the category and stops at SUBMIT for a
+// person to check and click. It never clicks SUBMIT.
+
+// A job older than this is stale (the person wandered off), so it's dropped
+const JOB_TTL_MS = 15 * 60 * 1000;
+
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+async function getJob() {
+  const { job } = await chrome.storage.local.get("job");
+  if (!job) return null;
+  if (Date.now() - job.createdAt > JOB_TTL_MS) {
+    await clearJob();
+    return null;
+  }
+  return job;
+}
+
+async function setStage(job, stage) {
+  job.stage = stage;
+  await chrome.storage.local.set({ job });
+}
+
+async function clearJob() {
+  await chrome.storage.local.remove("job");
+}
+
+/** Waits for `find()` to return something, checking every 250ms */
+function waitFor(find, timeoutMs = 20000) {
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    const tick = () => {
+      const found = find();
+      if (found) return resolve(found);
+      if (Date.now() - started > timeoutMs) return reject(new Error("timed out"));
+      setTimeout(tick, 250);
+    };
+    tick();
+  });
+}
+
+function setValue(input, value) {
+  input.value = value;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function banner(tone, html) {
+  let el = document.getElementById("swna-helper-banner");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "swna-helper-banner";
+    el.style.cssText =
+      "position:fixed;top:0;left:0;right:0;z-index:2147483647;padding:12px 16px;" +
+      "font:600 14px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.25)";
+    document.body.appendChild(el);
+  }
+  const colors = { info: ["#1e3a8a", "#fff"], done: ["#065f46", "#fff"], error: ["#991b1b", "#fff"] };
+  [el.style.background, el.style.color] = colors[tone];
+  el.innerHTML = `SWNA helper: ${html}`;
+}
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+}
+
+function pageError() {
+  const text = document.body?.innerText ?? "";
+  return DOL.errorTexts.find((t) => text.toLowerCase().includes(t.toLowerCase())) ?? null;
+}
+
+async function fail(message) {
+  await clearJob();
+  banner("error", `${escapeHtml(message)} Nothing was submitted. Finish this one by hand.`);
+}
+
+function base64ToFile({ name, type, base64 }) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], name, { type: type || "application/pdf" });
+}
+
+async function onLanding(job) {
+  if (job.stage !== "start") return;
+  const button = $$(DOL.landingButtons).find((b) => b.value?.trim() === DOL.uploadToCaseLabel);
+  if (!button) return;
+  await setStage(job, "landing");
+  banner("info", "opening Upload Document to Existing Case…");
+  button.click();
+}
+
+async function onLookup(job) {
+  // Back on the lookup after already submitting it: the lookup failed
+  if (job.stage === "lookup") {
+    return fail(`DOL didn’t accept the case lookup${pageError() ? ` (“${pageError()}”)` : ""}. Check the case ID, last name and SSN last 4.`);
+  }
+  if (job.stage !== "start" && job.stage !== "landing") return;
+  setValue($(DOL.caseNumber), job.caseId);
+  setValue($(DOL.lastName), job.lastName);
+  setValue($(DOL.ssnLast4), job.ssnLast4);
+  await setStage(job, "lookup");
+  banner("info", `looking up case ${escapeHtml(job.caseId)}…`);
+  $(DOL.next).click();
+}
+
+async function onUpload(job) {
+  if (job.stage === "attaching" || job.stage === "done") return;
+  await setStage(job, "attaching");
+  banner("info", `attaching ${escapeHtml(job.file.name)}…`);
+
+  try {
+    const heldBefore = $$(DOL.heldRow).length;
+
+    // Hand the file to the uploader as if it had been picked in ADD FILE
+    const input = $(DOL.fileInput);
+    const transfer = new DataTransfer();
+    transfer.items.add(base64ToFile(job.file));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+
+    // Send it to DOL's holding area. Held files aren't on the case until SUBMIT.
+    const start = await waitFor(() => {
+      const rows = $$(DOL.pendingRow);
+      return rows.length ? $(DOL.pendingStart, rows[rows.length - 1]) : null;
+    });
+    start.click();
+
+    const held = await waitFor(() => {
+      const rows = $$(DOL.heldRow);
+      return rows.length > heldBefore ? rows[rows.length - 1] : null;
+    }, 60000);
+
+    const select = $(DOL.categorySelect, held);
+    const option = [...select.options].find((o) => o.value === String(job.category.value));
+    if (option) setValue(select, option.value);
+
+    const submit = $(DOL.submit);
+    if (submit) {
+      submit.style.outline = "4px solid #f59e0b";
+      submit.style.outlineOffset = "3px";
+      submit.scrollIntoView({ block: "center" });
+    }
+
+    await setStage(job, "done");
+    await clearJob();
+    banner(
+      "done",
+      `attached <u>${escapeHtml(job.file.name)}</u>` +
+        (option
+          ? ` as <u>${escapeHtml(option.textContent.trim())}</u>.`
+          : `, but couldn’t pick “${escapeHtml(job.category.label)}”. Pick the category by hand.`) +
+        " Check it, then click SUBMIT yourself. The helper never submits."
+    );
+  } catch (e) {
+    await fail(`Couldn’t attach the file (${e.message}).`);
+  }
+}
+
+(async () => {
+  const job = await getJob();
+  if (!job) return;
+
+  if ($(DOL.uploadForm)) return onUpload(job);
+  if ($(DOL.caseNumber)) return onLookup(job);
+  if ($$(DOL.landingButtons).some((b) => b.value?.trim() === DOL.uploadToCaseLabel)) return onLanding(job);
+
+  // Some other DOL page while a lookup is in flight, e.g. "session timed out"
+  if (job.stage === "lookup" && document.body && pageError()) {
+    return fail(`DOL said “${pageError()}”.`);
+  }
+})();

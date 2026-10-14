@@ -299,7 +299,12 @@ export default function WithdrawalForm() {
             />
           )}
 
-          <PortalAccess client={submittedClient as any} autoOpen={true} />
+          <PortalAccess
+            client={submittedClient as any}
+            autoOpen={true}
+            file={generatedFile}
+            tool="withdrawal"
+          />
 
           {/* Airtable update — after submitting in the portal, paste the
               reference number and download the full case file from ECOMP,

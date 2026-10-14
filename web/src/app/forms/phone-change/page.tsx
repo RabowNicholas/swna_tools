@@ -354,7 +354,12 @@ export default function PhoneChangeForm() {
 
             {/* Portal Access */}
             {submittedClient && (
-              <PortalAccess client={submittedClient} autoOpen={true} />
+              <PortalAccess
+                client={submittedClient}
+                autoOpen={true}
+                file={generatedFile}
+                tool="phone-change"
+              />
             )}
 
             {/* Airtable update — after submitting in the portal, paste the

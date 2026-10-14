@@ -489,6 +489,8 @@ export default function ChangeOfARForm() {
                   } as any
                 }
                 autoOpen={true}
+                file={packetPdf}
+                tool="change-of-ar"
               />
             </>
           ) : (

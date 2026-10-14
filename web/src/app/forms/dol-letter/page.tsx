@@ -296,7 +296,12 @@ export default function DolLetterForm() {
             />
           )}
 
-          <PortalAccess client={submittedClient as any} autoOpen={true} />
+          <PortalAccess
+            client={submittedClient as any}
+            autoOpen={true}
+            file={generatedFile}
+            tool="dol-letter"
+          />
 
           {/* Airtable update — after submitting in the portal, paste the
               reference number here to log the letter on the client. The letter

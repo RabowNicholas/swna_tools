@@ -129,7 +129,7 @@ export const TOOL_SECTIONS: ToolSection[] = [
     tools: [
       { name: "Claims Pipeline", href: "/pipeline", description: "See where every claim stands and what needs follow-up." },
       { name: "AO Weekly Report", href: "/reports/ao-weekly", description: "Find AO clients with recent claim activity to report." },
-      { name: "Settings", href: "/settings", description: "Point the app at your Sync folder so files save straight into the client's folder." },
+      { name: "Settings", href: "/settings", description: "Point the app at your Sync folder, and install the DOL portal helper." },
     ],
   },
 ];

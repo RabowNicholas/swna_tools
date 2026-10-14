@@ -326,7 +326,12 @@ export default function DolStatusUpdateForm() {
             />
           )}
 
-          <PortalAccess client={submittedClient as any} autoOpen={true} />
+          <PortalAccess
+            client={submittedClient as any}
+            autoOpen={true}
+            file={generatedFile}
+            tool="dol-status-update"
+          />
 
           {/* Airtable update — after submitting in the portal, paste the
               reference number here to log the request on the client */}

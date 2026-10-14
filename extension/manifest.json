@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "SWNA DOL Portal Helper",
+  "version": "1.0.0",
+  "description": "Fills the DOL Energy Document Portal from the SWNA tools app, up to Submit. Never submits.",
+  "permissions": ["storage", "unlimitedStorage", "tabs"],
+  "host_permissions": ["https://eclaimant.dol.gov/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://eclaimant.dol.gov/*"],
+      "js": ["selectors.js", "dol.js"],
+      "all_frames": true,
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://swna-tools-web.vercel.app/*", "http://localhost:3000/*"],
+      "js": ["bridge.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

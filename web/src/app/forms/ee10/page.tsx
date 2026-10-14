@@ -817,7 +817,12 @@ export default function EE10Form() {
             {/* Portal Access */}
             {submittedClient && (
               <>
-                <PortalAccess client={submittedClient} autoOpen={true} />
+                <PortalAccess
+                  client={submittedClient}
+                  autoOpen={true}
+                  file={mode === "generate" ? generatedFile : null}
+                  tool="ee10"
+                />
 
                 {/* Email Drafting */}
                 <EmailDraft

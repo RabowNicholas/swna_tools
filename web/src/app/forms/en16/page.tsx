@@ -262,7 +262,12 @@ export default function EN16Form() {
             />
           )}
 
-          <PortalAccess client={submittedClient as any} autoOpen={true} />
+          <PortalAccess
+            client={submittedClient as any}
+            autoOpen={true}
+            file={generatedFile}
+            tool="en16"
+          />
 
           {/* Airtable update — after submitting in the portal, paste the
               reference number here to log the EN-16 on the client, with the
