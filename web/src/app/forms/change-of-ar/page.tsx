@@ -79,6 +79,13 @@ export default function ChangeOfARForm() {
   // The case ID the packet went out under; decides portal vs fax
   const [submittedCaseId, setSubmittedCaseId] = useState("");
 
+  // A case ID typed here that the record doesn't hold yet is written back with
+  // the log entry, in the same update
+  const caseIdIsNew =
+    !!submittedClient &&
+    !!submittedCaseId &&
+    submittedCaseId !== String(submittedClient.fields["Case ID"] || "").trim();
+
   // The client's wet-signed DOL AR form, appended after the letter
   const [arFormFile, setArFormFile] = useState<File | null>(null);
 
@@ -513,11 +520,28 @@ export default function ChangeOfARForm() {
                 `Submitted change of AR (removed ${submittedPrevRep}) (*${reference})`
               }
               autoStatus={{ add: ["Awaiting AR Change"], remove: [] }}
+              extraFields={
+                caseIdIsNew
+                  ? () => ({ fields: { "Case ID": submittedCaseId } })
+                  : undefined
+              }
+              description={
+                <>
+                  Once you&apos;ve submitted in the portal, paste the reference
+                  number below to log the change of AR on the client&apos;s
+                  record
+                  {caseIdIsNew && (
+                    <> and save case ID {submittedCaseId} to it</>
+                  )}
+                  .
+                </>
+              }
               confirmation={(reference) => (
                 <>
                   The change of AR was added to {submittedClient.fields.Name}
-                  &apos;s log with reference {reference} and the Awaiting AR
-                  Change tag was added to Status.
+                  &apos;s log with reference {reference}
+                  {caseIdIsNew && <>, case ID {submittedCaseId} was saved</>}
+                  {" "}and the Awaiting AR Change tag was added to Status.
                 </>
               )}
             />
