@@ -1,9 +1,11 @@
 import { PDFDocument } from "pdf-lib";
+import { fitPageToLetter } from "./page-size";
 
 /**
  * Appends every page of `extra` after the pages of `base` and returns the
- * combined PDF. Runs in the browser, so a large scanned attachment never has to
- * be uploaded to the server (Vercel caps request bodies at 4.5 MB).
+ * combined PDF, with every page fitted to US Letter. Runs in the browser, so
+ * a large scanned attachment never has to be uploaded to the server (Vercel
+ * caps request bodies at 4.5 MB).
  *
  * Throws a readable error if `extra` can't be opened as a PDF.
  */
@@ -30,6 +32,7 @@ export async function appendPdf(
     attachment.getPageIndices()
   );
   pages.forEach((page) => combined.addPage(page));
+  combined.getPages().forEach(fitPageToLetter);
 
   return combined.save();
 }

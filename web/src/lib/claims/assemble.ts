@@ -6,6 +6,7 @@
  */
 
 import { PDFDocument } from 'pdf-lib';
+import { fitPageToLetter } from '@/lib/pdf/page-size';
 
 export interface AssemblyInput {
   /** Matches the DocumentSlot it came from */
@@ -71,7 +72,11 @@ export async function assembleClaim(inputs: AssemblyInput[]): Promise<AssemblyRe
 
     const startPage = output.getPageCount() + 1;
     const copied = await output.copyPages(source, indices);
-    copied.forEach((page) => output.addPage(page));
+    // Scans arrive at the scanner's pixel size; keep the claim one page size
+    copied.forEach((page) => {
+      fitPageToLetter(page);
+      output.addPage(page);
+    });
 
     ranges.push({
       slotId: input.slotId,
