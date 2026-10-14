@@ -28,6 +28,7 @@ import { formatSSN, generateEE1 } from "@/lib/claims/generate";
 import { getStateAbbreviation } from "@/lib/states";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 interface Client {
   id: string;
@@ -56,6 +57,10 @@ export default function EE1Form() {
   const [loading, setLoading] = useState(false);
 
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
+  // Bumped per generated file, so a regenerated one starts a fresh save card
+  const [submissionId, setSubmissionId] = useState(0);
+  const [submittedSigned, setSubmittedSigned] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
@@ -269,21 +274,13 @@ export default function EE1Form() {
         },
         signatureFile
       );
-
-      // Download the PDF
       const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `EE1_${data.first_name.charAt(0) || "X"}.${
-        data.last_name
-      }_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Saved to the client's folder from the card below
+      setGeneratedFile(blob);
 
       setFormSubmitted(true);
+      setSubmissionId((id) => id + 1);
+      setSubmittedSigned(!!signatureFile);
       setSubmittedClient(selectedClient);
     } catch (error) {
       console.error("Error generating EE-1:", error);
@@ -504,24 +501,35 @@ export default function EE1Form() {
 
         {/* Success Message */}
         {formSubmitted && (
-          <Card variant="elevated" className="bg-success/10 border-success/20">
-            <CardContent>
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="h-6 w-6 text-success" />
+          <>
+            <Card variant="elevated" className="bg-success/10 border-success/20">
+              <CardContent>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <CheckCircle className="h-6 w-6 text-success" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      EE-1 Generated Successfully!
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Save the EE-1 to the client&apos;s folder below.
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-foreground mb-2">
-                    EE-1 Generated Successfully!
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your EE-1 form has been downloaded and is ready for
-                    submission.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {submittedClient && generatedFile && (
+              <SaveToClientFolder
+                key={submissionId}
+                client={submittedClient}
+                blob={generatedFile}
+                destination="ee1"
+                doc={submittedSigned ? "EE-1 SIGNED" : "EE-1"}
+              />
+            )}
+          </>
         )}
       </form>
     </div>

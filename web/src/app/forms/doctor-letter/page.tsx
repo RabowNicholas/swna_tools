@@ -41,6 +41,7 @@ import { assembleClaim, formatPageRange } from "@/lib/claims/assemble";
 import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 const CONDITIONS = letterConditions();
 
@@ -190,6 +191,9 @@ export default function DoctorLetterForm() {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  const [generatedFile, setGeneratedFile] = useState<{ blob: Blob; name: string } | null>(null);
+  // Bumped per generated letter, so a regenerated one starts a fresh save card
+  const [submissionId, setSubmissionId] = useState(0);
   const [submittedCharge, setSubmittedCharge] = useState<string | null>(null);
   const [submittedPages, setSubmittedPages] = useState<{
     total: number;
@@ -427,7 +431,7 @@ export default function DoctorLetterForm() {
           throw new Error(
             `${
               errorData.details || errorData.error || "Failed to create billing record"
-            }. Nothing was written and the letter was NOT downloaded — safe to try again.`
+            }. Nothing was written and no letter was made — safe to try again.`
           );
         }
         setUnloggedChargeFor(selectedClient.id);
@@ -457,19 +461,14 @@ export default function DoctorLetterForm() {
       // Both writes landed, so the charge is no longer orphaned.
       setUnloggedChargeFor(null);
 
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       // The generator already sanitized the filename; reuse it rather than rebuilding
-      // a second version here that could drift from it.
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // a second version here that could drift from it. Saved to the client's
+      // folder from the card below.
+      setGeneratedFile({ blob, name: filename });
 
       setFormSubmitted(true);
       setSubmittedClient(selectedClient);
+      setSubmissionId((id) => id + 1);
       setSubmittedCharge(`${chargeDescription} ${stamp}`);
       const bReadRange = assembled.ranges.find((r) => r.slotId === "b-read");
       setSubmittedPages({
@@ -1054,38 +1053,50 @@ export default function DoctorLetterForm() {
         </div>
 
         {formSubmitted && submittedClient && (
-          <Card variant="elevated" className="bg-success/10 border-success/20">
-            <CardContent>
-              <div className="flex items-start">
-                <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-foreground mb-2">
-                    Letter drafted and downloaded
-                  </h3>
-                  {submittedPages && (
-                    <p className="text-sm text-muted-foreground mb-1">
-                      {submittedPages.total} pages, signed, with the B-read on{" "}
-                      {submittedPages.bRead.includes("–") ? "pages" : "page"}{" "}
-                      {submittedPages.bRead}. Read it through before it goes out.
+          <>
+            <Card variant="elevated" className="bg-success/10 border-success/20">
+              <CardContent>
+                <div className="flex items-start">
+                  <CheckCircle className="h-6 w-6 text-success flex-shrink-0" />
+                  <div className="ml-4">
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      Letter drafted
+                    </h3>
+                    {submittedPages && (
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {submittedPages.total} pages, signed, with the B-read on{" "}
+                        {submittedPages.bRead.includes("–") ? "pages" : "page"}{" "}
+                        {submittedPages.bRead}. Read it through before it goes out.
+                      </p>
+                    )}
+                    <p className="text-sm text-muted-foreground">
+                      Added to {submittedClient.fields.Name}&apos;s log and billing:{" "}
+                      <span className="font-medium text-foreground">
+                        {submittedCharge}
+                      </span>
                     </p>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    Added to {submittedClient.fields.Name}&apos;s log and billing:{" "}
-                    <span className="font-medium text-foreground">
-                      {submittedCharge}
-                    </span>
-                  </p>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {generatedFile && (
+              <SaveToClientFolder
+                key={submissionId}
+                client={submittedClient}
+                blob={generatedFile.blob}
+                destination="doctor-letter"
+                fileName={generatedFile.name}
+              />
+            )}
+          </>
         )}
       </form>
 
       <div className="flex items-start gap-2 text-sm text-muted-foreground">
         <FileText className="h-4 w-4 flex-shrink-0 mt-0.5" />
         <p>
-          The letter downloads finished: dated today, signed by the doctor, with the
+          The letter comes out finished: dated today, signed by the doctor, with the
           B-read already on the end. Nothing to convert or attach afterwards.
         </p>
       </div>

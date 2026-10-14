@@ -27,6 +27,7 @@ import {
   formatCompleteEmail,
 } from '@/lib/email-utils';
 import { buildLogEntry } from '@/lib/airtable-log';
+import { SaveToClientFolder } from '@/components/files/SaveToClientFolder';
 
 interface Client {
   id: string;
@@ -118,6 +119,9 @@ export function IRCoordinationCard({
   const [availability, setAvailability] = useState('');
   const [dpDownloading, setDpDownloading] = useState(false);
   const [dpError, setDpError] = useState<string | null>(null);
+  const [dpReferral, setDpReferral] = useState<Blob | null>(null);
+  // Bumped per generated referral, so a regenerated one starts a fresh save card
+  const [dpGeneration, setDpGeneration] = useState(0);
 
   const setItemChecked = (id: string, on: boolean) =>
     setChecked((prev) => {
@@ -171,16 +175,9 @@ export function IRCoordinationCard({
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Desert_Pulm_Referral_${patient.name.replace(/\s+/g, '_')}_${new Date()
-        .toLocaleDateString('en-US')
-        .replace(/\//g, '.')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Saved to the client's folder from the card below
+      setDpReferral(blob);
+      setDpGeneration((g) => g + 1);
 
       if (dpItem) setItemChecked(dpItem.id, true);
     } catch (error) {
@@ -355,8 +352,17 @@ export function IRCoordinationCard({
                             disabled={dpDownloading}
                             icon={<FileDown className="h-4 w-4" />}
                           >
-                            {dpDownloading ? 'Generating...' : 'Download Referral'}
+                            {dpDownloading ? 'Generating...' : 'Generate Referral'}
                           </Button>
+
+                          {dpReferral && (
+                            <SaveToClientFolder
+                              key={dpGeneration}
+                              client={client}
+                              blob={dpReferral}
+                              destination="desert-pulm"
+                            />
+                          )}
 
                           <div className="space-y-2 text-sm">
                             <p className="font-medium text-foreground">Email to AO</p>
@@ -391,7 +397,7 @@ export function IRCoordinationCard({
                               </Button>
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              Attach the downloaded referral before sending.
+                              Attach the saved referral before sending.
                             </p>
                           </div>
                         </div>

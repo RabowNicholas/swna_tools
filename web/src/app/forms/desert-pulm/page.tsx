@@ -24,6 +24,7 @@ import {
 import { DPReferralEmailDraft } from "@/components/email/DPReferralEmailDraft";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -158,6 +159,9 @@ export default function DesertPulmForm() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [submittedClient, setSubmittedClient] = useState<Client | null>(null);
+  const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
+  // Bumped per generated referral, so a regenerated one starts a fresh save card
+  const [submissionId, setSubmissionId] = useState(0);
 
   const form = useForm<DesertPulmFormData>({
     resolver: zodResolver(desertPulmSchema),
@@ -279,22 +283,13 @@ export default function DesertPulmForm() {
       });
 
       if (response.ok) {
-        // Download the PDF
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Desert_Pulm_Referral_${data.patient_name.replace(
-          /\s+/g,
-          "_"
-        )}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Saved to the client's folder from the card below
+        setGeneratedFile(blob);
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
+        setSubmissionId((id) => id + 1);
       } else {
         const errorData = await response.json();
         throw new Error(
@@ -551,13 +546,22 @@ export default function DesertPulmForm() {
                       Desert Pulmonary referral form generated successfully!
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Your Desert Pulmonary referral form has been downloaded
-                      and is ready for submission.
+                      Save the referral to the client&apos;s folder below,
+                      then send it.
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {submittedClient && generatedFile && (
+              <SaveToClientFolder
+                key={submissionId}
+                client={submittedClient}
+                blob={generatedFile}
+                destination="desert-pulm"
+              />
+            )}
 
             {submittedClient && (
               <DPReferralEmailDraft

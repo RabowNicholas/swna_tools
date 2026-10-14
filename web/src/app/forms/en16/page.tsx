@@ -19,6 +19,7 @@ import {
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 // Zod schema for form validation
 const en16Schema = z.object({
@@ -53,6 +54,7 @@ export default function EN16Form() {
   // Bumped per generated form, and used as the log card's key so a regenerated
   // EN-16 starts a fresh submission
   const [submissionId, setSubmissionId] = useState(0);
+  const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
   // What the client was texted, once the text is checked off as sent — goes
   // into the same log entry as the submission
   const [textSummary, setTextSummary] = useState<string | null>(null);
@@ -116,25 +118,9 @@ export default function EN16Form() {
       });
 
       if (response.ok) {
-        // Download the PDF
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-
-        // Generate filename from name
-        const nameParts = data.name.trim().split(" ");
-        const firstInitial = nameParts[0]?.[0] || "X";
-        const lastName = nameParts[nameParts.length - 1] || "Client";
-        const currentDate = new Date()
-          .toLocaleDateString("en-US")
-          .replace(/\//g, ".");
-        a.download = `EN16_${firstInitial}.${lastName}_${currentDate}.pdf`;
-
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Saved to the client's folder from the card below
+        setGeneratedFile(blob);
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
@@ -259,13 +245,22 @@ export default function EN16Form() {
                     EN-16 form generated
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Your EN-16 energy notification form has been downloaded and
-                    is ready for submission.
+                    Save the EN-16 to the client&apos;s folder below, then
+                    submit it.
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {submittedClient && generatedFile && (
+            <SaveToClientFolder
+              key={submissionId}
+              client={submittedClient}
+              blob={generatedFile}
+              destination="en16"
+            />
+          )}
 
           <PortalAccess client={submittedClient as any} autoOpen={true} />
 

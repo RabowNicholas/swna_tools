@@ -25,16 +25,21 @@ import {
   type SaveResult,
 } from "@/lib/files/save-to-client";
 
-interface Client {
+/** Any Airtable client record; only the id and Name are used */
+export interface FolderClient {
   id: string;
   fields: { Name?: string; [key: string]: unknown };
 }
 
 interface SaveToClientFolderProps {
-  client: Client;
+  client: FolderClient;
   /** The file the tool just generated */
   blob: Blob;
   destination: DestinationId;
+  /** Overrides the destination's document name, e.g. "EE-1 SIGNED" */
+  doc?: string;
+  /** A finished file name, for tools that already build one in the house format */
+  fileName?: string;
 }
 
 /** Picked in the subfolder list to make the expected subfolder */
@@ -45,9 +50,16 @@ const CREATE = "__create__";
  * exactly what goes where before the click, then logs it to Airtable. Falls
  * back to a plain download when there's no Sync folder set up.
  */
-export function SaveToClientFolder({ client, blob, destination }: SaveToClientFolderProps) {
+export function SaveToClientFolder({
+  client,
+  blob,
+  destination,
+  doc: docOverride,
+  fileName: givenName,
+}: SaveToClientFolderProps) {
   const { data: session } = useSession();
-  const { doc, subfolder: expectedSub } = DESTINATIONS[destination];
+  const { doc: defaultDoc, subfolder: expectedSub } = DESTINATIONS[destination];
+  const doc = docOverride ?? defaultDoc;
   const airtableName = client.fields.Name ?? "";
 
   const [sync, setSync] = useState<SyncState | null>(null);
@@ -56,7 +68,7 @@ export function SaveToClientFolder({ client, blob, destination }: SaveToClientFo
   const [clientDir, setClientDir] = useState<DirHandle | null>(null);
   const [subfolders, setSubfolders] = useState<string[] | null>(null);
   const [sub, setSub] = useState<string | null>(null);
-  const [fileName, setFileName] = useState(() => fileNameFor(doc, airtableName));
+  const [fileName, setFileName] = useState(() => givenName ?? fileNameFor(doc, airtableName));
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<SaveResult | null>(null);
   const [error, setError] = useState<string | null>(null);

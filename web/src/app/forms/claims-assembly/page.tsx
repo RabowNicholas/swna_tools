@@ -15,7 +15,6 @@ import {
   AlertCircle,
   CheckCircle,
   ClipboardList,
-  Download,
   Upload,
   Lock,
   User,
@@ -90,6 +89,7 @@ import {
 import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 const CLAIM_TYPES = [
   { value: "primary", label: "Primary" },
@@ -1213,28 +1213,6 @@ export default function ClaimsAssemblyPage() {
                   ))}
                 </div>
 
-                {result.forms.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">
-                      Save a copy of each form to the client&apos;s folder:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {result.forms.map((built) => (
-                        <Button
-                          key={built.slotId}
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => downloadPdf(built.bytes, built.name)}
-                          icon={<Download className="h-4 w-4" />}
-                        >
-                          {built.name}.pdf
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <p className="text-sm text-muted-foreground">
                   Leave it in your Claim Drafts folder until another team member
                   has checked it.
@@ -1244,6 +1222,20 @@ export default function ClaimsAssemblyPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* A copy of each form this tool built, for the client's folder */}
+      {result &&
+        selectedClient &&
+        result.forms.map((built) => (
+          <SaveToClientFolder
+            key={`${result.id}-${built.slotId}`}
+            client={selectedClient}
+            blob={new Blob([built.bytes], { type: "application/pdf" })}
+            destination="claim-form"
+            doc={built.label}
+            fileName={`${built.name}.pdf`}
+          />
+        ))}
 
       {/* Airtable note that the claim was compiled — pressed by the assembler,
           never written on its own */}

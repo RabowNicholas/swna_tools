@@ -28,6 +28,7 @@ import {
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder, type FolderClient } from "@/components/files/SaveToClientFolder";
 
 // Invoice item options
 const INVOICE_ITEMS = [
@@ -88,6 +89,9 @@ export default function InvoiceForm() {
     refreshClients,
   } = useClients();
   const [loading, setLoading] = useState(false);
+  const [generatedFile, setGeneratedFile] = useState<{ blob: Blob; name: string; client: FolderClient } | null>(null);
+  // Bumped per generated invoice, so a regenerated one starts a fresh save card
+  const [submissionId, setSubmissionId] = useState(0);
 
   const [lastSelectedClient, setLastSelectedClient] = useState<string>("");
 
@@ -309,14 +313,11 @@ export default function InvoiceForm() {
         });
 
         if (!tagResponse.ok) {
-          throw new Error("Failed to update client status tags in Airtable. Invoice was NOT downloaded. Please let Nick know.");
+          throw new Error("Failed to update client status tags in Airtable. No invoice was made. Please let Nick know.");
         }
 
-        // Download the Excel file
+        // Saved to the client's BILLING folder from the card below
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
 
         // Format filename
         const amount =
@@ -336,11 +337,12 @@ export default function InvoiceForm() {
 
         const invoiceNum = data.invoice_number.trim().replace(/^#/, "");
 
-        a.download = `Invoice ${invoiceNum} ${data.part_type} ${amountStr} ${nameStr} ${todayStr}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        setGeneratedFile({
+          blob,
+          name: `Invoice ${invoiceNum} ${data.part_type} ${amountStr} ${nameStr} ${todayStr}.xlsx`,
+          client: selectedClient,
+        });
+        setSubmissionId((id) => id + 1);
 
       } else {
         const errorData = await response.json();
@@ -722,6 +724,16 @@ export default function InvoiceForm() {
             </div>
           </CardContent>
         </Card>
+
+        {generatedFile && (
+          <SaveToClientFolder
+            key={submissionId}
+            client={generatedFile.client}
+            blob={generatedFile.blob}
+            destination="invoice"
+            fileName={generatedFile.name}
+          />
+        )}
       </form>
     </div>
   );

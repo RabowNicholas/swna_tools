@@ -32,6 +32,7 @@ import {
 import { detectClientStatus } from "@/lib/email-utils";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 // Whichever pre-IR tag is on the record when the EE-10 goes in — generic or
 // already doctor-specific — is superseded once the doctor is confirmed here.
@@ -209,6 +210,7 @@ export default function EE10Form() {
   // Bumped per submission, and used as the log card's key so going round again
   // starts a fresh one
   const [submissionId, setSubmissionId] = useState(0);
+  const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
   const [mode, setMode] = useState<'generate' | 'skip'>('generate');
 
   const form = useForm<EE10FormData>({
@@ -393,24 +395,9 @@ export default function EE10Form() {
       });
 
       if (response.ok) {
-        // Download the PDF
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-
-        // Extract first initial and last name for filename
-        const nameParts = data.name.trim().split(" ");
-        const firstName = nameParts[0] || "X";
-        const lastName = nameParts.slice(1).join(" ") || "Unknown";
-
-        a.download = `EE10_${firstName.charAt(0)}.${lastName}_${new Date()
-          .toLocaleDateString("en-US")
-          .replace(/\//g, ".")}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Saved to the client's folder from the card below
+        setGeneratedFile(blob);
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
@@ -789,7 +776,7 @@ export default function EE10Form() {
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       {mode === 'generate'
-                        ? "Your EE-10 form has been downloaded and is ready for submission."
+                        ? "Save the EE-10 to the client's folder below, then submit it."
                         : "Use the portal access below to upload your pre-completed form, then send the email notification."
                       }
                     </p>
@@ -817,6 +804,15 @@ export default function EE10Form() {
                 </div>
               </CardContent>
             </Card>
+
+            {mode === "generate" && submittedClient && generatedFile && (
+              <SaveToClientFolder
+                key={submissionId}
+                client={submittedClient}
+                blob={generatedFile}
+                destination="ee10"
+              />
+            )}
 
             {/* Portal Access */}
             {submittedClient && (

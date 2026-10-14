@@ -24,6 +24,7 @@ import { ee3Schema, type EE3FormValues } from "@/lib/schemas/ee3";
 import { formatSSN, generateEE3 } from "@/lib/claims/generate";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder, type FolderClient } from "@/components/files/SaveToClientFolder";
 
 
 
@@ -38,6 +39,10 @@ export default function EE3Form() {
   const [loading, setLoading] = useState(false);
 
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
+  // Bumped per generated file, so a regenerated one starts a fresh save card
+  const [submissionId, setSubmissionId] = useState(0);
+  const [submittedClient, setSubmittedClient] = useState<FolderClient | null>(null);
   const [collapsedEmployment, setCollapsedEmployment] = useState<Set<number>>(
     new Set()
   );
@@ -187,21 +192,13 @@ export default function EE3Form() {
         ssn: formatSSN(data.ssn),
         employment_history: data.employment_history,
       });
-
-      // Download the PDF
       const blob = new Blob([pdfBytes], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `EE3_${data.first_name.charAt(0) || "X"}.${
-        data.last_name
-      }_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Saved to the client's folder from the card below
+      setGeneratedFile(blob);
 
       setFormSubmitted(true);
+      setSubmissionId((id) => id + 1);
+      setSubmittedClient(selectedClient);
     } catch (error) {
       console.error("Error generating EE-3:", error);
       alert(error instanceof Error ? error.message : "Failed to generate EE-3");
@@ -316,24 +313,37 @@ export default function EE3Form() {
         </div>
 
         {formSubmitted && (
-          <Card variant="elevated" className="bg-success/10 border-success/20">
-            <CardContent>
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="h-6 w-6 text-success" />
+
+          <>
+            <Card variant="elevated" className="bg-success/10 border-success/20">
+              <CardContent>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <CheckCircle className="h-6 w-6 text-success" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      EE-3 Generated Successfully!
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Save the EE-3 to the client&apos;s folder below.
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-foreground mb-2">
-                    EE-3 Generated Successfully!
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your EE-3 form has been downloaded and is ready for
-                    submission.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {submittedClient && generatedFile && (
+              <SaveToClientFolder
+                key={submissionId}
+                client={submittedClient}
+                blob={generatedFile}
+                destination="ee3"
+              />
+            )}
+
+          </>
+
         )}
       </form>
     </div>

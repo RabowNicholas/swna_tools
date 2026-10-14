@@ -24,6 +24,7 @@ import {
 } from "@/components/form/ClientSelector";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 // Zod schema for form validation
 const rdWaiverSchema = z.object({
@@ -99,6 +100,7 @@ export default function RDWaiverForm() {
   // Bumped per generated waiver, and used as the log card's key so a
   // regenerated waiver starts a fresh submission
   const [submissionId, setSubmissionId] = useState(0);
+  const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
   // What the client was texted, once the text is checked off as sent — goes
   // into the same log entry as the waiver
   const [textSummary, setTextSummary] = useState<string | null>(null);
@@ -212,19 +214,9 @@ export default function RDWaiverForm() {
       });
 
       if (response.ok) {
-        // Download the PDF
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `RD_waiver_${data.claimant_name.replace(
-          /\s+/g,
-          "_"
-        )}_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Saved to the client's folder from the card below
+        setGeneratedFile(blob);
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
@@ -459,13 +451,22 @@ export default function RDWaiverForm() {
                       RD waiver generated successfully!
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Your completed RD acceptance waiver has been downloaded
-                      and is ready for submission.
+                      Save the RD acceptance waiver to the client&apos;s folder
+                      below, then submit it.
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
+
+            {submittedClient && generatedFile && (
+              <SaveToClientFolder
+                key={submissionId}
+                client={submittedClient}
+                blob={generatedFile}
+                destination="rd-waiver"
+              />
+            )}
 
             {/* Portal Access */}
             {submittedClient && (

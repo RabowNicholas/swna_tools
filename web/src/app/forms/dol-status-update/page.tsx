@@ -22,6 +22,7 @@ import {
 } from "@/lib/status-update-subject";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 
 // Fill the subject and leave the cursor at the end so the blank can be typed in
 const SUBJECT_PRESETS = [
@@ -81,6 +82,7 @@ export default function DolStatusUpdateForm() {
   // Bumped per generated letter, and used as the log card's key so a
   // regenerated letter starts a fresh submission
   const [submissionId, setSubmissionId] = useState(0);
+  const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
 
   const form = useForm<DolStatusUpdateFormData>({
     resolver: zodResolver(dolStatusUpdateSchema),
@@ -136,23 +138,9 @@ export default function DolStatusUpdateForm() {
       });
 
       if (response.ok) {
-        // Download the PDF
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-
-        // Generate filename
-        const nameForFile = data.claimant_name.replace(/\s+/g, "_");
-        const currentDate = new Date()
-          .toLocaleDateString("en-US")
-          .replace(/\//g, ".");
-        a.download = `DOL_Status_Update_${nameForFile}_${currentDate}.pdf`;
-
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Saved to the client's folder from the card below
+        setGeneratedFile(blob);
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
@@ -322,12 +310,21 @@ export default function DolStatusUpdateForm() {
                     Status update letter generated successfully!
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Your status update letter has been downloaded and is ready for submission to the Department of Labor.
+                    Save the status update to the client&apos;s folder below, then submit it to the Department of Labor.
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {submittedClient && generatedFile && (
+            <SaveToClientFolder
+              key={submissionId}
+              client={submittedClient}
+              blob={generatedFile}
+              destination="dol-status-update"
+            />
+          )}
 
           <PortalAccess client={submittedClient as any} autoOpen={true} />
 

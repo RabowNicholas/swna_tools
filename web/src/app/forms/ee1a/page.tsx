@@ -29,6 +29,7 @@ import {
 import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
+import { SaveToClientFolder, type FolderClient } from "@/components/files/SaveToClientFolder";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -156,6 +157,10 @@ export default function EE1AForm() {
   const [loading, setLoading] = useState(false);
 
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
+  // Bumped per generated file, so a regenerated one starts a fresh save card
+  const [submissionId, setSubmissionId] = useState(0);
+  const [submittedClient, setSubmittedClient] = useState<FolderClient | null>(null);
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
@@ -325,20 +330,13 @@ export default function EE1AForm() {
       });
 
       if (response.ok) {
-        // Download the PDF
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `EE1A_${data.first_name.charAt(0) || "X"}.${
-          data.last_name
-        }_${new Date().toLocaleDateString("en-US").replace(/\//g, ".")}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+        // Saved to the client's folder from the card below
+        setGeneratedFile(blob);
 
         setFormSubmitted(true);
+        setSubmissionId((id) => id + 1);
+        setSubmittedClient(selectedClient);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to generate EE-1a");
@@ -586,24 +584,34 @@ export default function EE1AForm() {
 
         {/* Success Message */}
         {formSubmitted && (
-          <Card variant="elevated" className="bg-success/10 border-success/20">
-            <CardContent>
-              <div className="flex items-start">
-                <div className="flex-shrink-0">
-                  <CheckCircle className="h-6 w-6 text-success" />
+          <>
+            <Card variant="elevated" className="bg-success/10 border-success/20">
+              <CardContent>
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <CheckCircle className="h-6 w-6 text-success" />
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-medium text-foreground mb-2">
+                      EE-1a form generated successfully!
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Save the EE-1a to the client&apos;s folder below.
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <h3 className="text-lg font-medium text-foreground mb-2">
-                    EE-1a form generated successfully!
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Your consequential illness claim form has been downloaded
-                    and is ready for submission.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {submittedClient && generatedFile && (
+              <SaveToClientFolder
+                key={submissionId}
+                client={submittedClient}
+                blob={generatedFile}
+                destination="ee1a"
+              />
+            )}
+          </>
         )}
       </form>
     </div>
