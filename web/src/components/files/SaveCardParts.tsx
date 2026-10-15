@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -70,9 +70,27 @@ export function DownloadFallback({ blob, fileName, children }: { blob: Blob; fil
   );
 }
 
+/** Files already downloaded, so a remount or re-render doesn't download them twice */
+const autoDownloaded = new WeakSet<Blob>();
+
 /**
- * What to show while the Sync folder isn't usable yet: still checking, not
- * Chrome, not set up, or waiting on Chrome's permission. Null once it's ready.
+ * With no Sync folder set up (or not in Chrome), the file just downloads like
+ * it used to and no save card shows. True in that case, so the card can hide.
+ */
+export function useAutoDownload(sync: SyncState | null, blob: Blob, fileName: string): boolean {
+  const off = sync?.status === "unset" || sync?.status === "unsupported";
+  useEffect(() => {
+    if (!off || autoDownloaded.has(blob)) return;
+    autoDownloaded.add(blob);
+    downloadBlob(blob, fileName.trim());
+  }, [off, blob, fileName]);
+  return off;
+}
+
+/**
+ * What to show while the Sync folder isn't usable yet: still checking,
+ * waiting on Chrome's permission, or moved. Null once it's ready. (With no
+ * Sync folder set up at all, useAutoDownload hides the card instead.)
  */
 export function syncGate(
   sync: SyncState | null,
@@ -80,19 +98,6 @@ export function syncGate(
 ): ReactNode | null {
   if (!sync) return <p className="text-sm text-muted-foreground">Checking your Sync folder…</p>;
   switch (sync.status) {
-    case "unsupported":
-      return (
-        <DownloadFallback blob={blob} fileName={fileName}>
-          Saving straight to Sync only works in Chrome.
-        </DownloadFallback>
-      );
-    case "unset":
-      return (
-        <DownloadFallback blob={blob} fileName={fileName}>
-          Set your Sync folder in <Link href="/settings" className="text-primary underline">Settings</Link> to
-          save files straight to Sync.
-        </DownloadFallback>
-      );
     case "needs-permission":
       return (
         <div className="space-y-3">

@@ -22,6 +22,7 @@ import {
   Notice,
   DownloadFallback,
   syncGate,
+  useAutoDownload,
   SaveTargetRows,
   SavedMessage,
 } from "./SaveCardParts";
@@ -62,6 +63,8 @@ export function SaveToClaimDrafts({ client, blob, fileName: givenName }: SaveToC
   useEffect(() => {
     getSyncState().then(setSync, (e) => setError(String(e)));
   }, []);
+
+  const autoDownload = useAutoDownload(sync, blob, fileName);
 
   // Find "5. New Claims - To Compile" and the drafts folders in it
   useEffect(() => {
@@ -169,6 +172,8 @@ export function SaveToClaimDrafts({ client, blob, fileName: givenName }: SaveToC
       </div>
     );
   };
+
+  if (autoDownload) return null;
 
   return (
     <SaveCardShell title="Save to your Claim Drafts">

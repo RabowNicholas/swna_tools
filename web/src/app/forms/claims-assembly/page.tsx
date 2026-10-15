@@ -322,6 +322,15 @@ export default function ClaimsAssemblyPage() {
     /** Whether the client still has B-read results to hear about */
     hasBRead: boolean;
   } | null>(null);
+  /** One file per built form, made once per assembly so a re-render doesn't
+      hand the save cards a new file (and download it again) */
+  const formBlobs = useMemo(
+    () =>
+      result?.forms.map(
+        (built) => new Blob([built.bytes as BlobPart], { type: "application/pdf" })
+      ) ?? [],
+    [result]
+  );
 
   const isConsequential = values.claim_type === "consequential";
   const condition = isConsequential
@@ -1224,11 +1233,11 @@ export default function ClaimsAssemblyPage() {
       {/* A copy of each form this tool built, for the client's folder */}
       {result &&
         selectedClient &&
-        result.forms.map((built) => (
+        result.forms.map((built, i) => (
           <SaveToClientFolder
             key={`${result.id}-${built.slotId}`}
             client={selectedClient}
-            blob={new Blob([built.bytes], { type: "application/pdf" })}
+            blob={formBlobs[i]}
             destination="claim-form"
             doc={built.label}
             fileName={`${built.name}.pdf`}

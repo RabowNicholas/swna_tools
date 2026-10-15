@@ -20,6 +20,7 @@ import {
   Notice,
   DownloadFallback,
   syncGate,
+  useAutoDownload,
   SaveTargetRows,
   SavedMessage,
 } from "./SaveCardParts";
@@ -46,8 +47,8 @@ const CREATE = "__create__";
 
 /**
  * Saves a generated file straight into the client's Sync folder, showing
- * exactly what goes where before the click, then logs it to Airtable. Falls
- * back to a plain download when there's no Sync folder set up.
+ * exactly what goes where before the click, then logs it to Airtable. With no
+ * Sync folder set up, the file just downloads and nothing shows.
  */
 export function SaveToClientFolder({
   client,
@@ -76,6 +77,8 @@ export function SaveToClientFolder({
   useEffect(() => {
     getSyncState().then(setSync, (e) => setError(String(e)));
   }, []);
+
+  const autoDownload = useAutoDownload(sync, blob, fileName);
 
   // Find the client's folder once there's access to Sync
   useEffect(() => {
@@ -215,6 +218,8 @@ export function SaveToClientFolder({
       </div>
     );
   };
+
+  if (autoDownload) return null;
 
   return (
     <SaveCardShell title={<>Save to the client&apos;s folder</>}>
