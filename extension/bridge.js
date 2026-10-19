@@ -1,6 +1,8 @@
 // Runs on the SWNA tools app. The app talks to it with window.postMessage:
 //   { source: "swna-app", type: "ping" }  →  { source: "swna-helper", type: "pong", version }
 //   { source: "swna-app", type: "fill", id, job }  →  { source: "swna-helper", type: "fill-result", id, ok, error? }
+// and, once the person submits in DOL and the confirmation loads:
+//   { source: "swna-helper", type: "filed", caseId, dcn, status, fileName }
 // The job's file arrives as an ArrayBuffer and is stored as base64.
 
 const VERSION = chrome.runtime.getManifest().version;
@@ -38,6 +40,10 @@ window.addEventListener("message", async (event) => {
       reply({ type: "fill-result", id: data.id, ok: false, error: String(e) });
     }
   }
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === "filed") reply({ type: "filed", ...message.filed });
 });
 
 // Lets the app know the helper is here even if it pinged before this loaded

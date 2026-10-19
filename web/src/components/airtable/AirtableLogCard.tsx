@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useClients } from "@/hooks/useClients";
 import { Button } from "@/components/ui/Button";
@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/Select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Database, CheckCircle, AlertCircle } from "lucide-react";
 import { buildLogEntry } from "@/lib/airtable-log";
+import { onFiled } from "@/lib/portal/helper";
 
 interface Client {
   id: string;
@@ -167,8 +168,24 @@ export function AirtableLogCard({
   const [updating, setUpdating] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set when the DOL portal helper filled the reference in after the submission
+  const [fromPortal, setFromPortal] = useState(false);
 
   const clientName = client.fields.Name;
+  const caseId = String(client.fields["Case ID"] ?? "").trim();
+
+  // The portal helper reports the DCN once the submission lands. It only fills
+  // an empty box, so a number already typed in is never overwritten.
+  useEffect(() => {
+    if (!requireReference || !caseId) return;
+    return onFiled(caseId, ({ dcn }) => {
+      setReferenceNumber((current) => {
+        if (current.trim()) return current;
+        setFromPortal(true);
+        return dcn;
+      });
+    });
+  }, [requireReference, caseId]);
   // Picking a tag is optional — a submission that warrants no tag still logs.
   const pickedOption = statusPicker?.options.find((o) => o.value === statusTag);
   const statusTags = [
@@ -315,9 +332,16 @@ export function AirtableLogCard({
                 required
                 placeholder="Paste the reference number from the portal"
                 value={referenceNumber}
-                onChange={(e) => setReferenceNumber(e.target.value)}
+                onChange={(e) => {
+                  setReferenceNumber(e.target.value);
+                  setFromPortal(false);
+                }}
                 disabled={updating}
-                helperText="Shown by the submission portal after you submit"
+                helperText={
+                  fromPortal
+                    ? "Filled in from the DOL portal. Check it, then update Airtable."
+                    : "Shown by the submission portal after you submit"
+                }
               />
             )}
 

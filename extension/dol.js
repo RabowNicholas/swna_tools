@@ -1,7 +1,8 @@
 // Runs in every frame of the DOL portal. When the app has handed over a job,
 // it walks the portal one page at a time: landing → case lookup → upload page,
 // where it attaches the file, picks the category and stops at SUBMIT for a
-// person to check and click. It never clicks SUBMIT.
+// person to check and click. It never clicks SUBMIT. When the confirmation page
+// loads after the person submits, it reads the DCN and sends it to the app.
 
 // A job older than this is stale (the person wandered off), so it's dropped
 const JOB_TTL_MS = 15 * 60 * 1000;
@@ -110,7 +111,7 @@ async function onLookup(job) {
 }
 
 async function onUpload(job) {
-  if (job.stage === "attaching" || job.stage === "done") return;
+  if (job.stage === "attaching" || job.stage === "attached") return;
   await setStage(job, "attaching");
   banner("info", `attaching ${escapeHtml(job.file.name)}…`);
 
@@ -177,8 +178,11 @@ async function onUpload(job) {
       submit.scrollIntoView({ block: "center" });
     }
 
-    await setStage(job, "done");
-    await clearJob();
+    // Keep the job until the confirmation page, so its DCN can be matched to
+    // this file. The person gets the full TTL from here to check and submit.
+    job.docId = docId;
+    job.createdAt = Date.now();
+    await setStage(job, "attached");
     banner(
       "done",
       `attached <u>${escapeHtml(job.file.name)}</u>` +
@@ -186,16 +190,62 @@ async function onUpload(job) {
           ? ` as <u>${escapeHtml(option.textContent.trim())}</u>`
           : `, but couldn’t pick “${escapeHtml(job.category.label)}”. Pick the category by hand`) +
         (dateSet ? `, dated ${authorDate}.` : ". Add the author date by hand if you want one.") +
-        " Check it, then click SUBMIT yourself. The helper never submits."
+        " Check it, then click SUBMIT and Send yourself. The helper never submits." +
+        " Once DOL files it, the DCN goes back to the app."
     );
   } catch (e) {
     await fail(`Couldn’t attach the file (${e.message}).`);
   }
 }
 
+async function onFiled(job) {
+  await clearJob();
+  const table = $(DOL.resultTable);
+  const headers = [...(table.rows[0]?.cells ?? [])].map((c) => c.innerText.trim().toUpperCase());
+  const dcnCol = headers.indexOf("DCN");
+  const statusCol = headers.indexOf("STATUS");
+  const docCol = headers.indexOf("DOCUMENT");
+  const rows = [...table.rows].slice(1).map((r) => ({
+    dcn: (r.cells[dcnCol]?.innerText ?? "").trim().replace(/^\*/, ""),
+    status: (r.cells[statusCol]?.innerText ?? "").trim(),
+    // DOL shortens long names, e.g. "DOL Status Update K"
+    name: (r.cells[docCol]?.innerText ?? "").trim().replace(/\.+$/, ""),
+  }));
+  const filed = rows.filter((r) => r.dcn);
+
+  // The page is the source of truth. The DCN predicted from the held row picks
+  // out this file; failing that, a lone row whose name matches is this file.
+  // Anything else could be a different upload made while the job was waiting.
+  const expected = `${DOL.dcnPrefix}${job.docId}`;
+  const lone = filed.length === 1 && filed[0].name && job.file.name.startsWith(filed[0].name) ? filed[0] : null;
+  const row = filed.find((r) => r.dcn === expected) ?? lone;
+  if (dcnCol < 0 || !row) {
+    banner("error", "DOL filed this, but the helper couldn’t tell which DCN is this file’s. Copy it into the app by hand.");
+    return;
+  }
+
+  chrome.runtime.sendMessage({
+    type: "filed",
+    appTabId: job.appTabId,
+    filed: { caseId: job.caseId, dcn: row.dcn, status: row.status, fileName: job.file.name },
+  });
+  const processed = row.status.toLowerCase() === "processed";
+  banner(
+    processed ? "done" : "error",
+    `filed ${escapeHtml(job.file.name)}. DCN <u>${escapeHtml(row.dcn)}</u>` +
+      (processed ? "" : `, but DOL shows its status as “${escapeHtml(row.status || "blank")}”`) +
+      ". It’s filled in on the app’s Airtable card."
+  );
+}
+
 (async () => {
   const job = await getJob();
   if (!job) return;
+
+  if (job.stage === "attached") {
+    if ($(DOL.resultTable)) return onFiled(job);
+    return;
+  }
 
   if ($(DOL.uploadForm)) return onUpload(job);
   if ($(DOL.caseNumber)) return onLookup(job);

@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Globe, Copy, ExternalLink, Send, CheckCircle, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { extractPortalData } from '@/lib/portal/portal-data';
 import { DOL_CATEGORIES, DEFAULT_CATEGORY, categoryFor } from '@/lib/portal/categories';
-import { detectHelper, fillPortal, portalFileName } from '@/lib/portal/helper';
+import { detectHelper, fillPortal, onFiled, portalFileName, type Filed } from '@/lib/portal/helper';
 import { DESTINATIONS, fileNameFor, type DestinationId } from '@/lib/files/destinations';
 
 interface Client {
@@ -106,6 +106,7 @@ export function PortalAccess({ client, autoOpen = true, file, tool }: PortalAcce
   const [fillResult, setFillResult] = useState<{ ok: boolean; error?: string } | null>(null);
   const [changingCategory, setChangingCategory] = useState(false);
   const [showManual, setShowManual] = useState(false);
+  const [filed, setFiled] = useState<Filed | null>(null);
 
   const canFill = !!(file && tool);
   const fileName = tool ? portalFileName(fileNameFor(DESTINATIONS[tool].doc, client.fields.Name ?? '')) : '';
@@ -114,6 +115,11 @@ export function PortalAccess({ client, autoOpen = true, file, tool }: PortalAcce
   useEffect(() => {
     detectHelper().then(setHelper);
   }, []);
+
+  useEffect(() => {
+    if (!portalData.caseId) return;
+    return onFiled(portalData.caseId, setFiled);
+  }, [portalData.caseId]);
 
   useEffect(() => {
     // With the helper, the portal opens when "Open portal and fill" is clicked instead
@@ -214,11 +220,25 @@ export function PortalAccess({ client, autoOpen = true, file, tool }: PortalAcce
             </p>
           )}
 
-          {fillResult?.ok ? (
+          {filed ? (
+            <div className="flex items-start gap-2 text-sm text-foreground">
+              {filed.status.toLowerCase() === "processed" ? (
+                <CheckCircle className="h-4 w-4 mt-0.5 text-success flex-shrink-0" />
+              ) : (
+                <AlertCircle className="h-4 w-4 mt-0.5 text-destructive flex-shrink-0" />
+              )}
+              <span>
+                Filed with DOL. DCN <span className="font-mono">{filed.dcn}</span>
+                {filed.status.toLowerCase() === "processed"
+                  ? "."
+                  : `, but DOL shows its status as “${filed.status || "blank"}”. Check the case in ECOMP.`}
+              </span>
+            </div>
+          ) : fillResult?.ok ? (
             <div className="space-y-3">
               <div className="flex items-start gap-2 text-sm text-foreground">
                 <CheckCircle className="h-4 w-4 mt-0.5 text-success flex-shrink-0" />
-                Portal opened. Check it, then click SUBMIT.
+                Portal opened. Check it, then click SUBMIT and Send. The DCN comes back here.
               </div>
               <Button type="button" variant="secondary" size="sm" onClick={handleFill} loading={filling}>
                 Open portal again

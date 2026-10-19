@@ -26,8 +26,15 @@ const DOL = {
   rowError: "#uploadtable td.error",
   // Optional author date on the held row, MM/DD/YYYY
   authorDate: "input[id^='date_']",
-  // Files the case for real. The helper never clicks it.
+  // Files the case for real. The helper never clicks it. It opens an in-page
+  // confirmation (Send / Cancel), and only Send files anything.
   submit: "input.submitportalfiles",
+
+  // Page after Send (AddToOISServlet), mapped 2026-10-19: one row per filed
+  // document, with STATUS ("Processed") and DCN ("*PE5039626") columns. The DCN
+  // has been "PE" + the held row's doc id.
+  resultTable: "#docTable",
+  dcnPrefix: "PE",
 
   // Text the portal shows when the lookup fails or the session is gone
   errorTexts: ["No Matching case found", "logged out", "session is timed out"],

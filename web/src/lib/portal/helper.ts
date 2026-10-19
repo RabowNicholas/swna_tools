@@ -5,11 +5,22 @@ import type { PortalData } from "./portal-data";
 import type { PortalCategory } from "./categories";
 
 /** The extension version this app was built against */
-export const HELPER_VERSION = "1.0.2";
+export const HELPER_VERSION = "1.0.3";
+
+/** What the helper read off DOL's confirmation page after the person submitted */
+export interface Filed {
+  caseId: string;
+  /** DOL's document control number, without the leading "*", e.g. "PE5039626" */
+  dcn: string;
+  /** DOL's status for the document, "Processed" when it went through */
+  status: string;
+  fileName: string;
+}
 
 type HelperMessage =
   | { source: "swna-helper"; type: "pong"; version: string }
-  | { source: "swna-helper"; type: "fill-result"; id: string; ok: boolean; error?: string };
+  | { source: "swna-helper"; type: "fill-result"; id: string; ok: boolean; error?: string }
+  | ({ source: "swna-helper"; type: "filed" } & Filed);
 
 function listen<T extends HelperMessage>(match: (m: HelperMessage) => m is T, timeoutMs: number): Promise<T | null> {
   return new Promise((resolve) => {
@@ -88,4 +99,18 @@ export async function fillPortal({
     [bytes]
   );
   return (await result) ?? { ok: false, error: "The portal helper didn’t answer. Reload this page and try again." };
+}
+
+/**
+ * Calls back whenever the helper reports a filing for this case, which arrives
+ * once the person has submitted in DOL. Returns the unsubscribe.
+ */
+export function onFiled(caseId: string, callback: (filed: Filed) => void): () => void {
+  const onMessage = (event: MessageEvent) => {
+    if (event.source !== window || event.data?.source !== "swna-helper") return;
+    const data = event.data as HelperMessage;
+    if (data.type === "filed" && data.caseId === caseId && data.dcn) callback(data);
+  };
+  window.addEventListener("message", onMessage);
+  return () => window.removeEventListener("message", onMessage);
 }

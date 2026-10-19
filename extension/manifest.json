@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "SWNA DOL Portal Helper",
-  "version": "1.0.2",
-  "description": "Fills the DOL Energy Document Portal from the SWNA tools app, up to Submit. Never submits.",
+  "version": "1.0.3",
+  "description": "Fills the DOL Energy Document Portal from the SWNA tools app, up to Submit, and reads back the DCN. Never submits.",
   "permissions": ["storage", "unlimitedStorage", "tabs"],
   "host_permissions": ["https://eclaimant.dol.gov/*"],
   "background": { "service_worker": "background.js" },
