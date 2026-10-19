@@ -176,7 +176,7 @@ export default function IRProcessPage() {
               <div className="node golden">
                 <div className="step-num">STEP 2 &mdash; EMAIL LA PLATA</div>
                 Send the client&rsquo;s contact info and causation records (diagnosis letters / medical records for all approved conditions).<br /><br />
-                Use the SWNA Tools EE-10 email template. <strong>CC the client&rsquo;s HHC group</strong> (AO or GHHC only) on this same email &mdash; you can also use it to request an OV note and ADL from them.
+                Use the SWNA Tools EE-10 email template. <strong>CC the client&rsquo;s one HHC group</strong> (Giving, Roots, Atomic, or AO) on this same email &mdash; you can also use it to request an OV note and ADL from them.<br /><br /><strong>Only ever one HHC group per client.</strong> If they&rsquo;re on file with AO and another group, go with the other group and leave AO out of it.
                 <div className="tag">impairments [at] lpmedx.com<br />cali.candelaria [at] lpmedx.com</div>
                 <div className="alert">DO NOT attach Dr. Smith B-reads to La Plata emails. Klepper B-reads are OK.<br />Check CS letters &mdash; many now auto-attach a B-read at the end. DELETE it before sending and save the B-read separately in the client&rsquo;s file.</div>
               </div>
@@ -196,7 +196,7 @@ export default function IRProcessPage() {
 
                 {/* AO */}
                 <div className="split3-col">
-                  <div className="col-header">AO Client</div>
+                  <div className="col-header">AO Client (no other HHC)</div>
                   <div className="arrow"></div>
                   <div className="node golden">
                     <div className="step-num">TESTING</div>
@@ -220,19 +220,19 @@ export default function IRProcessPage() {
 
                 {/* GHHC */}
                 <div className="split3-col">
-                  <div className="col-header">GHHC Client</div>
+                  <div className="col-header">Giving / Roots / Atomic Client</div>
                   <div className="arrow"></div>
                   <div className="node golden">
                     <div className="step-num">TESTING</div>
-                    CC GHHC on the La Plata email.<br /><br />
-                    Send a <strong>separate email to GHHC</strong> asking them to coordinate the 6MWT and PFT (with DLCO and pre/post bronchodilator).<br /><br />
+                    CC the HHC group on the La Plata email.<br /><br />
+                    Send a <strong>separate email to the HHC group</strong> asking them to coordinate the 6MWT and PFT (with DLCO and pre/post bronchodilator).<br /><br />
                     <strong>If client is in NV or nearby:</strong> also request mobile testing in the La Plata email (bold the request). CC Zeke.
-                    <div className="tag">ar.nv [at] givinghhc.com (NV only)<br />stephv [at] givinghhc.com<br />bradyp [at] givinghhc.com<br />cache [at] givinghhc.com (TN only)<br />zkalcich [at] lpmedx.com (CC Zeke &mdash; mobile only)</div>
+                    <div className="tag">ar.nv [at] givinghhc.com (NV only)<br />stephv [at] givinghhc.com<br />bradyp [at] givinghhc.com<br />cache [at] givinghhc.com (TN only)<br />juarezc1 [at] rootshhc.com + NickSWNA [at] outlook.com (Roots)<br />arrequest [at] atomichhc.com (Atomic)<br />zkalcich [at] lpmedx.com (CC Zeke &mdash; mobile only)</div>
                   </div>
                   <div className="arrow"></div>
                   <div className="node golden">
                     <div className="step-num">OVN + ADL</div>
-                    Ask GHHC (in the La Plata email) to send us a recent OV note and ADL sheet.<br /><br />
+                    Ask the HHC group (in the La Plata email) to send us a recent OV note and ADL sheet.<br /><br />
                     Also encourage the client to get their own copy to speed things up.
                   </div>
                 </div>

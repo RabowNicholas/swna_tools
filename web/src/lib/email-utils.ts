@@ -20,6 +20,7 @@ export const EMAIL_ADDRESSES = {
   roots: "juarezc1@rootshhc.com",
   // Nick at SWNA follows every Roots client's IR
   rootsSwna: "NickSWNA@outlook.com",
+  atomic: "arrequest@atomichhc.com",
 } as const;
 
 // Client status tags
@@ -28,25 +29,29 @@ export const CLIENT_STATUS = {
   GHHC_NV: "GHHC NV",
   GHHC_TN: "GHHC TN",
   ROOTS: "Roots Client",
+  ATOMIC: "Atomic Client",
 } as const;
 
-// Helper: mobile testing applies when La Plata, not AO, not GHHC, and client is in NV
+// HHC groups that coordinate the 6MWT/PFT and the OVN themselves
+function isTestingHHC(clientStatus: string): boolean {
+  return isGHHCClient(clientStatus)
+    || clientStatus === CLIENT_STATUS.ROOTS
+    || clientStatus === CLIENT_STATUS.ATOMIC;
+}
+
+// Helper: mobile testing applies when La Plata, no HHC group, and client is in NV
 function requiresMobileTesting(doctor: string, clientStatus: string, clientState?: string): boolean {
   return doctor === "La Plata"
     && clientStatus !== CLIENT_STATUS.AO
-    && clientStatus !== CLIENT_STATUS.GHHC_NV
-    && clientStatus !== CLIENT_STATUS.GHHC_TN
-    && clientStatus !== CLIENT_STATUS.ROOTS
+    && !isTestingHHC(clientStatus)
     && clientState === "NV";
 }
 
-// Helper: out-of-state La Plata clients without GHHC test at a local facility,
-// and La Plata is asked first whether they know one and can write a referral
+// Helper: out-of-state La Plata clients without a testing HHC test at a local
+// facility, and La Plata is asked first whether they know one and can write a referral
 function requiresLocalFacility(doctor: string, clientStatus: string, clientState?: string): boolean {
   return doctor === "La Plata"
-    && clientStatus !== CLIENT_STATUS.GHHC_NV
-    && clientStatus !== CLIENT_STATUS.GHHC_TN
-    && clientStatus !== CLIENT_STATUS.ROOTS
+    && !isTestingHHC(clientStatus)
     && clientState !== "NV";
 }
 
@@ -149,6 +154,20 @@ Roots, could you assist with coordinating the 6MWT and PFT for the client and se
 
 Thank you, and please let us know how we can further assist.`;
 
+const ATOMIC_TEMPLATE = `Hello,
+
+Our client has elected to have {doctor} perform their impairment evaluation. I have attached their causation and contact information here.
+
+Name: {name}
+Phone: {phone}
+DOB: {dob}
+Case ID: {case_id}
+Address: {address}
+
+Atomic, could you assist with coordinating the 6MWT and PFT for the client and send us a recent office visit note?
+
+Thank you, and please let us know how we can further assist.`;
+
 // IR Notice email template
 const IR_NOTICE_TEMPLATE = `We received the attached letter authorizing {client_name}'s impairment evaluation with {provider}. Please let us know if there is anything we can assist with.
 
@@ -185,24 +204,36 @@ function resolveGHHCFromState(fields: Client['fields']): string {
 }
 
 /**
- * Detect client status from Airtable record
+ * Detect client status from Airtable record. A client's IR goes through one
+ * HHC group only: when another group is on file alongside AO, that group wins
+ * and AO stays out of it.
  */
 export function detectClientStatus(client: Client): string {
   try {
     const fields = client.fields;
+    const found = new Set<string>();
 
-    // Check Associated Companies for AO Medical or GHHC
+    // Check Associated Companies for each HHC group
     const associatedCompanies = fields["Associated Companies"];
     if (associatedCompanies && Array.isArray(associatedCompanies)) {
       for (const company of associatedCompanies) {
-        if (company.toLowerCase().includes("ao")) {
-          return CLIENT_STATUS.AO;
-        }
-        if (company.toLowerCase().includes("ghhc") || company.toLowerCase().includes("giving")) {
-          return resolveGHHCFromState(fields);
-        }
+        const c = company.toLowerCase();
+        if (c.includes("ghhc") || c.includes("giving")) found.add(resolveGHHCFromState(fields));
+        else if (c.includes("roots")) found.add(CLIENT_STATUS.ROOTS);
+        else if (c.includes("atomic")) found.add(CLIENT_STATUS.ATOMIC);
+        else if (c.includes("ao")) found.add(CLIENT_STATUS.AO);
       }
     }
+
+    const matchTag = (tag: string, exact: boolean) => {
+      const is = (s: string) => (exact ? tag === s : tag.includes(s));
+      if (is(CLIENT_STATUS.AO)) found.add(CLIENT_STATUS.AO);
+      if (is(CLIENT_STATUS.GHHC_NV)) found.add(CLIENT_STATUS.GHHC_NV);
+      if (is(CLIENT_STATUS.GHHC_TN)) found.add(CLIENT_STATUS.GHHC_TN);
+      if (is("GHHC Client")) found.add(resolveGHHCFromState(fields));
+      if (is(CLIENT_STATUS.ROOTS)) found.add(CLIENT_STATUS.ROOTS);
+      if (is(CLIENT_STATUS.ATOMIC)) found.add(CLIENT_STATUS.ATOMIC);
+    };
 
     // Possible field names for status/tags
     const possibleStatusFields = [
@@ -220,46 +251,27 @@ export function detectClientStatus(client: Client): string {
       if (fieldValue) {
         // Handle array format
         if (Array.isArray(fieldValue)) {
-          for (const tag of fieldValue) {
-            if (tag === CLIENT_STATUS.AO) return CLIENT_STATUS.AO;
-            if (tag === CLIENT_STATUS.GHHC_NV) return CLIENT_STATUS.GHHC_NV;
-            if (tag === CLIENT_STATUS.GHHC_TN) return CLIENT_STATUS.GHHC_TN;
-            if (tag === "GHHC Client") return resolveGHHCFromState(fields);
-          }
+          for (const tag of fieldValue) matchTag(tag, true);
         }
-        // Handle string format
+        // Handle string format; the status can also sit inside a longer string
         else if (typeof fieldValue === "string") {
-          if (fieldValue === CLIENT_STATUS.AO) return CLIENT_STATUS.AO;
-          if (fieldValue === CLIENT_STATUS.GHHC_NV) return CLIENT_STATUS.GHHC_NV;
-          if (fieldValue === CLIENT_STATUS.GHHC_TN) return CLIENT_STATUS.GHHC_TN;
-          if (fieldValue === "GHHC Client") return resolveGHHCFromState(fields);
-          // Check if status is contained within the string
-          if (fieldValue.includes(CLIENT_STATUS.AO)) return CLIENT_STATUS.AO;
-          if (fieldValue.includes(CLIENT_STATUS.GHHC_NV)) return CLIENT_STATUS.GHHC_NV;
-          if (fieldValue.includes(CLIENT_STATUS.GHHC_TN)) return CLIENT_STATUS.GHHC_TN;
-          if (fieldValue.includes("GHHC Client")) return resolveGHHCFromState(fields);
+          matchTag(fieldValue, false);
         }
       }
     }
 
-    // Roots only decides the path when nothing above did — a client with AO
-    // too goes AO's way, and still gets Roots CC'd (see isRootsClient)
-    if (isRootsClient(client)) return CLIENT_STATUS.ROOTS;
-
-    return ""; // No status found
+    // Any group other than AO wins; AO only when it's the only one
+    const order = [
+      CLIENT_STATUS.GHHC_NV,
+      CLIENT_STATUS.GHHC_TN,
+      CLIENT_STATUS.ROOTS,
+      CLIENT_STATUS.ATOMIC,
+      CLIENT_STATUS.AO,
+    ];
+    return order.find((s) => found.has(s)) ?? ""; // "" = no status found
   } catch (error) {
     return ""; // Error reading status
   }
-}
-
-/**
- * Whether the client is with Roots HHC. Checked on its own rather than as a
- * client status, since Roots clients are often with AO too and need both CCs.
- */
-export function isRootsClient(client: { fields: Record<string, unknown> }): boolean {
-  const companies = client.fields["Associated Companies"];
-  return Array.isArray(companies)
-    && companies.some((c) => c.toLowerCase().includes("roots"));
 }
 
 /**
@@ -282,8 +294,7 @@ export function isAOClient(clientStatus: string): boolean {
 export function getEmailRecipients(
   doctor: "La Plata" | "Dr. Lewis",
   clientStatus: string,
-  clientState?: string,
-  roots = false
+  clientState?: string
 ): { to: string[]; cc: string[] } {
   // TO recipient is always the selected doctor
   const to = [EMAIL_ADDRESSES.doctors[doctor]];
@@ -303,11 +314,10 @@ export function getEmailRecipients(
     cc.push(EMAIL_ADDRESSES.hhc.nv);
   } else if (clientStatus === CLIENT_STATUS.GHHC_TN) {
     cc.push(EMAIL_ADDRESSES.hhc.tn);
-  }
-
-  // Roots on top of any other HHC — see isRootsClient
-  if (roots) {
+  } else if (clientStatus === CLIENT_STATUS.ROOTS) {
     cc.push(EMAIL_ADDRESSES.roots, EMAIL_ADDRESSES.rootsSwna);
+  } else if (clientStatus === CLIENT_STATUS.ATOMIC) {
+    cc.push(EMAIL_ADDRESSES.atomic);
   }
 
   // Add Zeke at La Plata for mobile testing cases (not AO, in NV)
@@ -343,6 +353,8 @@ export function formatEmailBody(
     template = GHHC_TN_TEMPLATE;
   } else if (clientStatus === CLIENT_STATUS.ROOTS) {
     template = ROOTS_TEMPLATE;
+  } else if (clientStatus === CLIENT_STATUS.ATOMIC) {
+    template = ATOMIC_TEMPLATE;
   } else if (requiresMobileTesting(doctor, clientStatus ?? "", clientState)) {
     template = MOBILE_TESTING_TEMPLATE;
   } else {
@@ -481,10 +493,9 @@ const LOCAL_FACILITY_ASK = "La Plata for a local testing facility and referral";
 export function getCoordinationItems(
   doctor: "La Plata" | "Dr. Lewis",
   clientStatus: string,
-  clientState?: string,
-  roots = false
+  clientState?: string
 ): CoordinationItem[] {
-  const { to, cc } = getEmailRecipients(doctor, clientStatus, clientState, roots);
+  const { to, cc } = getEmailRecipients(doctor, clientStatus, clientState);
   const sentTo = `${to.join(", ")}${cc.length ? ` (cc ${cc.join(", ")})` : ""}`;
   const emailItem = (asking?: string): CoordinationItem => ({
     id: "email",
@@ -524,13 +535,15 @@ export function getCoordinationItems(
     return [emailItem(`asking AO for the OVN and ${LOCAL_FACILITY_ASK}`), LOCAL_TESTING_ITEM, aoOvn];
   }
 
-  // La Plata: the HHC (GHHC or Roots) coordinates testing and the OVN
-  // wherever the client lives
+  // La Plata: the HHC (GHHC, Roots, or Atomic) coordinates testing and the
+  // OVN wherever the client lives
   const hhc = isGHHCClient(clientStatus)
     ? "GHHC"
     : clientStatus === CLIENT_STATUS.ROOTS
       ? "Roots"
-      : null;
+      : clientStatus === CLIENT_STATUS.ATOMIC
+        ? "Atomic"
+        : null;
   if (hhc) {
     return [
       emailItem(`asking ${hhc} to coordinate the 6MWT/PFT and OVN`),
