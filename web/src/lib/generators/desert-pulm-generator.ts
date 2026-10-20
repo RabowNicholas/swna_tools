@@ -71,8 +71,18 @@ export class DesertPulmReferralGenerator extends BaseGenerator {
       // Patient name in "The patient, [NAME] has been REFERRED TO:" section
       this.drawText(page1, patientName, { x: 135, y: 563, size: 10 });
 
-      // DX field (diagnosis code)
-      this.drawText(page1, dxCode, { x: 92, y: 126, size: 10 });
+      // DX field: several diagnoses wrap, shrinking until they fit above the next line
+      const dxWidth = 470;
+      const dxBottom = 107;
+      let dxSize = 10;
+      let dxLines = wrapText(dxCode, dxWidth, (t) => font.widthOfTextAtSize(t, dxSize));
+      while (dxSize > 7 && 126 - (dxLines.length - 1) * (dxSize + 1) < dxBottom) {
+        dxSize -= 1;
+        dxLines = wrapText(dxCode, dxWidth, (t) => font.widthOfTextAtSize(t, dxSize));
+      }
+      dxLines.forEach((line, i) => {
+        this.drawText(page1, line, { x: 92, y: 126 - i * (dxSize + 1), size: dxSize });
+      });
     }
 
     // Page 2 - Patient information section
@@ -117,4 +127,20 @@ export class DesertPulmReferralGenerator extends BaseGenerator {
       pdfBytes: Buffer.from(pdfBytes),
     };
   }
+}
+
+function wrapText(text: string, maxWidth: number, widthOf: (t: string) => number): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    const next = line ? `${line} ${word}` : word;
+    if (line && widthOf(next) > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = next;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
 }

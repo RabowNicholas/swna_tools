@@ -27,6 +27,7 @@ import {
 } from '@/lib/email-utils';
 import { buildLogEntry } from '@/lib/airtable-log';
 import { SaveToClientFolder } from '@/components/files/SaveToClientFolder';
+import { DiagnosisPicker } from '@/components/form/DiagnosisPicker';
 
 interface Client {
   id: string;
@@ -35,15 +36,6 @@ interface Client {
     [key: string]: string | string[] | undefined;
   };
 }
-
-// Approved conditions offered for the DP referral's DX line, as they're
-// written on the form — several are joined with a semicolon
-const DP_CONDITIONS = [
-  'Silicosis (J62.8)',
-  'Obstructive sleep apnea (G47.33)',
-  'Hypoxemia (R06.02)',
-  'Asthma (J45.909)',
-];
 
 const SECTIONS: { key: CoordinationItem['section']; title: string }[] = [
   { key: 'email', title: 'IR Request Email' },
@@ -164,7 +156,7 @@ export function IRCoordinationCard({
             address_state: patient.addressState,
             address_zip: patient.addressZip,
             // Kept in the order they're listed, however they were ticked
-            dx_code: DP_CONDITIONS.filter((c) => conditions.includes(c)).join('; '),
+            dx_code: conditions.join('; '),
           },
         }),
       });
@@ -306,28 +298,11 @@ export function IRCoordinationCard({
 
                       {item.dpReferral && !logged && (
                         <div className="ml-7 p-4 rounded-lg border border-border bg-muted/30 space-y-4">
-                          <div>
-                            <p className="text-sm font-medium text-foreground mb-2">
-                              Approved conditions (from the Final Decision)
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                              {DP_CONDITIONS.map((c) => (
-                                <label key={c} className="flex items-center gap-2 text-sm cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    className="h-4 w-4 rounded border-border accent-primary"
-                                    checked={conditions.includes(c)}
-                                    onChange={(e) =>
-                                      setConditions((prev) =>
-                                        e.target.checked ? [...prev, c] : prev.filter((x) => x !== c)
-                                      )
-                                    }
-                                  />
-                                  {c}
-                                </label>
-                              ))}
-                            </div>
-                          </div>
+                          <DiagnosisPicker
+                            label="Approved conditions (from the Final Decision)"
+                            value={conditions}
+                            onChange={setConditions}
+                          />
 
                           <Input
                             label="General availability"

@@ -8,7 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
   FileDown,
@@ -25,6 +24,7 @@ import { DPReferralEmailDraft } from "@/components/email/DPReferralEmailDraft";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
+import { DiagnosisPicker } from "@/components/form/DiagnosisPicker";
 
 // State name to abbreviation mapping
 const STATE_NAME_TO_ABBR: Record<string, string> = {
@@ -124,7 +124,7 @@ const desertPulmSchema = z.object({
   address_city: z.string().min(1, "City is required"),
   address_state: z.string().min(1, "State is required"),
   address_zip: z.string().min(1, "ZIP code is required"),
-  dx_code: z.string().min(1, "Diagnosis code is required"),
+  dx_codes: z.array(z.string()).min(1, "Add at least one diagnosis"),
 });
 
 type DesertPulmFormData = z.infer<typeof desertPulmSchema>;
@@ -177,7 +177,7 @@ export default function DesertPulmForm() {
       address_city: "",
       address_state: "",
       address_zip: "",
-      dx_code: "",
+      dx_codes: [],
     },
   });
 
@@ -192,7 +192,7 @@ export default function DesertPulmForm() {
   const handleClientChange = (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
-      // Reset form to default values first (clears dx_code and other form-specific fields)
+      // Reset form to default values first (clears dx_codes and other form-specific fields)
       form.reset();
 
       // Set client_id since reset cleared it
@@ -270,7 +270,7 @@ export default function DesertPulmForm() {
           address_city: data.address_city,
           address_state: data.address_state,
           address_zip: data.address_zip,
-          dx_code: data.dx_code,
+          dx_code: data.dx_codes.join("; "),
         },
       };
 
@@ -486,25 +486,20 @@ export default function DesertPulmForm() {
             </p>
           </CardHeader>
           <CardContent>
-            <Select
-              label="Diagnosis"
+            <DiagnosisPicker
+              label="Diagnoses"
               required
+              value={form.watch("dx_codes")}
+              onChange={(codes) =>
+                form.setValue("dx_codes", codes, { shouldValidate: attemptedSubmit })
+              }
               error={
                 attemptedSubmit
-                  ? form.formState.errors.dx_code?.message
+                  ? form.formState.errors.dx_codes?.message
                   : undefined
               }
-              helperText="As listed on the Final Decision"
-              {...form.register("dx_code")}
-            >
-              <option value="">Select diagnosis...</option>
-              <option value="Silicosis (J62.8)">Silicosis (J62.8)</option>
-              <option value="Obstructive sleep apnea (G47.33)">
-                Obstructive sleep apnea (G47.33)
-              </option>
-              <option value="Hypoxemia (R06.02)">Hypoxemia (R06.02)</option>
-              <option value="Asthma (J45.909)">Asthma (J45.909)</option>
-            </Select>
+              helperText="As listed on the Final Decision. Add as many as apply."
+            />
           </CardContent>
         </Card>
 
