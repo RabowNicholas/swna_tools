@@ -174,28 +174,7 @@ export class DolLetterGenerator extends BaseGenerator {
       return page;
     };
 
-    // Draw the body, flowing onto as many pages as the content needs.
-    let currentPage = firstPage;
-    let currentY = firstPageStartY;
-
-    for (const line of wrappedLines) {
-      if (currentY < bodyBottomMargin) {
-        currentPage = addContinuationPage();
-        currentY = continuationStartY;
-      }
-
-      if (line !== "") {
-        this.drawText(currentPage, line, {
-          x: startX,
-          y: currentY,
-          size: fontSize,
-        });
-      }
-      // Advance for both text and blank (paragraph-spacing) lines.
-      currentY -= lineHeight;
-    }
-
-    // --- Signature block: pinned directly beneath the letter body ---
+    // --- Signature block, measured up front so the body layout can make room ---
     const sigBytes = await readFile(
       path.join(process.cwd(), "public", "templates", "swna_signature.png")
     );
@@ -214,13 +193,64 @@ export class DolLetterGenerator extends BaseGenerator {
       sigDims.height + lineHeight + sigLines.length * lineHeight;
     const minBottom = 50;
 
-    // Place the block one blank line below the last body line. If it would run
-    // off the bottom of the current page, move it to a fresh page instead.
-    let blockTop = currentY - lineHeight;
-    if (blockTop - blockHeight < minBottom) {
-      currentPage = addContinuationPage();
-      blockTop = continuationStartY;
+    // Works out which page and Y every body line lands on. `breakBefore` forces
+    // a page break ahead of that line index.
+    const layOut = (breakBefore?: number) => {
+      const spots: { page: number; y: number }[] = [];
+      let page = 0;
+      let y = firstPageStartY;
+      wrappedLines.forEach((_, i) => {
+        if (y < bodyBottomMargin || i === breakBefore) {
+          page += 1;
+          y = continuationStartY;
+        }
+        spots.push({ page, y });
+        // Advance for both text and blank (paragraph-spacing) lines.
+        y -= lineHeight;
+      });
+      return { spots, page, y };
+    };
+
+    let layout = layOut();
+
+    // The block sits one blank line below the last body line. If it won't fit
+    // there, it must not land on a page by itself, so the end of the letter
+    // moves over with it: the closing sentence, plus the paragraph before it
+    // when that one is short (e.g. "Thank you for your attention…").
+    if (layout.y - lineHeight - blockHeight < minBottom) {
+      const paragraphStart = (from: number) => {
+        let i = from;
+        while (i > 0 && wrappedLines[i - 1] !== "") i--;
+        return i;
+      };
+      const lastLine = wrappedLines.length - 1;
+      const closingStart = paragraphStart(lastLine);
+      let carryFrom = closingStart;
+      // Skip the blank separator line to find the paragraph before it
+      if (closingStart >= 2 && wrappedLines[closingStart - 2] !== "") {
+        const prevStart = paragraphStart(closingStart - 2);
+        if (closingStart - 1 - prevStart <= 3) carryFrom = prevStart;
+      }
+      layout = layOut(carryFrom);
+      // Carrying lines can only free space, but guard against a block that
+      // still somehow doesn't fit
+      if (layout.y - lineHeight - blockHeight < minBottom) {
+        layout = layOut(closingStart);
+      }
     }
+
+    // Draw the body, flowing onto as many pages as the layout needs.
+    const pages = [firstPage];
+    wrappedLines.forEach((line, i) => {
+      const { page, y } = layout.spots[i];
+      while (pages.length <= page) pages.push(addContinuationPage());
+      if (line !== "") {
+        this.drawText(pages[page], line, { x: startX, y, size: fontSize });
+      }
+    });
+
+    const currentPage = pages[pages.length - 1];
+    const blockTop = layout.y - lineHeight;
 
     currentPage.drawImage(sigImg, {
       x: startX,
