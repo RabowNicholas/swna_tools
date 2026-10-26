@@ -10,7 +10,15 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { FileEdit, CheckCircle } from "lucide-react";
+import {
+  FileEdit,
+  CheckCircle,
+  Paperclip,
+  Lock,
+  ArrowUp,
+  ArrowDown,
+  X,
+} from "lucide-react";
 import { PortalAccess } from "@/components/portal/PortalAccess";
 import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import {
@@ -20,6 +28,8 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
+import { FileDropzone } from "@/components/form/FileDropzone";
+import { appendPdf } from "@/lib/pdf/append-pdf";
 
 // Zod schema for form validation
 const dolLetterSchema = z.object({
@@ -59,6 +69,16 @@ export default function DolLetterForm() {
   // regenerated letter starts a fresh submission
   const [submissionId, setSubmissionId] = useState(0);
   const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
+  // PDFs merged onto the back of the letter, in this order
+  const [attachments, setAttachments] = useState<File[]>([]);
+
+  const moveAttachment = (index: number, by: -1 | 1) => {
+    setAttachments((files) => {
+      const next = [...files];
+      [next[index], next[index + by]] = [next[index + by], next[index]];
+      return next;
+    });
+  };
 
   const form = useForm<DolLetterFormData>({
     resolver: zodResolver(dolLetterSchema),
@@ -77,6 +97,8 @@ export default function DolLetterForm() {
     if (client) {
       // Reset form to default values first (clears letter_content, dates)
       form.reset();
+
+      setAttachments([]);
 
       // Set client_id since reset cleared it
       form.setValue("client_id", clientId);
@@ -114,9 +136,22 @@ export default function DolLetterForm() {
       });
 
       if (response.ok) {
-        const blob = await response.blob();
+        // The letter goes first, then each attachment in the order listed, so
+        // it uploads to the portal as one packet
+        let packet: Uint8Array | ArrayBuffer = await (
+          await response.blob()
+        ).arrayBuffer();
+        for (const file of attachments) {
+          packet = await appendPdf(
+            packet,
+            await file.arrayBuffer(),
+            `attachment "${file.name}"`
+          );
+        }
         // Saved to the client's folder from the card below
-        setGeneratedFile(blob);
+        setGeneratedFile(
+          new Blob([packet as BlobPart], { type: "application/pdf" })
+        );
 
         setFormSubmitted(true);
         setSubmittedClient(selectedClient);
@@ -230,6 +265,86 @@ export default function DolLetterForm() {
                 />
               </CardContent>
             </Card>
+
+            {/* Attachments merged onto the end of the letter */}
+            <Card variant="elevated">
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <Paperclip className="h-5 w-5 text-primary" />
+                  <CardTitle>Attachments</CardTitle>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Optional. Attached to the back of the letter in the order listed.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {attachments.length > 0 && (
+                  <ol className="space-y-2">
+                    {attachments.map((file, i) => (
+                      <li
+                        key={`${file.name}-${file.lastModified}-${i}`}
+                        className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm"
+                      >
+                        <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-accent text-xs font-medium text-foreground">
+                          {i + 1}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-foreground">
+                          {file.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => moveAttachment(i, -1)}
+                          disabled={i === 0}
+                          aria-label={`Move ${file.name} up`}
+                          className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveAttachment(i, 1)}
+                          disabled={i === attachments.length - 1}
+                          aria-label={`Move ${file.name} down`}
+                          className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-30"
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setAttachments((files) =>
+                              files.filter((_, j) => j !== i)
+                            )
+                          }
+                          aria-label={`Remove ${file.name}`}
+                          className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+
+                <FileDropzone
+                  accept="application/pdf,.pdf"
+                  file={null}
+                  multiple
+                  onFile={(file) => setAttachments((files) => [...files, file])}
+                  prompt="PDFs to attach"
+                  hint="PDF only. Add as many as you need."
+                  typeError="Only PDFs can be attached."
+                />
+
+                <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <Lock className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <p>
+                    Attachments are merged into the letter here in your browser. They
+                    are never uploaded to the server.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </>
         )}
 
@@ -280,6 +395,9 @@ export default function DolLetterForm() {
                     Custom DOL letter generated successfully!
                   </h3>
                   <p className="text-sm text-muted-foreground">
+                    {attachments.length > 0
+                      ? `The letter and ${attachments.length} attachment${attachments.length === 1 ? "" : "s"} are one PDF. `
+                      : ""}
                     Save the letter to the client&apos;s folder below, then upload it to the DOL portal.
                   </p>
                 </div>

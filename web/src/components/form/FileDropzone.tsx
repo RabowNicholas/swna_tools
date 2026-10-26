@@ -28,6 +28,8 @@ export interface FileDropzoneProps {
   /** Shown when a file of the wrong type is dropped or picked */
   typeError?: string;
   disabled?: boolean;
+  /** Accept several files at once; `onFile` is called once per file */
+  multiple?: boolean;
   className?: string;
 }
 
@@ -63,6 +65,7 @@ export function FileDropzone({
   hint,
   typeError = "That file type isn't accepted here.",
   disabled,
+  multiple,
   className,
 }: FileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -83,14 +86,12 @@ export function FileDropzone({
     };
   }, []);
 
-  const take = (selected: File | undefined) => {
-    if (!selected) return;
-    if (!matchesAccept(selected, accept)) {
-      setError(typeError);
-      return;
-    }
-    setError(null);
-    onFile(selected);
+  const take = (list: FileList | null | undefined) => {
+    const selected = Array.from(list ?? []).slice(0, multiple ? undefined : 1);
+    if (selected.length === 0) return;
+    const accepted = selected.filter((f) => matchesAccept(f, accept));
+    setError(accepted.length < selected.length ? typeError : null);
+    accepted.forEach(onFile);
   };
 
   const open = () => {
@@ -142,7 +143,7 @@ export function FileDropzone({
         onDrop={(e) => {
           e.preventDefault();
           setDragging(false);
-          if (!disabled) take(e.dataTransfer.files?.[0]);
+          if (!disabled) take(e.dataTransfer.files);
         }}
         className={cn(
           "flex items-center gap-3 rounded-lg border-2 border-dashed px-4 py-5 text-sm transition-colors",
@@ -196,10 +197,11 @@ export function FileDropzone({
           id={inputId}
           type="file"
           accept={accept}
+          multiple={multiple}
           className="hidden"
           disabled={disabled}
           onChange={(e) => {
-            take(e.target.files?.[0]);
+            take(e.target.files);
             // Lets the same file be picked again after a reset
             e.target.value = "";
           }}
