@@ -22,6 +22,7 @@ export const DESTINATIONS = {
   'claim-form': { doc: 'Claim form', subfolder: '' },
   'doctor-letter': { doc: 'Doctor Letter', subfolder: '' },
   'desert-pulm': { doc: 'Desert Pulm Referral', subfolder: '' },
+  scan: { doc: 'Scan', subfolder: '' },
 
   // Sent to DOL
   'ir-notice': { doc: 'IR Notice', subfolder: SUBMITTED_DOL },
