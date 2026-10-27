@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
 import { FolderInput } from "lucide-react";
@@ -78,6 +78,15 @@ export function SaveToClientFolder({
   useEffect(() => {
     getSyncState().then(setSync, (e) => setError(String(e)));
   }, []);
+
+  // A tool that lets the user name the document can change it after the card
+  // shows; follow it
+  const firstDoc = useRef(doc);
+  useEffect(() => {
+    if (givenName || doc === firstDoc.current) return;
+    firstDoc.current = doc;
+    setFileName(fileNameFor(doc, airtableName));
+  }, [doc, givenName, airtableName]);
 
   const autoDownload = useAutoDownload(sync, blob, fileName);
 

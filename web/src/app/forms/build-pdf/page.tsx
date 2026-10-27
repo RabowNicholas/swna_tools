@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Download, FileText, X } from "lucide-react";
 import { useClientContext } from "@/contexts/ClientContext";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { ClientSelector, type ClientSelectorClient } from "@/components/form/ClientSelector";
 import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
 import { downloadBlob } from "@/lib/files/save-to-client";
+import { fileNameFor } from "@/lib/files/destinations";
 import { track } from "@/lib/events/client";
 import { cn } from "@/lib/utils";
 import { loadPhoto, renderPage, DEFAULT_THRESHOLD, type ScanOptions } from "@/lib/scan/scan-look";
@@ -37,6 +39,7 @@ export default function BuildPdfPage() {
   const [gray, setGray] = useState(false);
   const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
   const [clientId, setClientId] = useState("");
+  const [name, setName] = useState("");
   const [readErrors, setReadErrors] = useState<string[]>([]);
   const [building, setBuilding] = useState(false);
   const [pdf, setPdf] = useState<Blob | null>(null);
@@ -45,7 +48,11 @@ export default function BuildPdfPage() {
   const client = clients.find((c) => c.id === clientId);
   const photos = pages.filter((p) => p.kind === "photo");
   const hasPdfPages = photos.length < pages.length;
-  const downloadName = hasPdfPages ? "Combined.pdf" : "Scan.pdf";
+  const defaultName = hasPdfPages ? "Combined" : "Scan";
+  // What the file is called; a client's folder adds their name and the date.
+  // Slashes and colons can't go in a file name.
+  const doc = name.trim().replace(/\.pdf$/i, "").replace(/[/\\:]/g, "-") || defaultName;
+  const downloadName = `${doc}.pdf`;
 
   // Any change makes the last PDF out of date
   useEffect(() => setPdf(null), [pages, gray, threshold, clientId]);
@@ -266,6 +273,17 @@ export default function BuildPdfPage() {
               label="Client (optional)"
               placeholder="Pick a client to save into their folder"
             />
+            <Input
+              label="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={defaultName}
+              helperText={
+                client
+                  ? `Saves as “${fileNameFor(doc, String(client.fields.Name ?? ""))}”`
+                  : `Downloads as “${downloadName}”`
+              }
+            />
             <Button
               type="button"
               size="lg"
@@ -282,7 +300,7 @@ export default function BuildPdfPage() {
       )}
 
       {pdf && client && (
-        <SaveToClientFolder key={clientId} client={client} blob={pdf} destination="scan" />
+        <SaveToClientFolder key={clientId} client={client} blob={pdf} destination="scan" doc={doc} />
       )}
 
       {pdf && !client && (
