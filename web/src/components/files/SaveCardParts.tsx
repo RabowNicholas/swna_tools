@@ -1,11 +1,11 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import { FolderInput, CheckCircle, AlertCircle, AlertTriangle, FileDown } from "lucide-react";
+import { FolderInput, CheckCircle, AlertCircle, AlertTriangle, FileDown, Eye } from "lucide-react";
 import { downloadBlob, type SaveResult } from "@/lib/files/save-to-client";
 import type { SyncState } from "@/lib/files/sync-folder";
 
@@ -162,17 +162,45 @@ export function SaveTargetRows({
   );
 }
 
+/**
+ * Opens the generated file in a new tab (Chrome's PDF viewer) for a look
+ * before saving. Nothing is saved or logged. The tab shows a random ID for a
+ * title, since the file has no name until it's saved.
+ */
+export function PreviewButton({ blob, label = "Open preview" }: { blob: Blob; label?: string }) {
+  const url = useRef<string | null>(null);
+
+  // One URL per card, freed when the card goes away
+  useEffect(() => () => {
+    if (url.current) URL.revokeObjectURL(url.current);
+  }, []);
+
+  const open = () => {
+    url.current ??= URL.createObjectURL(blob);
+    window.open(url.current, "_blank", "noopener");
+  };
+
+  return (
+    <Button type="button" variant="secondary" size="sm" onClick={open} icon={<Eye className="h-4 w-4" />}>
+      {label}
+    </Button>
+  );
+}
+
 /** The confirmation once the file is written, and whether the log landed */
 export function SavedMessage({
   path,
   saved,
   askedName,
   logError,
+  blob,
 }: {
   path: string[];
   saved: SaveResult;
   askedName: string;
   logError: string | null;
+  /** The saved file, for one last look */
+  blob: Blob;
 }) {
   return (
     <div className="space-y-3">
@@ -188,6 +216,7 @@ export function SavedMessage({
           {!logError && <p className="text-muted-foreground mt-1">Noted in the client&apos;s Airtable Log.</p>}
         </div>
       </div>
+      <PreviewButton blob={blob} label="Open" />
       {logError && (
         <Notice tone="error" title="The file is saved, but the Airtable Log wasn’t updated:">
           {logError}

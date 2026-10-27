@@ -23,6 +23,7 @@ import {
   useAutoDownload,
   SaveTargetRows,
   SavedMessage,
+  PreviewButton,
 } from "./SaveCardParts";
 
 /** Any Airtable client record; only the id and Name are used */
@@ -205,16 +206,19 @@ export function SaveToClientFolder({
           />
         )}
 
-        <Button
-          type="button"
-          size="lg"
-          onClick={handleSave}
-          disabled={!clientDir || sub === null || !fileName.trim() || saving}
-          loading={saving}
-          icon={<FolderInput className="h-5 w-5" />}
-        >
-          {shortTarget && sub !== null ? `Save to ${shortTarget}` : "Save"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            size="lg"
+            onClick={handleSave}
+            disabled={!clientDir || sub === null || !fileName.trim() || saving}
+            loading={saving}
+            icon={<FolderInput className="h-5 w-5" />}
+          >
+            {shortTarget && sub !== null ? `Save to ${shortTarget}` : "Save"}
+          </Button>
+          <PreviewButton blob={blob} />
+        </div>
       </div>
     );
   };
@@ -224,7 +228,7 @@ export function SaveToClientFolder({
   return (
     <SaveCardShell title={<>Save to the client&apos;s folder</>}>
       {saved ? (
-        <SavedMessage path={path} saved={saved} askedName={fileName.trim()} logError={logError} />
+        <SavedMessage path={path} saved={saved} askedName={fileName.trim()} logError={logError} blob={blob} />
       ) : (
         body()
       )}

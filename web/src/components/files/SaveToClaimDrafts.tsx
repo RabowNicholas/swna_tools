@@ -25,6 +25,7 @@ import {
   useAutoDownload,
   SaveTargetRows,
   SavedMessage,
+  PreviewButton,
 } from "./SaveCardParts";
 
 const DRAFTS_SUFFIX = "'s Claim Drafts";
@@ -159,16 +160,19 @@ export function SaveToClaimDrafts({ client, blob, fileName: givenName }: SaveToC
           onFileNameChange={setFileName}
         />
 
-        <Button
-          type="button"
-          size="lg"
-          onClick={handleSave}
-          disabled={!newClaims || !target || !fileName.trim() || saving}
-          loading={saving}
-          icon={<FolderInput className="h-5 w-5" />}
-        >
-          {target ? `Save to ${target}` : "Save"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            size="lg"
+            onClick={handleSave}
+            disabled={!newClaims || !target || !fileName.trim() || saving}
+            loading={saving}
+            icon={<FolderInput className="h-5 w-5" />}
+          >
+            {target ? `Save to ${target}` : "Save"}
+          </Button>
+          <PreviewButton blob={blob} />
+        </div>
       </div>
     );
   };
@@ -178,7 +182,7 @@ export function SaveToClaimDrafts({ client, blob, fileName: givenName }: SaveToC
   return (
     <SaveCardShell title="Save to your Claim Drafts">
       {saved ? (
-        <SavedMessage path={path} saved={saved} askedName={fileName.trim()} logError={logError} />
+        <SavedMessage path={path} saved={saved} askedName={fileName.trim()} logError={logError} blob={blob} />
       ) : (
         body()
       )}
