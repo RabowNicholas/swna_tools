@@ -210,22 +210,18 @@ async function drawBitonal(pdf: PDFDocument, pdfPage: PDFPage, page: HTMLCanvasE
   );
 }
 
-/** One PDF with a page per photo, in order. */
-export async function buildScanPdf(photos: ImageBitmap[], opts: ScanOptions): Promise<Blob> {
-  const pdf = await PDFDocument.create();
-  for (const photo of photos) {
-    const page = renderPage(photo, PDF_DPI, opts);
-    const pdfPage = pdf.addPage([(page.width / PDF_DPI) * 72, (page.height / PDF_DPI) * 72]);
-    if (!opts.gray) {
-      await drawBitonal(pdf, pdfPage, page);
-      continue;
-    }
-    // JPEG goes into the PDF as-is, with no decoding
-    const blob = await new Promise<Blob>((resolve, reject) =>
-      page.toBlob((b) => (b ? resolve(b) : reject(new Error('Couldn’t render a page'))), 'image/jpeg', 0.85)
-    );
-    const image = await pdf.embedJpg(new Uint8Array(await blob.arrayBuffer()));
-    pdfPage.drawImage(image, { x: 0, y: 0, ...pdfPage.getSize() });
+/** Adds the photo to `pdf` as one scanned-look page. */
+export async function addScanPage(pdf: PDFDocument, photo: ImageBitmap, opts: ScanOptions): Promise<void> {
+  const page = renderPage(photo, PDF_DPI, opts);
+  const pdfPage = pdf.addPage([(page.width / PDF_DPI) * 72, (page.height / PDF_DPI) * 72]);
+  if (!opts.gray) {
+    await drawBitonal(pdf, pdfPage, page);
+    return;
   }
-  return new Blob([(await pdf.save()) as BlobPart], { type: 'application/pdf' });
+  // JPEG goes into the PDF as-is, with no decoding
+  const blob = await new Promise<Blob>((resolve, reject) =>
+    page.toBlob((b) => (b ? resolve(b) : reject(new Error('Couldn’t render a page'))), 'image/jpeg', 0.85)
+  );
+  const image = await pdf.embedJpg(new Uint8Array(await blob.arrayBuffer()));
+  pdfPage.drawImage(image, { x: 0, y: 0, ...pdfPage.getSize() });
 }

@@ -68,7 +68,7 @@ export const TOOL_SECTIONS: ToolSection[] = [
       { name: "Custom Letter", href: "/forms/dol-letter", description: "Write any other letter to DOL." },
       { name: "Withdrawal", href: "/forms/withdrawal", description: "Withdraw a client's claim." },
       { name: "EN-16", href: "/forms/en16", description: "Fill out the EN-16 questionnaire DOL asks for." },
-      { name: "Scan to PDF", href: "/forms/scan-to-pdf", description: "Turn photos of documents into a clean black and white PDF that looks scanned." },
+      { name: "Build PDF", href: "/forms/build-pdf", description: "Combine PDFs and photos of documents into one PDF. Photos come out looking scanned." },
       { name: "Client Manager", href: "/clients", description: "View and edit a client's record." },
       { name: "DOL Portal", href: "/portal", description: "Submit to the DOL portal with the client's details ready to paste." },
     ],
