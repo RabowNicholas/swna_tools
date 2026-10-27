@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FolderInput, CheckCircle, AlertCircle, Wand2, Download } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { FolderInput, CheckCircle, AlertCircle, Wand2, Download, UserRound } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
   chooseSyncFolder,
@@ -14,6 +16,8 @@ import {
   type SyncState,
 } from "@/lib/files/sync-folder";
 import { detectHelper, HELPER_VERSION } from "@/lib/portal/helper";
+import { buildLogEntry } from "@/lib/airtable-log";
+import { cleanInitials, profileError, NAME_MAX } from "@/lib/profile-fields";
 
 export default function SettingsPage() {
   const [sync, setSync] = useState<SyncState | null>(null);
@@ -55,6 +59,8 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <PageHeader />
+
+      <ProfileCard />
 
       <Card variant="elevated">
         <CardHeader>
@@ -193,5 +199,120 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/** Your name and the initials your Airtable Log entries are signed with */
+function ProfileCard() {
+  const { data: session, update } = useSession();
+  const [name, setName] = useState("");
+  const [initials, setInitials] = useState("");
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fill the form once the session arrives
+  useEffect(() => {
+    if (loaded || !session?.user) return;
+    setName(session.user.name ?? "");
+    setInitials(session.user.initials ?? "");
+    setLoaded(true);
+  }, [session, loaded]);
+
+  const problem = profileError(name, initials);
+  const unchanged = name.trim() === session?.user?.name && initials === session?.user?.initials;
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaved(false);
+    setError(null);
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, initials }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Couldn’t save. Try again in a moment.");
+      // Re-reads the session so the sidebar and every tool use the new values
+      await update();
+      setName(data.name);
+      setInitials(data.initials);
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card variant="elevated">
+      <CardHeader>
+        <div className="flex items-center space-x-2">
+          <UserRound className="h-5 w-5 text-primary" />
+          <CardTitle>You</CardTitle>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Your initials sign every entry the app writes to a client&apos;s Airtable Log, the same way you sign the
+          ones you write yourself.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!loaded ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : (
+          <>
+            <div className="grid gap-4 sm:grid-cols-[1fr_8rem]">
+              <Input
+                label="Name"
+                value={name}
+                maxLength={NAME_MAX}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setSaved(false);
+                }}
+                helperText={`Also signs client texts, and finds your Claim Drafts folder (“${name.trim() || "Name"}'s Claim Drafts”). If you change it, rename that folder to match.`}
+              />
+              <Input
+                label="Initials"
+                value={initials}
+                maxLength={4}
+                onChange={(e) => {
+                  setInitials(cleanInitials(e.target.value));
+                  setSaved(false);
+                }}
+              />
+            </div>
+
+            {initials && (
+              <p className="text-sm text-muted-foreground">
+                Log entries will read: <span className="text-foreground">{buildLogEntry("Saved IR Notice B. White to Submitted DOL", initials)}</span>
+              </p>
+            )}
+
+            {error && (
+              <div className="flex items-start gap-2 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="button" onClick={handleSave} loading={saving} disabled={!!problem || unchanged || saving}>
+                Save
+              </Button>
+              {problem && !unchanged && <span className="text-sm text-muted-foreground">{problem}</span>}
+              {saved && (
+                <span className="flex items-center gap-1.5 text-sm text-success">
+                  <CheckCircle className="h-4 w-4" /> Saved
+                </span>
+              )}
+            </div>
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }

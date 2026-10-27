@@ -4,6 +4,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  /** What they sign Airtable Log entries with; editable in Settings */
+  initials: string;
   hashedPassword: string;
   role: "admin" | "user";
 }
@@ -20,6 +22,7 @@ export const users: User[] = [
     id: "1",
     email: "nickswna@outlook.com",
     name: "Nick",
+    initials: "NR",
     hashedPassword:
       "$2b$10$i38QWh7JcjBgwnDtZlXfYOuKJL58mBDxIyCOBXiiyP7OOkdryL1tG", // Password: Admin123!
     role: "admin",
@@ -28,6 +31,7 @@ export const users: User[] = [
     id: "2",
     email: "swnadvocates@outlook.com",
     name: "Tyler",
+    initials: "TJB",
     hashedPassword:
       "$2b$10$l8zl3SjKtZn1xAOUJFEI..3IBpu0XorhkvPfNuzxjoK6Tsf3xeXse",
     role: "user",
@@ -36,6 +40,7 @@ export const users: User[] = [
     id: "3",
     email: "taylorswna@outlook.com",
     name: "Taylor",
+    initials: "TRB",
     hashedPassword:
       "$2b$10$buJqjKam2L1a1aCuT0.M..t3i/RzJRPPO7BOFyDbrwwGS/4MBoHSe",
     role: "user",
@@ -44,6 +49,7 @@ export const users: User[] = [
     id: "4",
     email: "leslieswna@outlook.com",
     name: "Leslie",
+    initials: "LMB",
     hashedPassword:
       "$2b$10$9DnckHUtkBllB980Aro85eH7nKFAy7t6V733XAjKr4I.lXKu4aF5W",
     role: "user",
@@ -52,6 +58,7 @@ export const users: User[] = [
     id: "5",
     email: "jessicapswna@outlook.com",
     name: "Jessica",
+    initials: "JP",
     hashedPassword:
       "$2b$10$h26xBsMzlV3kYEydlmjbF.oRMP6yXY414Q/pUcEH9MgCKmZwD.Iv2",
     role: "user",
@@ -60,6 +67,7 @@ export const users: User[] = [
     id: "6",
     email: "celesteswna@outlook.com",
     name: "Celeste",
+    initials: "CBN",
     hashedPassword:
       "$2b$10$WUISBiUncSQr6XmVqYH37.X9wX78hr/50MFHOdGjOGSuPKK/U5UFO",
     role: "user",
@@ -68,6 +76,7 @@ export const users: User[] = [
     id: "7",
     email: "mekellswna@outlook.com",
     name: "Mekell",
+    initials: "MJF",
     hashedPassword:
       "$2b$10$WRrKgeF3d4C5uSDX5Ya7QO5zvjFzV9ZUX8jukc27d8mnY8w9YKX0m",
     role: "user",
@@ -76,6 +85,7 @@ export const users: User[] = [
     id: "8",
     email: "emmaswna@outlook.com",
     name: "Emma",
+    initials: "ESS",
     hashedPassword:
       "$2b$10$XgvN/F65Yyw9kqrFm9Ny8OwkSm4w5Y3gO0QtAtXzIuzEA9ivYt.Ne",
     role: "user",
@@ -84,6 +94,7 @@ export const users: User[] = [
     id: "9",
     email: "jodyswna@outlook.com",
     name: "Jody",
+    initials: "JB",
     hashedPassword:
       "$2b$10$qf.oavP.O/5QXV9u8cAE..g6DbInZNYZCGEHxquPYr6a2SIQY4EWq",
     role: "user",
@@ -92,6 +103,7 @@ export const users: User[] = [
     id: "10",
     email: "devenyswna@outlook.com",
     name: "Deveny",
+    initials: "DP",
     hashedPassword:
       "$2b$10$GEYRyKAEToOfCpj9X/yaHedvFQvFOrkXL/w2ZAGoShfm0NGq.y6pG",
     role: "user",
@@ -100,6 +112,7 @@ export const users: User[] = [
     id: "11",
     email: "rustinswna@outlook.com",
     name: "Rustin",
+    initials: "RDS",
     hashedPassword:
       "$2b$10$9rR0TYOGd4LfTPE0CiQT7esVWQC4oT4iEIk67OmQ.prrAYAd.71Vm",
     role: "user",
@@ -108,6 +121,7 @@ export const users: User[] = [
     id: "12",
     email: "torrinswna@outlook.com",
     name: "Torrin",
+    initials: "TJC",
     hashedPassword:
       "$2b$10$RmdseTmZ0mztRGNXHJhIUO09TMOtTy8KFt53dHfrM/L250SRmVVRy",
     role: "user",
@@ -116,6 +130,7 @@ export const users: User[] = [
     id: "13",
     email: "abbyswna@outlook.com",
     name: "Abby",
+    initials: "AL",
     hashedPassword:
       "$2b$10$Ic5T27yWbCCh1C8QLSM3C.fa3zANiyK7RJEmB/9p5nOtoDiCcaCsy",
     role: "user",
@@ -124,6 +139,7 @@ export const users: User[] = [
     id: "14",
     email: "thorinswna@outlook.com",
     name: "Thorin",
+    initials: "TG",
     hashedPassword:
       "$2b$10$fJ1VRt6puHHLfhIu9c9aruvzNEFMF9IXqQu/wwoB0m0TI7L95mLQm",
     role: "user",
@@ -132,6 +148,7 @@ export const users: User[] = [
     id: "15",
     email: "krisswna@outlook.com",
     name: "Kris",
+    initials: "KB",
     hashedPassword:
       "$2b$10$mU3QeT6SDDaT4FI0HW7d8.S7kRiCgMVWO4hlTMISOiCRZFkIZbbJO",
     role: "user",

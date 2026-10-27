@@ -1,23 +1,25 @@
 /**
- * The house format for entries the app writes to a client's Airtable Log, so
- * every tool's entries read the same way and stay greppable by the TOOLS APP
- * suffix.
+ * The house format for entries the app writes to a client's Airtable Log,
+ * shaped like the ones people write by hand: the date, then their initials.
  *
- *   "<action> via Tools App. Triggered by [email] MM.DD.YY. TOOLS APP"
+ *   "<action> via Tools App. M.D.YY INITIALS"
  *
  * `action` should read as a completed act with any detail in parentheses, e.g.
  * "Submitted RD waiver, Option 1 (waive all rights) (*12345)".
+ *
+ * `signer` is the person's initials (session.user.initials, set in Settings),
+ * falling back to their name.
  */
-export function buildLogEntry(
-  action: string,
-  userEmail?: string | null
-): string {
+export function buildLogEntry(action: string, signer?: string | null): string {
   const now = new Date();
-  const logDate = `${String(now.getMonth() + 1).padStart(2, "0")}.${String(
-    now.getDate()
-  ).padStart(2, "0")}.${String(now.getFullYear()).slice(-2)}`;
+  const logDate = `${now.getMonth() + 1}.${now.getDate()}.${String(now.getFullYear()).slice(-2)}`;
 
-  return `${action} via Tools App. Triggered by [${
-    userEmail || "unknown"
-  }] ${logDate}. TOOLS APP`;
+  return `${action} via Tools App. ${logDate} ${signer?.trim() || "Unknown"}`;
+}
+
+/** Who to sign a Log entry as: initials, or the name if there are none */
+export function signerOf(
+  user?: { initials?: string | null; name?: string | null } | null
+): string | undefined {
+  return user?.initials?.trim() || user?.name?.trim() || undefined;
 }

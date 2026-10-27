@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Database, CheckCircle, AlertCircle } from "lucide-react";
-import { buildLogEntry } from "@/lib/airtable-log";
+import { buildLogEntry, signerOf } from "@/lib/airtable-log";
 import { onFiled } from "@/lib/portal/helper";
 
 interface Client {
@@ -200,7 +200,7 @@ export function AirtableLogCard({
     (!requireReference || !!referenceNumber.trim()) &&
     (!submissionField || !!submitted);
   const logEntry = (reference: string) =>
-    buildLogEntry(action(reference, statusTags, submitted), session?.user?.email);
+    buildLogEntry(action(reference, statusTags, submitted), signerOf(session?.user));
 
   const handleUpdate = async () => {
     const reference = referenceNumber.trim();

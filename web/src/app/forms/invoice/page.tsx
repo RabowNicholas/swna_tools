@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { buildLogEntry, signerOf } from "@/lib/airtable-log";
 import { useClients } from "@/hooks/useClients";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -289,15 +290,14 @@ export default function InvoiceForm() {
         // Update client tags BEFORE downloading — if this fails, no invoice download
         // Server performs read-merge-write against fresh Airtable data so we don't
         // clobber existing Status tags or Log content using stale cache values.
-        const now = new Date();
-        const logDate = `${String(now.getMonth() + 1).padStart(2, "0")}.${String(now.getDate()).padStart(2, "0")}.${String(now.getFullYear()).slice(-2)}`;
-        const userEmail = session?.user?.email || "unknown";
-
         // Claim Complete tag keyed off the invoice's part type
         const claimCompleteTag =
           data.part_type === "Part B" ? "Part B Paid" : "Complete Paid";
 
-        const logEntry = `Needs Invoicing and Payment Outstanding tags added, ${claimCompleteTag} added to Claim Complete, by SWNA Tools app. Triggered by [${userEmail}] ${logDate}. TOOLS APP`;
+        const logEntry = buildLogEntry(
+          `Needs Invoicing and Payment Outstanding tags added, ${claimCompleteTag} added to Claim Complete`,
+          signerOf(session?.user)
+        );
 
         const tagResponse = await fetch("/api/clients", {
           method: "POST",

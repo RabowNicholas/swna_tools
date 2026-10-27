@@ -15,6 +15,8 @@ declare module 'next-auth' {
       email: string;
       name: string;
       role: string;
+      /** What they sign Airtable Log entries with */
+      initials: string;
     };
   }
 }

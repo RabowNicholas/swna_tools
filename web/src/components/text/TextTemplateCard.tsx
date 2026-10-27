@@ -16,7 +16,7 @@ import {
   AlertCircle,
   Phone,
 } from "lucide-react";
-import { buildLogEntry } from "@/lib/airtable-log";
+import { buildLogEntry, signerOf } from "@/lib/airtable-log";
 import {
   firstNameOf,
   formatAmount,
@@ -198,7 +198,7 @@ export function TextTemplateCard({
           prepend: {
             Log: buildLogEntry(
               `Texted client re: ${summary}`,
-              session?.user?.email
+              signerOf(session?.user)
             ),
           },
         }),

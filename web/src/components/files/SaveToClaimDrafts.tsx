@@ -16,6 +16,7 @@ import {
   type SyncState,
 } from "@/lib/files/sync-folder";
 import { saveAndLog, type SaveResult } from "@/lib/files/save-to-client";
+import { signerOf } from "@/lib/airtable-log";
 import type { FolderClient } from "./SaveToClientFolder";
 import {
   SaveCardShell,
@@ -105,7 +106,7 @@ export function SaveToClaimDrafts({ client, blob, fileName: givenName }: SaveToC
         blob,
         recordId: client.id,
         where: target,
-        userEmail: session?.user?.email,
+        signer: signerOf(session?.user),
       });
       setSaved(result);
       setLogError(logError);

@@ -83,20 +83,21 @@ export async function logSave({
   recordId,
   fileName,
   where,
-  userEmail,
+  signer,
 }: {
   recordId: string;
   fileName: string;
   /** e.g. "Submitted DOL", or "the client folder" */
   where: string;
-  userEmail?: string | null;
+  /** Initials (or name) the Log entry is signed with */
+  signer?: string | null;
 }): Promise<void> {
   const response = await fetch('/api/clients', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       recordId,
-      prepend: { Log: buildLogEntry(`Saved ${fileName} to ${where}`, userEmail) },
+      prepend: { Log: buildLogEntry(`Saved ${fileName} to ${where}`, signer) },
     }),
   });
   if (!response.ok) {
@@ -117,7 +118,7 @@ export async function saveAndLog({
   blob,
   recordId,
   where,
-  userEmail,
+  signer,
 }: {
   dir: DirHandle;
   subfolder?: string;
@@ -126,11 +127,12 @@ export async function saveAndLog({
   blob: Blob;
   recordId: string;
   where: string;
-  userEmail?: string | null;
+  /** Initials (or name) the Log entry is signed with */
+  signer?: string | null;
 }): Promise<{ result: SaveResult; logError: string | null }> {
   const result = await saveToClientFolder({ clientDir: dir, subfolder, fileName, blob, createSubfolder });
   try {
-    await logSave({ recordId, fileName: result.savedAs, where, userEmail });
+    await logSave({ recordId, fileName: result.savedAs, where, signer });
     return { result, logError: null };
   } catch (e) {
     return { result, logError: e instanceof Error ? e.message : String(e) };

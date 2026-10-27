@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import { findUserByEmail, getUserById, verifyPassword } from '@/lib/users';
+import { getProfile } from '@/lib/profiles';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true, // Required for Vercel/production deployments
@@ -95,6 +96,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           session.user.name = user.name;
           session.user.email = user.email;
           session.user.role = user.role;
+          session.user.initials = user.initials;
+
+          // What they set for themselves in Settings wins over users.ts
+          const profile = await getProfile(user.email);
+          if (profile) {
+            session.user.name = profile.name;
+            session.user.initials = profile.initials;
+          }
         }
       }
       return session;

@@ -25,7 +25,7 @@ import {
   createMailtoLink,
   formatCompleteEmail,
 } from '@/lib/email-utils';
-import { buildLogEntry } from '@/lib/airtable-log';
+import { buildLogEntry, signerOf } from '@/lib/airtable-log';
 import { SaveToClientFolder } from '@/components/files/SaveToClientFolder';
 import { DiagnosisPicker } from '@/components/form/DiagnosisPicker';
 
@@ -192,7 +192,7 @@ export function IRCoordinationCard({
         body: JSON.stringify({
           recordId: client.id,
           prepend: {
-            Log: buildLogEntry(logAction(reference), session?.user?.email),
+            Log: buildLogEntry(logAction(reference), signerOf(session?.user)),
             // Merged ahead of the record's existing Status rather than replacing it
             ...(submission.statusAdd.length ? { Status: submission.statusAdd } : {}),
           },
@@ -421,7 +421,7 @@ export function IRCoordinationCard({
                 <div className="text-sm text-muted-foreground">
                   Adds to {client.fields.Name ?? 'the client'}&apos;s log:{' '}
                   <span className="font-medium text-foreground">
-                    {buildLogEntry(logAction(reference || 'REFERENCE'), session?.user?.email)}
+                    {buildLogEntry(logAction(reference || 'REFERENCE'), signerOf(session?.user))}
                   </span>
                 </div>
 

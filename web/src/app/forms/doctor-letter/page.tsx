@@ -24,7 +24,7 @@ import {
   Trash2,
   Lock,
 } from "lucide-react";
-import { buildLogEntry } from "@/lib/airtable-log";
+import { buildLogEntry, signerOf } from "@/lib/airtable-log";
 import {
   ClientSelector,
   type ClientSelectorClient,
@@ -444,7 +444,7 @@ export default function DoctorLetterForm() {
           recordId: selectedClient.id,
           fields: { "Last update": todayInputValue() },
           prepend: {
-            Log: buildLogEntry(chargeDescription, session?.user?.email),
+            Log: buildLogEntry(chargeDescription, signerOf(session?.user)),
           },
         }),
       });

@@ -13,7 +13,7 @@ import {
   createMailtoLink,
   formatCompleteEmail,
 } from '@/lib/email-utils';
-import { buildLogEntry } from '@/lib/airtable-log';
+import { buildLogEntry, signerOf } from '@/lib/airtable-log';
 
 interface Client {
   id: string;
@@ -81,7 +81,7 @@ export function DPReferralEmailDraft({ patientName, client }: DPReferralEmailDra
           prepend: {
             Log: buildLogEntry(
               `Sent Desert Pulmonary referral to ${to.join(', ')}`,
-              session?.user?.email
+              signerOf(session?.user)
             ),
           },
         }),
