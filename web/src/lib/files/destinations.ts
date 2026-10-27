@@ -22,7 +22,6 @@ export const DESTINATIONS = {
   'claim-form': { doc: 'Claim form', subfolder: '' },
   'doctor-letter': { doc: 'Doctor Letter', subfolder: '' },
   'desert-pulm': { doc: 'Desert Pulm Referral', subfolder: '' },
-  scan: { doc: 'Scan', subfolder: '' },
 
   // Sent to DOL
   'ir-notice': { doc: 'IR Notice', subfolder: SUBMITTED_DOL },
@@ -36,6 +35,7 @@ export const DESTINATIONS = {
   'phone-change': { doc: 'Phone Change', subfolder: SUBMITTED_DOL },
   'address-change': { doc: 'Address Change', subfolder: SUBMITTED_DOL },
   'claim-packet': { doc: 'EEOIC Claim', subfolder: SUBMITTED_DOL },
+  'build-pdf': { doc: 'Scan', subfolder: SUBMITTED_DOL },
 
   invoice: { doc: 'Invoice', subfolder: BILLING },
 } satisfies Record<string, Destination>;

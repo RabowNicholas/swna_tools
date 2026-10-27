@@ -48,6 +48,7 @@ export const DEFAULT_CATEGORY: Partial<Record<DestinationId, number>> = {
   withdrawal: OTHER,
   "dol-status-update": OTHER,
   "dol-letter": OTHER,
+  "build-pdf": OTHER,
 };
 
 export function categoryFor(value: number): PortalCategory {

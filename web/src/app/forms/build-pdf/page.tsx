@@ -10,6 +10,8 @@ import { ClientSelector, type ClientSelectorClient } from "@/components/form/Cli
 import { FileDropzone } from "@/components/form/FileDropzone";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
+import { PortalAccess } from "@/components/portal/PortalAccess";
+import { AirtableLogCard } from "@/components/airtable/AirtableLogCard";
 import { downloadBlob } from "@/lib/files/save-to-client";
 import { fileNameFor } from "@/lib/files/destinations";
 import { track } from "@/lib/events/client";
@@ -43,6 +45,8 @@ export default function BuildPdfPage() {
   const [readErrors, setReadErrors] = useState<string[]>([]);
   const [building, setBuilding] = useState(false);
   const [pdf, setPdf] = useState<Blob | null>(null);
+  // Bumped on every Make PDF, so the cards below start fresh for each file
+  const [made, setMade] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const client = clients.find((c) => c.id === clientId);
@@ -124,6 +128,7 @@ export default function BuildPdfPage() {
         { gray, threshold }
       );
       setPdf(blob);
+      setMade((n) => n + 1);
       track({
         type: "tool_used",
         tool: "build-pdf",
@@ -271,7 +276,7 @@ export default function BuildPdfPage() {
               onRefresh={() => refreshClients(true)}
               showCard={false}
               label="Client (optional)"
-              placeholder="Pick a client to save into their folder"
+              placeholder="Pick a client to save to their Submitted DOL folder and file it in the portal"
             />
             <Input
               label="Name"
@@ -300,7 +305,18 @@ export default function BuildPdfPage() {
       )}
 
       {pdf && client && (
-        <SaveToClientFolder key={clientId} client={client} blob={pdf} destination="scan" doc={doc} />
+        <>
+          <SaveToClientFolder key={`save-${made}`} client={client} blob={pdf} destination="build-pdf" doc={doc} />
+
+          <PortalAccess key={`portal-${made}`} client={client} autoOpen={true} file={pdf} tool="build-pdf" doc={doc} />
+
+          <AirtableLogCard
+            key={`log-${made}`}
+            client={client}
+            subject={`the ${doc}`}
+            action={(reference) => `Submitted ${doc} to DOL (*${reference})`}
+          />
+        </>
       )}
 
       {pdf && !client && (

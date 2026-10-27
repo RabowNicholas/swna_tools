@@ -83,6 +83,8 @@ export interface PortalAccessProps {
   file?: Blob | null;
   /** Which tool made the file, for its name and default DOL category */
   tool?: DestinationId;
+  /** Overrides the tool's document name in the file name, e.g. "Medical Records" */
+  doc?: string;
 }
 
 /**
@@ -97,7 +99,7 @@ export interface PortalAccessProps {
  */
 let portalWindow: Window | null = null;
 
-export function PortalAccess({ client, autoOpen = true, file, tool }: PortalAccessProps) {
+export function PortalAccess({ client, autoOpen = true, file, tool, doc }: PortalAccessProps) {
   const portalData = extractPortalData(client);
   // undefined while checking, null when the helper isn't installed
   const [helper, setHelper] = useState<string | null | undefined>(undefined);
@@ -109,7 +111,7 @@ export function PortalAccess({ client, autoOpen = true, file, tool }: PortalAcce
   const [filed, setFiled] = useState<Filed | null>(null);
 
   const canFill = !!(file && tool);
-  const fileName = tool ? portalFileName(fileNameFor(DESTINATIONS[tool].doc, client.fields.Name ?? '')) : '';
+  const fileName = tool ? portalFileName(fileNameFor(doc ?? DESTINATIONS[tool].doc, client.fields.Name ?? '')) : '';
   const useHelper = canFill && !!helper;
 
   useEffect(() => {
