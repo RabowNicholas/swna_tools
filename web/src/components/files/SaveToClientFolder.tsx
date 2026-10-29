@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/Button";
-import { FolderInput } from "lucide-react";
+import { CheckCircle, FolderInput } from "lucide-react";
 import { DESTINATIONS, fileNameFor, type DestinationId } from "@/lib/files/destinations";
 import type { FolderMatch } from "@/lib/files/client-folder";
 import {
@@ -42,7 +42,19 @@ interface SaveToClientFolderProps {
   doc?: string;
   /** A finished file name, for tools that already build one in the house format */
   fileName?: string;
+  /**
+   * Where `blob` already lives on disk, when it's a file the user picked
+   * rather than one the tool made. Already in the target folder, nothing is
+   * saved; elsewhere in Sync, it's moved; outside Sync, it's copied in.
+   */
+  source?: FileSystemFileHandle;
 }
+
+/** Where a picked file is, next to where it's going */
+type Origin =
+  | { kind: "here"; path: string[] }
+  | { kind: "sync"; path: string[]; parent: FileSystemDirectoryHandle; name: string; otherClient: string | null }
+  | { kind: "outside" };
 
 /** Picked in the subfolder list to make the expected subfolder */
 const CREATE = "__create__";
@@ -58,6 +70,7 @@ export function SaveToClientFolder({
   destination,
   doc: docOverride,
   fileName: givenName,
+  source,
 }: SaveToClientFolderProps) {
   const { data: session } = useSession();
   const { doc: defaultDoc, subfolder: expectedSub } = DESTINATIONS[destination];
@@ -75,6 +88,8 @@ export function SaveToClientFolder({
   const [saved, setSaved] = useState<SaveResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [logError, setLogError] = useState<string | null>(null);
+  const [origin, setOrigin] = useState<Origin | null>(null);
+  const [removeError, setRemoveError] = useState<string | null>(null);
 
   useEffect(() => {
     getSyncState().then(setSync, (e) => setError(String(e)));
@@ -113,6 +128,39 @@ export function SaveToClientFolder({
     })().catch((e) => setError(`Couldn’t open “${folder}”: ${e}`));
   }, [folder, sync, expectedSub]);
 
+  // Work out where a picked file sits, once the target folder is known
+  useEffect(() => {
+    if (!source || !clientDir || !sync?.root || sub === null) return;
+    const root = sync.root;
+    const targetSub = sub === CREATE ? expectedSub : sub;
+    setOrigin(null);
+    (async (): Promise<Origin> => {
+      const inClient = await clientDir.resolve(source);
+      // Anywhere under the target folder counts, subfolders of it included
+      if (inClient && (targetSub ? inClient.length >= 2 && inClient[0] === targetSub : inClient.length === 1)) {
+        return { kind: "here", path: [...pathToActiveClients(root), folder, ...inClient] };
+      }
+      const inSync = await root.resolve(source);
+      if (!inSync) return { kind: "outside" };
+      let parent: FileSystemDirectoryHandle = root;
+      for (const dir of inSync.slice(0, -1)) parent = await parent.getDirectoryHandle(dir);
+      // A file from another client's folder is worth a second look before it moves
+      const above = pathToActiveClients(root).slice(1);
+      const inActive = above.every((dir, i) => inSync[i] === dir) && inSync.length > above.length + 1;
+      const theirs = inActive ? inSync[above.length] : null;
+      return {
+        kind: "sync",
+        path: [root.name, ...inSync],
+        parent,
+        name: inSync[inSync.length - 1],
+        otherClient: theirs && theirs !== folder ? theirs : null,
+      };
+    })()
+      // Can't tell where it is: copying it in is the safe choice
+      .catch((): Origin => ({ kind: "outside" }))
+      .then(setOrigin);
+  }, [source, clientDir, sync, sub, expectedSub, folder]);
+
   const handleReconnect = async () => {
     if (!sync?.root) return;
     setSync(await reconnectSyncFolder(sync.root));
@@ -134,6 +182,15 @@ export function SaveToClientFolder({
         where: target || "the client folder",
         signer: signerOf(session?.user),
       });
+      if (origin?.kind === "sync") {
+        try {
+          await origin.parent.removeEntry(origin.name);
+        } catch (e) {
+          setRemoveError(
+            `Saved, but the original couldn’t be removed from ${origin.path.join(" › ")}: ${e instanceof Error ? e.message : e}. Delete it by hand.`
+          );
+        }
+      }
       setSaved(result);
       setLogError(logError);
     } catch (e) {
@@ -206,9 +263,22 @@ export function SaveToClientFolder({
           </Notice>
         )}
 
+        {origin?.kind === "sync" && origin.otherClient && (
+          <Notice
+            tone="warning"
+            title={`This file is in ${origin.otherClient}’s folder, not ${folder}’s. Check it’s the right file before moving it.`}
+          />
+        )}
+
         {folder && (
           <SaveTargetRows
-            from={`The ${doc} you just generated`}
+            from={
+              origin?.kind === "sync"
+                ? origin.path.join(" › ")
+                : source
+                  ? "The file you added, from your computer"
+                  : `The ${doc} you just generated`
+            }
             path={sub === null ? null : path}
             boldFrom={path.length - (targetSub ? 2 : 1)}
             fileName={fileName}
@@ -221,11 +291,12 @@ export function SaveToClientFolder({
             type="button"
             size="lg"
             onClick={handleSave}
-            disabled={!clientDir || sub === null || !fileName.trim() || saving}
+            disabled={!clientDir || sub === null || !fileName.trim() || saving || (!!source && !origin)}
             loading={saving}
             icon={<FolderInput className="h-5 w-5" />}
           >
-            {shortTarget && sub !== null ? `Save to ${shortTarget}` : "Save"}
+            {origin?.kind === "sync" ? "Move" : "Save"}
+            {shortTarget && sub !== null ? ` to ${shortTarget}` : ""}
           </Button>
           <PreviewButton blob={blob} />
         </div>
@@ -239,10 +310,18 @@ export function SaveToClientFolder({
     <SaveCardShell title={<>Save to the client&apos;s folder</>}>
       {saved ? (
         <SavedMessage path={path} saved={saved} askedName={fileName.trim()} logError={logError} blob={blob} />
+      ) : origin?.kind === "here" ? (
+        <div className="flex items-start gap-2 text-sm text-foreground">
+          <CheckCircle className="h-4 w-4 mt-0.5 text-success flex-shrink-0" />
+          <span>
+            Already in {targetSub || "the client’s folder"}: {origin.path.slice(-2).join(" › ")}. Nothing to save.
+          </span>
+        </div>
       ) : (
         body()
       )}
       {error && <Notice tone="error" title={error} />}
+      {removeError && <Notice tone="warning" title={removeError} />}
     </SaveCardShell>
   );
 }

@@ -6,18 +6,38 @@
  *
  * A dropped file skips the browser's `accept` filter, so the type is checked
  * here against the same `accept` string before the parent ever sees it.
+ *
+ * With `pickerTypes`, files come with their File System Access handle, so the
+ * parent can tell where on disk each one lives (e.g. already in a client's
+ * Sync folder). Clicking opens Chrome's own file picker for that; outside
+ * Chrome it falls back to the plain input and no handles come back.
  */
 
 import { useEffect, useId, useRef, useState } from "react";
 import { Upload, CheckCircle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// The File System Access calls Chrome has that TypeScript's DOM types don't
+export interface FilePickerType {
+  description?: string;
+  accept: Record<string, string[]>;
+}
+declare global {
+  interface Window {
+    showOpenFilePicker?: (opts?: { multiple?: boolean; types?: FilePickerType[] }) => Promise<FileSystemFileHandle[]>;
+  }
+  interface DataTransferItem {
+    getAsFileSystemHandle?: () => Promise<FileSystemHandle | null>;
+  }
+}
+
 export interface FileDropzoneProps {
   /** Same format as the input's `accept`: MIME types, `image/*`, or `.ext` */
   accept: string;
   /** The file the parent currently holds, shown in place of the prompt */
   file: File | null;
-  onFile: (file: File) => void;
+  /** `handle` is there only with `pickerTypes`, and only when Chrome gives one */
+  onFile: (file: File, handle?: FileSystemFileHandle) => void;
   /** Visible label above the zone */
   label?: string;
   required?: boolean;
@@ -30,6 +50,8 @@ export interface FileDropzoneProps {
   disabled?: boolean;
   /** Accept several files at once; `onFile` is called once per file */
   multiple?: boolean;
+  /** The file types for Chrome's picker; setting it turns on handles */
+  pickerTypes?: FilePickerType[];
   className?: string;
 }
 
@@ -66,6 +88,7 @@ export function FileDropzone({
   typeError = "That file type isn't accepted here.",
   disabled,
   multiple,
+  pickerTypes,
   className,
 }: FileDropzoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,16 +109,31 @@ export function FileDropzone({
     };
   }, []);
 
-  const take = (list: FileList | null | undefined) => {
-    const selected = Array.from(list ?? []).slice(0, multiple ? undefined : 1);
+  const take = (list: { file: File; handle?: FileSystemFileHandle }[]) => {
+    const selected = list.slice(0, multiple ? undefined : 1);
     if (selected.length === 0) return;
-    const accepted = selected.filter((f) => matchesAccept(f, accept));
+    const accepted = selected.filter(({ file }) => matchesAccept(file, accept));
     setError(accepted.length < selected.length ? typeError : null);
-    accepted.forEach(onFile);
+    accepted.forEach(({ file, handle }) => onFile(file, handle));
   };
 
-  const open = () => {
-    if (!disabled) inputRef.current?.click();
+  const takeHandles = async (handles: (FileSystemHandle | null)[]) => {
+    const files = handles.filter((h): h is FileSystemFileHandle => h?.kind === "file");
+    take(await Promise.all(files.map(async (handle) => ({ file: await handle.getFile(), handle }))));
+  };
+
+  const open = async () => {
+    if (disabled) return;
+    if (pickerTypes && window.showOpenFilePicker) {
+      try {
+        takeHandles(await window.showOpenFilePicker({ multiple, types: pickerTypes }));
+      } catch (e) {
+        // Cancelling the picker throws AbortError
+        if ((e as Error).name !== "AbortError") setError(`Couldn't open the file picker: ${(e as Error).message}`);
+      }
+      return;
+    }
+    inputRef.current?.click();
   };
 
   return (
@@ -143,7 +181,15 @@ export function FileDropzone({
         onDrop={(e) => {
           e.preventDefault();
           setDragging(false);
-          if (!disabled) take(e.dataTransfer.files);
+          if (disabled) return;
+          // Both have to be read before the drop event ends; after it they're empty
+          const dropped = Array.from(e.dataTransfer.files, (file) => ({ file }));
+          const items = Array.from(e.dataTransfer.items).filter((i) => i.kind === "file");
+          if (pickerTypes && items.length > 0 && items.every((i) => i.getAsFileSystemHandle)) {
+            Promise.all(items.map((i) => i.getAsFileSystemHandle!())).then(takeHandles, () => take(dropped));
+            return;
+          }
+          take(dropped);
         }}
         className={cn(
           "flex items-center gap-3 rounded-lg border-2 border-dashed px-4 py-5 text-sm transition-colors",
@@ -201,7 +247,7 @@ export function FileDropzone({
           className="hidden"
           disabled={disabled}
           onChange={(e) => {
-            take(e.target.files);
+            take(Array.from(e.target.files ?? [], (file) => ({ file })));
             // Lets the same file be picked again after a reset
             e.target.value = "";
           }}
