@@ -14,6 +14,8 @@ const nextConfig: NextConfig = {
     return [
       // Scan to PDF became Build PDF when it learned to combine PDFs
       { source: "/forms/scan-to-pdf", destination: "/forms/build-pdf", permanent: true },
+      // AO Weekly Report became HHC Weekly Report with a group dropdown
+      { source: "/reports/ao-weekly", destination: "/reports/hhc-weekly", permanent: true },
     ];
   },
 };

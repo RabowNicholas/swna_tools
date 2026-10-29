@@ -3,13 +3,24 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { DEFAULT_ON_TAGS, ALL_CANDIDATE_TAGS } from '@/lib/reports/ao-weekly-config';
+import {
+  ALL_CANDIDATE_TAGS,
+  DEFAULT_GROUP,
+  DEFAULT_ON_TAGS,
+  HHC_GROUPS,
+  HHCGroupId,
+  findGroup,
+  formatDateShort,
+  formatRange,
+  toDateInputValue,
+} from '@/lib/reports/hhc-weekly-config';
 import { PageHeader } from "@/components/layout/PageHeader";
 
-interface AOWeeklyMatch {
+interface HHCWeeklyMatch {
   id: string;
   name: string;
   caseId: string;
@@ -17,26 +28,33 @@ interface AOWeeklyMatch {
   lastUpdate: string;
 }
 
-function todayInputValue(): string {
-  return new Date().toISOString().split('T')[0];
-}
-
 function daysAgoInputValue(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() - days);
-  return date.toISOString().split('T')[0];
+  return toDateInputValue(date);
 }
 
-function formatDateShort(iso: string): string {
-  const [year, month, day] = iso.split('-');
-  return `${month}/${day}/${year.slice(2)}`;
+// Pull the server's filename out of Content-Disposition
+function filenameFrom(response: Response, fallback: string): string {
+  const match = /filename="([^"]+)"/.exec(response.headers.get('Content-Disposition') || '');
+  return match ? match[1] : fallback;
 }
 
-export default function AOWeeklyReportPage() {
+interface ReportWindow {
+  group: HHCGroupId;
+  from: string;
+  to: string;
+}
+
+export default function HHCWeeklyReportPage() {
+  const [group, setGroup] = useState<HHCGroupId>(DEFAULT_GROUP);
   const [from, setFrom] = useState(daysAgoInputValue(7));
-  const [to, setTo] = useState(todayInputValue());
+  const [to, setTo] = useState(daysAgoInputValue(0));
+  // What the current matches were fetched for, so exports don't pick up
+  // edits to the filters that haven't been refreshed yet
+  const [reportWindow, setReportWindow] = useState<ReportWindow | null>(null);
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set(DEFAULT_ON_TAGS));
-  const [matches, setMatches] = useState<AOWeeklyMatch[]>([]);
+  const [matches, setMatches] = useState<HHCWeeklyMatch[]>([]);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,17 +66,19 @@ export default function AOWeeklyReportPage() {
     setError(null);
     try {
       const params = new URLSearchParams({
+        group,
         from,
         to,
         tags: Array.from(activeTags).join(','),
       });
-      const response = await fetch(`/api/reports/ao-weekly?${params.toString()}`);
+      const response = await fetch(`/api/reports/hhc-weekly?${params.toString()}`);
       const result = await response.json();
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Failed to fetch report');
       }
-      const fetchedMatches: AOWeeklyMatch[] = result.data.matches;
+      const fetchedMatches: HHCWeeklyMatch[] = result.data.matches;
       setMatches(fetchedMatches);
+      setReportWindow({ group: result.data.group, ...result.data.window });
       setChecked(new Set(fetchedMatches.map(m => m.id)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch report');
@@ -67,10 +87,13 @@ export default function AOWeeklyReportPage() {
     }
   };
 
+  // Run on open and whenever the HHC group changes
   useEffect(() => {
     fetchReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [group]);
+
+  const reportGroupLabel = findGroup(reportWindow?.group)?.label ?? '';
 
   const toggleTag = (tag: string) => {
     setActiveTags(prev => {
@@ -99,14 +122,18 @@ export default function AOWeeklyReportPage() {
   const includedMatches = matches.filter(m => checked.has(m.id));
 
   const handleCopy = async () => {
-    const grouped: Record<string, AOWeeklyMatch[]> = {};
+    if (!reportWindow) return;
+    const grouped: Record<string, HHCWeeklyMatch[]> = {};
     for (const match of includedMatches) {
       const label = match.matchedTags.join(', ');
       if (!grouped[label]) grouped[label] = [];
       grouped[label].push(match);
     }
 
-    const lines: string[] = [];
+    const lines: string[] = [
+      `${reportGroupLabel} weekly report: ${formatRange(reportWindow.from, reportWindow.to)}`,
+      '',
+    ];
     for (const [label, rows] of Object.entries(grouped)) {
       lines.push(`${label}:`);
       for (const row of rows) {
@@ -125,6 +152,7 @@ export default function AOWeeklyReportPage() {
   };
 
   const handleDownload = async () => {
+    if (!reportWindow) return;
     setDownloading(true);
     try {
       const rows = includedMatches.map(m => ({
@@ -134,10 +162,10 @@ export default function AOWeeklyReportPage() {
         lastUpdate: m.lastUpdate,
       }));
 
-      const response = await fetch('/api/generate/ao-weekly-report', {
+      const response = await fetch('/api/generate/hhc-weekly-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows }),
+        body: JSON.stringify({ rows, ...reportWindow }),
       });
 
       if (!response.ok) {
@@ -148,7 +176,7 @@ export default function AOWeeklyReportPage() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `AO_Weekly_Report_${todayInputValue()}.xlsx`;
+      a.download = filenameFrom(response, `${reportGroupLabel}_Weekly_Report.xlsx`);
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -163,7 +191,7 @@ export default function AOWeeklyReportPage() {
   return (
     <div>
       <div className="max-w-5xl mx-auto space-y-6">
-        <PageHeader description="AO clients whose status looks like it changed in the selected window. This is a first-pass filter — review each row before sending." />
+        <PageHeader description="Clients of an HHC group whose status looks like it changed in the selected window. This is a first-pass filter — review each row before sending." />
 
         <Card variant="elevated">
           <CardHeader>
@@ -171,7 +199,13 @@ export default function AOWeeklyReportPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <Select
+                  label="HHC group"
+                  value={group}
+                  onChange={e => setGroup(e.target.value as HHCGroupId)}
+                  options={HHC_GROUPS.map(g => ({ value: g.id, label: g.label }))}
+                />
                 <Input
                   label="From"
                   type="date"
@@ -226,6 +260,11 @@ export default function AOWeeklyReportPage() {
             <CardTitle>
               Matches ({includedMatches.length} of {matches.length} selected)
             </CardTitle>
+            {reportWindow && (
+              <p className="text-sm text-muted-foreground">
+                {reportGroupLabel} clients, {formatRange(reportWindow.from, reportWindow.to)}
+              </p>
+            )}
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -233,7 +272,7 @@ export default function AOWeeklyReportPage() {
                 <LoadingSpinner />
               </div>
             ) : matches.length === 0 ? (
-              <p className="text-muted-foreground">No matching AO clients in this window.</p>
+              <p className="text-muted-foreground">No matching {reportGroupLabel} clients in this window.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -282,7 +321,7 @@ export default function AOWeeklyReportPage() {
                   onClick={handleCopy}
                   disabled={includedMatches.length === 0}
                 >
-                  {copied ? 'Copied!' : 'Copy for AO'}
+                  {copied ? 'Copied!' : `Copy for ${reportGroupLabel}`}
                 </Button>
                 <Button
                   variant="outline"

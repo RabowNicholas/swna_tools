@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { airtableService } from '@/lib/airtable';
-import { detectClientStatus, isAOClient } from '@/lib/email-utils';
-import { DEFAULT_ON_TAGS } from '@/lib/reports/ao-weekly-config';
+import { detectClientStatus } from '@/lib/email-utils';
+import { DEFAULT_GROUP, DEFAULT_ON_TAGS, findGroup, toDateInputValue } from '@/lib/reports/hhc-weekly-config';
 
 export const dynamic = 'force-dynamic';
 
-export interface AOWeeklyMatch {
+export interface HHCWeeklyMatch {
   id: string;
   name: string;
   caseId: string;
@@ -33,9 +33,16 @@ export async function GET(request: NextRequest) {
     const fromParam = searchParams.get('from');
     const toParam = searchParams.get('to');
     const tagsParam = searchParams.get('tags');
+    const groupParam = searchParams.get('group');
 
-    const from = fromParam ? toDateOnly(fromParam) : defaultFrom;
-    const to = toParam ? toDateOnly(toParam) : today;
+    const group = findGroup(groupParam ?? DEFAULT_GROUP);
+    if (!group) {
+      return NextResponse.json({ success: false, error: `Unknown HHC group: ${groupParam}` }, { status: 400 });
+    }
+    const groupStatuses: readonly string[] = group.statuses;
+
+    const from = fromParam ? toDateOnly(fromParam) : toDateOnly(toDateInputValue(defaultFrom));
+    const to = toParam ? toDateOnly(toParam) : toDateOnly(toDateInputValue(today));
 
     const activeTags = (tagsParam ? tagsParam.split(',') : DEFAULT_ON_TAGS)
       .map(tag => tag.trim())
@@ -43,12 +50,12 @@ export async function GET(request: NextRequest) {
 
     const clients = await airtableService.getClients();
 
-    const matches: AOWeeklyMatch[] = [];
+    const matches: HHCWeeklyMatch[] = [];
 
     for (const client of clients) {
       const fields = client.fields as Record<string, unknown>;
 
-      if (!isAOClient(detectClientStatus(client as any))) {
+      if (!groupStatuses.includes(detectClientStatus(client as any))) {
         continue;
       }
 
@@ -92,9 +99,10 @@ export async function GET(request: NextRequest) {
       success: true,
       data: {
         matches,
+        group: group.id,
         window: {
-          from: from.toISOString().split('T')[0],
-          to: to.toISOString().split('T')[0],
+          from: toDateInputValue(from),
+          to: toDateInputValue(to),
         },
       },
     });
@@ -103,7 +111,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.error('AO weekly report error:', error);
+    console.error('HHC weekly report error:', error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
