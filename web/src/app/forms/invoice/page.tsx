@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { buildLogEntry, signerOf } from "@/lib/airtable-log";
 import { useClients } from "@/hooks/useClients";
@@ -30,6 +30,7 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 import { SaveToClientFolder, type FolderClient } from "@/components/files/SaveToClientFolder";
+import { nextInvoiceForClient } from "@/lib/files/invoice-number";
 
 // Invoice item options
 const INVOICE_ITEMS = [
@@ -95,6 +96,10 @@ export default function InvoiceForm() {
   const [submissionId, setSubmissionId] = useState(0);
 
   const [lastSelectedClient, setLastSelectedClient] = useState<string>("");
+  // Where the invoice number came from, shown under the field
+  const [invoiceNumberHint, setInvoiceNumberHint] = useState<string>("");
+  // The client the number lookup is for, so a slow lookup can't fill in for the wrong one
+  const numberLookupFor = useRef("");
 
   const form = useForm<InvoiceFormData>({
     resolver: zodResolver(invoiceSchema),
@@ -148,6 +153,33 @@ export default function InvoiceForm() {
 
       // Set client_id since reset cleared it
       form.setValue("client_id", clientId);
+
+      // Next invoice number from the client's BILLING folder, in the background
+      numberLookupFor.current = clientId;
+      setInvoiceNumberHint("Counting invoices in BILLING…");
+      nextInvoiceForClient(client.fields.Name || "").then(
+        (found) => {
+          if (numberLookupFor.current !== clientId) return;
+          if (!found) {
+            setInvoiceNumberHint("Couldn’t read the client’s BILLING folder. Check the number.");
+            return;
+          }
+          // Don't overwrite a number typed while the folder was being read
+          if (!form.getFieldState("invoice_number").isDirty) {
+            form.setValue("invoice_number", String(found.next));
+          }
+          setInvoiceNumberHint(
+            found.count === 0
+              ? "No invoices in BILLING yet, so this is #1."
+              : `${found.count} invoice${found.count === 1 ? "" : "s"} already in BILLING.`
+          );
+        },
+        () => {
+          if (numberLookupFor.current === clientId) {
+            setInvoiceNumberHint("Couldn’t read the client’s BILLING folder. Check the number.");
+          }
+        }
+      );
 
       // Parse client name using shared utility
       const displayName = parseClientName(client.fields.Name || "");
@@ -429,6 +461,7 @@ export default function InvoiceForm() {
                 label="Invoice Number"
                 required
                 error={form.formState.errors.invoice_number?.message}
+                helperText={invoiceNumberHint || undefined}
                 {...form.register("invoice_number")}
               />
 
