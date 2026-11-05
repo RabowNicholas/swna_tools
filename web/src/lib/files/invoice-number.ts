@@ -1,5 +1,5 @@
-// The next invoice number for a client, from what's already in their BILLING
-// folder. Invoices are numbered per client: the first is 1, the second 2.
+// What a client's BILLING folder says about their next invoice: its number,
+// and which services are already on an earlier invoice. Invoices are numbered per client: the first is 1, the second 2.
 // Older invoices have no number in the name ("Invoice Part B $150k …"), so
 // the count of real invoices is what matters; a numbered one ("Invoice 2 …",
 // "Invoice #4 …", "Invoice Part E #2 …") can push it higher.
@@ -49,13 +49,95 @@ export function nextInvoiceNumber(fileNames: string[]): NextInvoice {
   return { next: Math.max(count, highest) + 1, count };
 }
 
+/** A physician service already on one of the client's invoices */
+export interface BilledItem {
+  name: string;
+  /** YYYY-MM-DD */
+  date: string;
+  /** The invoice it's on */
+  invoice: string;
+}
+
+/** "Physician File Review - Dr. Toupin" on 2026-01-12, as one comparable key */
+export function itemKey(name: string, date: string): string {
+  return `${name.trim().replace(/\s+/g, ' ').toLowerCase()}|${date}`;
+}
+
 /**
- * Reads the client's BILLING folder through the Sync folder. Null when Sync
- * isn't set up or allowed in this browser, or the client's folder can't be
- * told apart; never asks the user for anything. A missing BILLING folder means
- * no invoices yet.
+ * A date cell as YYYY-MM-DD. The app writes "2026-01-12"; invoices made by
+ * hand hold real dates or "1/12/26". Null for anything that isn't a date.
  */
-export async function nextInvoiceForClient(airtableName: string): Promise<NextInvoice | null> {
+export function cellDate(value: unknown): string | null {
+  if (value instanceof Date && !isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+  if (typeof value !== 'string') return null;
+  const iso = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const us = value.trim().match(/^(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})$/);
+  if (!us) return null;
+  const year = us[3].length === 2 ? `20${us[3]}` : us[3];
+  return `${year}-${us[1].padStart(2, '0')}-${us[2].padStart(2, '0')}`;
+}
+
+/** Any spreadsheet row, as its first column's text and the other cells' values */
+export interface SheetRow {
+  label: string;
+  values: unknown[];
+}
+
+/**
+ * The services listed on one invoice: the rows under the "Physician Service"
+ * header that have a name and a date, up to the thank-you lines at the bottom,
+ * or the one-line "… dated 8/16/2020" rows of older invoices.
+ */
+export function itemsOnInvoice(rows: SheetRow[], invoice: string): BilledItem[] {
+  const items: BilledItem[] = [];
+  // The 2020-era layout writes each service as one line:
+  // "$200.00 Physician File Review - Dr. Herold dated 8/16/2020"
+  for (const row of rows) {
+    const m = row.label.match(/^\s*(?:-?\$[\d,.]+\s+)?(.+?)\s+dated\s+(\d{1,2}\/\d{1,2}\/\d{2,4})\s*$/i);
+    const date = m && cellDate(m[2]);
+    if (m && date && !/award/i.test(m[1])) items.push({ name: m[1].trim(), date, invoice });
+  }
+  const start = rows.findIndex((r) => r.label.trim().toLowerCase() === 'physician service');
+  if (start < 0) return items;
+  for (const row of rows.slice(start + 1)) {
+    if (/^we appreciate/i.test(row.label.trim())) break;
+    if (!row.label.trim()) continue;
+    const date = row.values.map(cellDate).find((d): d is string => d !== null);
+    if (date) items.push({ name: row.label.trim(), date, invoice });
+  }
+  return items;
+}
+
+async function readInvoice(file: File): Promise<SheetRow[]> {
+  const { default: ExcelJS } = await import('exceljs');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(await file.arrayBuffer());
+  const sheet = workbook.worksheets[0];
+  if (!sheet) return [];
+  const rows: SheetRow[] = [];
+  sheet.eachRow((row) => {
+    const values: unknown[] = [];
+    for (let c = 2; c <= 6; c++) values.push(row.getCell(c).value);
+    rows.push({ label: row.getCell(1).text ?? '', values });
+  });
+  return rows;
+}
+
+export interface BillingFolder extends NextInvoice {
+  /** Every service already on an invoice there */
+  billed: BilledItem[];
+  /** Invoices that couldn't be opened, so their items couldn't be checked */
+  unreadable: string[];
+}
+
+/**
+ * Reads the client's BILLING folder through the Sync folder: the next invoice
+ * number and every service already billed. Null when Sync isn't set up or
+ * allowed in this browser, or the client's folder can't be told apart; never
+ * asks the user for anything. A missing BILLING folder means no invoices yet.
+ */
+export async function readBillingFolder(airtableName: string): Promise<BillingFolder | null> {
   const sync = await getSyncState();
   if (sync.status !== 'ready' || !sync.activeClients) return null;
   const match = await findClientFolder(sync.activeClients, airtableName);
@@ -65,11 +147,24 @@ export async function nextInvoiceForClient(airtableName: string): Promise<NextIn
   try {
     billing = (await clientDir.getDirectoryHandle(BILLING)) as DirHandle;
   } catch {
-    return nextInvoiceNumber([]);
+    return { ...nextInvoiceNumber([]), billed: [], unreadable: [] };
   }
-  const names: string[] = [];
+  const files: FileSystemFileHandle[] = [];
   for await (const entry of billing.values()) {
-    if (entry.kind === 'file') names.push(entry.name);
+    if (entry.kind === 'file') files.push(entry as FileSystemFileHandle);
   }
-  return nextInvoiceNumber(names);
+  const billed: BilledItem[] = [];
+  const unreadable: string[] = [];
+  await Promise.all(
+    files
+      .filter((f) => isInvoiceFile(f.name))
+      .map(async (f) => {
+        try {
+          billed.push(...itemsOnInvoice(await readInvoice(await f.getFile()), f.name));
+        } catch {
+          unreadable.push(f.name);
+        }
+      })
+  );
+  return { ...nextInvoiceNumber(files.map((f) => f.name)), billed, unreadable };
 }

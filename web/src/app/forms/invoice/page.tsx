@@ -30,7 +30,7 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 import { SaveToClientFolder, type FolderClient } from "@/components/files/SaveToClientFolder";
-import { nextInvoiceForClient } from "@/lib/files/invoice-number";
+import { readBillingFolder, itemKey } from "@/lib/files/invoice-number";
 
 // Invoice item options
 const INVOICE_ITEMS = [
@@ -98,6 +98,8 @@ export default function InvoiceForm() {
   const [lastSelectedClient, setLastSelectedClient] = useState<string>("");
   // Where the invoice number came from, shown under the field
   const [invoiceNumberHint, setInvoiceNumberHint] = useState<string>("");
+  // Items left off because they're already on an earlier invoice, or why that couldn't be checked
+  const [itemsNote, setItemsNote] = useState<string>("");
   // The client the number lookup is for, so a slow lookup can't fill in for the wrong one
   const numberLookupFor = useRef("");
 
@@ -157,7 +159,9 @@ export default function InvoiceForm() {
       // Next invoice number from the client's BILLING folder, in the background
       numberLookupFor.current = clientId;
       setInvoiceNumberHint("Counting invoices in BILLING…");
-      nextInvoiceForClient(client.fields.Name || "").then(
+      setItemsNote("");
+      const billingFolder = readBillingFolder(client.fields.Name || "");
+      billingFolder.then(
         (found) => {
           if (numberLookupFor.current !== clientId) return;
           if (!found) {
@@ -287,9 +291,36 @@ export default function InvoiceForm() {
           }
         }
 
-        // Update form with auto-populated items or default empty item
+        // Leave off anything already on an earlier invoice in BILLING
+        let itemsToAdd = newInvoiceItems;
+        const folder = await billingFolder.catch(() => null);
+        if (numberLookupFor.current !== clientId) return;
         if (newInvoiceItems.length > 0) {
-          form.setValue("invoice_items", newInvoiceItems);
+          if (!folder) {
+            setItemsNote("Couldn’t read BILLING, so these weren’t checked against earlier invoices.");
+          } else {
+            const billed = new Map(folder.billed.map((b) => [itemKey(b.name, b.date), b.invoice]));
+            itemsToAdd = newInvoiceItems.filter((item) => !billed.has(itemKey(item.name, item.date)));
+            const dropped = newInvoiceItems.filter((item) => billed.has(itemKey(item.name, item.date)));
+            const notes: string[] = [];
+            if (dropped.length > 0) {
+              notes.push(
+                `Left off ${dropped.length} already billed: ` +
+                  dropped
+                    .map((d) => `${d.name} ${d.date} (on ${billed.get(itemKey(d.name, d.date))})`)
+                    .join("; ")
+              );
+            }
+            if (folder.unreadable.length > 0) {
+              notes.push(`Couldn’t open ${folder.unreadable.join(", ")}, so its items weren’t checked.`);
+            }
+            setItemsNote(notes.join(" "));
+          }
+        }
+
+        // Update form with auto-populated items or default empty item
+        if (itemsToAdd.length > 0) {
+          form.setValue("invoice_items", itemsToAdd);
         } else {
           form.setValue("invoice_items", [{ name: "", date: "" }]);
         }
@@ -631,6 +662,9 @@ export default function InvoiceForm() {
             </div>
           </CardHeader>
           <CardContent>
+            {itemsNote && (
+              <p className="mb-4 text-sm text-muted-foreground">{itemsNote}</p>
+            )}
             <div className="space-y-4">
               {fields.map((field, index) => (
                 <Card key={field.id} variant="outlined" className="p-4">
