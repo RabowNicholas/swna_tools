@@ -143,10 +143,9 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
           "report to the Department of Labor for review.";
 
       const compensationSentence = hasPrevious
-        ? "For compensation, every 1% is worth $2,500 under Part E. At " +
-          "{percentage}%, this equals ${amount} in potential compensation " +
-          "if the DOL accepts the rating — an increase of " +
-          "${increase_amount} over your previous rating."
+        ? "For compensation, every 1% is worth $2,500 under Part E. The " +
+          "{increase_percentage}% increase equals ${increase_amount} in " +
+          "potential compensation if the DOL accepts the rating."
         : "For compensation, every 1% is worth $2,500 under Part E. At " +
           "{percentage}%, this equals ${amount} in potential compensation " +
           "if the DOL accepts the rating.";
@@ -188,6 +187,9 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
         amount: formatAmount(String(percentage * 2500)),
       };
       if (Number.isFinite(previousPercentage)) {
+        tokens.increase_percentage = String(
+          Number((percentage - previousPercentage).toFixed(2))
+        );
         tokens.increase_amount = formatAmount(
           String((percentage - previousPercentage) * 2500)
         );
