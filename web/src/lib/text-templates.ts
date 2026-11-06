@@ -199,7 +199,7 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
     logSummary: (tokens) =>
       tokens.previous_percentage?.trim()
         ? "IR report submitted ({previous_percentage}% → {percentage}%, " +
-          "${amount}, +${increase_amount})"
+          "+${increase_amount})"
         : "IR report submitted ({percentage}%, ${amount})",
   },
   {
