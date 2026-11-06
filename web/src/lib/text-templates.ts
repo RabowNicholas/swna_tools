@@ -135,6 +135,31 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
     body: (tokens) => {
       const hasPrevious = Boolean(tokens.previous_percentage?.trim());
 
+      // Same or lower than before: no new money, but nothing is taken back.
+      // Clients get upset at these, so explain why and lead with what they keep.
+      if (hasPrevious && Number(tokens.increase_percentage) <= 0) {
+        const same = Number(tokens.increase_percentage) === 0;
+        const ratingLine = same
+          ? "Your doctor rated you at {percentage}%, the same as your " +
+            "previous rating."
+          : "Your doctor rated you at {percentage}%, which is lower than " +
+            "your previous rating of {previous_percentage}%. This happens " +
+            "fairly often. A rating depends a lot on how the tests come out " +
+            "that day, and the Department of Labor has become stricter about " +
+            "ratings in recent years.";
+        return (
+          "Hi {client_name} this is {sender_name} with SWNA. We just received " +
+          `your new impairment report. ${ratingLine}\n` +
+          "This report won't add any new compensation, but it doesn't take " +
+          "anything away either. The money you already received for your " +
+          "earlier rating is yours to keep. I've still submitted the report " +
+          "to the Department of Labor.\n" +
+          "Ratings can change over time, so if your condition gets worse we " +
+          "can look at another rating down the road. I'm happy to talk this " +
+          "through on a call anytime, just let me know."
+        );
+      }
+
       const ratingSentence = hasPrevious
         ? "Your doctor rated you at {percentage}%, up from your previous " +
           "rating of {previous_percentage}%, and I've submitted that report " +
@@ -197,7 +222,10 @@ export const TEXT_TEMPLATES: TextTemplate[] = [
       return tokens;
     },
     logSummary: (tokens) =>
-      tokens.previous_percentage?.trim()
+      tokens.previous_percentage?.trim() && Number(tokens.increase_percentage) <= 0
+        ? "IR report submitted ({previous_percentage}% → {percentage}%, " +
+          "no additional comp)"
+        : tokens.previous_percentage?.trim()
         ? "IR report submitted ({previous_percentage}% → {percentage}%, " +
           "+${increase_amount})"
         : "IR report submitted ({percentage}%, ${amount})",
