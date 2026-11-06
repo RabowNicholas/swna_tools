@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { ReopenLetterGenerator, ReopenConditionError } from '@/lib/generators/reopen-generator';
+import { ReopenLetterGenerator, RequestLetterError } from '@/lib/generators/claim-request-letters';
 import { withToolTracking } from '@/lib/events/with-tracking';
 
 async function handlePOST(request: NextRequest) {
@@ -40,7 +40,7 @@ async function handlePOST(request: NextRequest) {
     }
 
     // A problem with what the user typed, not a server fault: return the message as-is
-    if (error instanceof ReopenConditionError) {
+    if (error instanceof RequestLetterError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 

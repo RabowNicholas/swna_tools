@@ -35,6 +35,7 @@ export const DOL_CATEGORIES: PortalCategory[] = [
 
 const OTHER = 20;
 const CLAIMS_AND_FORMS = 11;
+const RECONSIDERATION_REQUEST = 22;
 const REOPENING_REQUEST = 23;
 
 /** The category each portal tool's document is filed under unless changed */
@@ -48,6 +49,7 @@ export const DEFAULT_CATEGORY: Partial<Record<DestinationId, number>> = {
   "ir-notice": OTHER,
   withdrawal: OTHER,
   reopen: REOPENING_REQUEST,
+  reconsideration: RECONSIDERATION_REQUEST,
   "dol-status-update": OTHER,
   "dol-letter": OTHER,
   "build-pdf": OTHER,
