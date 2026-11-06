@@ -393,6 +393,11 @@ export function AirtableLogCard({
                 .
               </p>
             )}
+            {autoStatus && autoStatus.add.length === 0 && autoStatus.remove.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Removes {autoStatus.remove.join(", ")} from the client&apos;s Status if present.
+              </p>
+            )}
 
             {error && (
               <div className="flex items-start text-sm text-destructive">

@@ -30,6 +30,7 @@ export const DESTINATIONS = {
   en16: { doc: 'EN-16', subfolder: SUBMITTED_DOL },
   'rd-waiver': { doc: 'RD Waiver', subfolder: SUBMITTED_DOL },
   withdrawal: { doc: 'Withdrawal Letter', subfolder: SUBMITTED_DOL },
+  reopen: { doc: 'Reopen Letter', subfolder: SUBMITTED_DOL },
   'dol-letter': { doc: 'DOL Letter', subfolder: SUBMITTED_DOL },
   'dol-status-update': { doc: 'DOL Status Update', subfolder: SUBMITTED_DOL },
   'phone-change': { doc: 'Phone Change', subfolder: SUBMITTED_DOL },
