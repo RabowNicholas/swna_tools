@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useClients } from '@/hooks/useClients';
 import { Button } from '@/components/ui/Button';
@@ -26,6 +26,7 @@ import {
   formatCompleteEmail,
 } from '@/lib/email-utils';
 import { buildLogEntry, signerOf } from '@/lib/airtable-log';
+import { onFiled } from '@/lib/portal/helper';
 import { SaveToClientFolder } from '@/components/files/SaveToClientFolder';
 import { DiagnosisPicker } from '@/components/form/DiagnosisPicker';
 
@@ -100,6 +101,22 @@ export function IRCoordinationCard({
   const dpItem = items.find((i) => i.dpReferral);
 
   const [referenceNumber, setReferenceNumber] = useState('');
+  // Set when the DOL portal helper filled the reference in after the submission
+  const [fromPortal, setFromPortal] = useState(false);
+  const caseId = String(client.fields['Case ID'] ?? '').trim();
+
+  // The portal helper reports the DCN once the submission lands. It only fills
+  // an empty box, so a number already typed in is never overwritten.
+  useEffect(() => {
+    if (!caseId) return;
+    return onFiled(caseId, ({ dcn }) => {
+      setReferenceNumber((current) => {
+        if (current.trim()) return current;
+        setFromPortal(true);
+        return dcn;
+      });
+    });
+  }, [caseId]);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [note, setNote] = useState('');
   const [logging, setLogging] = useState(false);
@@ -265,9 +282,16 @@ export function IRCoordinationCard({
                 required
                 placeholder="Paste the reference number from the portal"
                 value={referenceNumber}
-                onChange={(e) => setReferenceNumber(e.target.value)}
+                onChange={(e) => {
+                  setReferenceNumber(e.target.value);
+                  setFromPortal(false);
+                }}
                 disabled={logging}
-                helperText="Shown by the portal after you upload the EE-10"
+                helperText={
+                  fromPortal
+                    ? 'Filled in from the DOL portal. Check it, then log it.'
+                    : 'Shown by the portal after you upload the EE-10'
+                }
               />
             )}
           </div>
