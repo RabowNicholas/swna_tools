@@ -24,7 +24,7 @@ import {
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageLoading, PageError } from "@/components/ui/PageStatus";
 import { SaveToClientFolder } from "@/components/files/SaveToClientFolder";
-import { AttachmentList, mergeAttachments } from "@/components/form/AttachmentList";
+import { AttachmentList, DEFAULT_SCAN, mergeAttachments } from "@/components/form/AttachmentList";
 
 // Zod schema for form validation
 const dolLetterSchema = z.object({
@@ -66,6 +66,8 @@ export default function DolLetterForm() {
   const [generatedFile, setGeneratedFile] = useState<Blob | null>(null);
   // PDFs merged onto the back of the letter, in this order
   const [attachments, setAttachments] = useState<File[]>([]);
+  // Black and white or grayscale, for any photos in the attachments
+  const [scan, setScan] = useState(DEFAULT_SCAN);
 
   const form = useForm<DolLetterFormData>({
     resolver: zodResolver(dolLetterSchema),
@@ -127,7 +129,7 @@ export default function DolLetterForm() {
         // it uploads to the portal as one packet, saved to the client's folder
         // from the card below
         setGeneratedFile(
-          await mergeAttachments(await response.blob(), attachments)
+          await mergeAttachments(await response.blob(), attachments, scan)
         );
 
         setFormSubmitted(true);
@@ -255,7 +257,7 @@ export default function DolLetterForm() {
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <AttachmentList files={attachments} onChange={setAttachments} />
+                <AttachmentList files={attachments} onChange={setAttachments} scan={scan} onScanChange={setScan} />
               </CardContent>
             </Card>
           </>
