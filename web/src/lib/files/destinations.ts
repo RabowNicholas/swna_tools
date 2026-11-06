@@ -48,13 +48,19 @@ export type DestinationId = keyof typeof DESTINATIONS;
  * "IR Notice B. White 10.14.26.pdf" from the Airtable Name
  * "White, Bryan K - 1234".
  */
+/** Ends in "W. Knipper 10.23.26": an initial, a last name, and a date */
+const ALREADY_NAMED = /\b[A-Za-z]\.\s+\S.*\s\d{1,2}\.\d{1,2}\.\d{2,4}$/;
+
 export function fileNameFor(
   doc: string,
   airtableName: string,
   ext = 'pdf',
   date = new Date()
 ): string {
-  const [last, rest = ''] = airtableName.split(/\s+-\s+/)[0].split(',', 2);
+  // A file that already ends in a name and date, like "IR La Plata 30%
+  // W. Knipper 10.23.26", keeps its name rather than getting a second one.
+  if (ALREADY_NAMED.test(doc.trim())) return `${doc.trim()}.${ext}`;
+  const [last, rest = '']= airtableName.split(/\s+-\s+/)[0].split(',', 2);
   const first = rest.trim().split(/\s+/)[0] ?? '';
   return `${doc} ${nameAndDate(first, last, date)}.${ext}`;
 }
